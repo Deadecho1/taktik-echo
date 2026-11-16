@@ -1209,7 +1209,16 @@ def _quote_below_video(a, b):
     if (
         a.quoted_post is not None
         or b.quoted_post is None
-        or not a.observable
+        or not (
+            a.observable
+            or (
+                a.header_visibility.accessible
+                and a.header_visibility.visible_bounds == a.header_visibility.bounds
+                and a.author_visibility.unobscured
+                and a.body_visibility is not None
+                and a.body_visibility.unobscured
+            )
+        )
         or len(a.media) != 1
         or len(b.media) != 1
     ):
