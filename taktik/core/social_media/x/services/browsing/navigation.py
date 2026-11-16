@@ -1260,6 +1260,16 @@ def _quote_below_video(a, b):
             (old.source_label, old.source_prefix)
             == (new.source_label, new.source_prefix)
             or _video_source_entered(old, new, shift)
+            or (
+                new.source_label is None
+                and new.source_prefix is None
+                and new.source_visibility is None
+                and old.source_visibility is not None
+                and old.source_visibility.accessible
+                and old.source_visibility.visible_bounds is None
+                and old.visibility.visible_bounds is not None
+                and old.source_visibility.bounds[1] >= old.visibility.visible_bounds[3]
+            )
         )
         and old_rect[::2] == new_rect[::2]
         and shift < -2
