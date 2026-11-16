@@ -695,14 +695,61 @@ def _compact_quote_video(card, body, viewport):
     return set(preview.iter())
 
 
+def _article_content_nodes(preview):
+    children = list(preview)
+    if not children or not children[-1].xpath('./node[@content-desc="Play"]'):
+        return children
+    control = children[-1]
+    content = children[:-1]
+    texts = [n for n in content if n.get("class") == "android.widget.TextView"]
+    if len(control) != 1 or not texts:
+        raise _Unsupported("Unrecognized article playback control.")
+    glyph = control[0]
+    rect, icon, title = map(_rect, (control, glyph, texts[0]))
+    if (
+        control.get("class") != "android.view.View"
+        or control.get("clickable") != "true"
+        or control.get("focusable") != "true"
+        or control.get("text")
+        or control.get("content-desc")
+        or glyph.get("class") != "android.view.View"
+        or glyph.get("content-desc") != "Play"
+        or glyph.get("text")
+        or len(glyph)
+        or any(
+            n.get("enabled") != "true"
+            or n.get("visible-to-user") == "false"
+            or n.get("long-clickable") == "true"
+            or n.get("scrollable") == "true"
+            for n in (control, glyph)
+        )
+        or any(glyph.get(flag) == "true" for flag in ("clickable", "focusable"))
+        or rect[2] - rect[0] != rect[3] - rect[1]
+        or icon[2] - icon[0] != icon[3] - icon[1]
+        or _intersect(rect, icon) != icon
+        or _intersect(_rect(preview), rect) != rect
+        or abs(rect[0] + rect[2] - icon[0] - icon[2]) > 2
+        or abs(rect[1] + rect[3] - icon[1] - icon[3]) > 2
+        or not (title[1] <= icon[1] < icon[3] <= title[3])
+        or any(_rect(n)[2] > icon[0] for n in texts)
+        or (
+            content[0].get("class") == "android.view.View"
+            and _rect(content[0])[3] > rect[1]
+        )
+    ):
+        raise _Unsupported("Unrecognized article playback control.")
+    return content
+
+
 def _article_preview(card, preceding, viewport, overlaps, excluded=()):
     candidates = [n for n in card if n.get("clickable") == "true" and n not in excluded]
     if not candidates:
         return (), set()
     preview = _one(candidates, "quoted article preview")
-    if len(preview) not in (1, 2, 3):
+    content = _article_content_nodes(preview)
+    if len(content) not in (1, 2, 3):
         raise _Unsupported("Unrecognized article preview.")
-    picture, *texts = preview
+    picture, *texts = content
     title = texts[0] if texts else None
     summary = texts[1] if len(texts) == 2 else None
     if (
@@ -723,7 +770,7 @@ def _article_preview(card, preceding, viewport, overlaps, excluded=()):
                 n.get(flag) == "true"
                 for flag in ("clickable", "long-clickable", "scrollable")
             )
-            for n in preview
+            for n in content
         )
         or picture.get("text")
         or list(card).index(preview) != list(card).index(preceding) + 1
@@ -2299,8 +2346,9 @@ def _clipped_preview_texts(container, actions, viewport, overlays):
     if len(wrapper) != (3 if footer else 1) or len(wrapper[0]) != 1:
         return ()
     card, preview = wrapper[0], wrapper[0][0]
-    picture = preview[0] if len(preview) == 3 else None
-    texts = list(preview)[1:] if picture is not None else list(preview)
+    content = _article_content_nodes(preview)
+    picture = content[0] if len(content) == 3 else None
+    texts = content[1:] if picture is not None else content
     if (
         len(texts) not in (1, 2)
         or (
@@ -2344,7 +2392,7 @@ def _clipped_preview_texts(container, actions, viewport, overlays):
             or _intersect(_rect(n), _rect(preview)) != _rect(n)
             for n in texts
         )
-        or any(_rect(a)[3] >= _rect(b)[1] for a, b in pairwise(preview))
+        or any(_rect(a)[3] >= _rect(b)[1] for a, b in pairwise(content))
         or any(t.visibility.bounds[1] != _rect(wrapper)[3] for t in actions)
     ):
         return ()
