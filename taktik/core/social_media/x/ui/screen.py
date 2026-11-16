@@ -75,7 +75,7 @@ class ScrollArea:
 
 @dataclass(frozen=True)
 class QuotedPost:
-    author: str
+    author: str | None
     display_name: str
     body: str | None
     body_complete: bool
@@ -93,7 +93,8 @@ class QuotedPost:
     @property
     def observable(self):
         return (
-            (self.nested_quote is None or self.nested_quote.observable)
+            self.author is not None
+            and (self.nested_quote is None or self.nested_quote.observable)
             and self.header_visibility.unobscured
             and (
                 self.body_visibility.unobscured
@@ -868,19 +869,54 @@ def _quoted_translation(card, texts, viewport, overlaps):
 
 
 def _quote(card, viewport, overlaps):
-    handle = _handle(card, "quoted author")
     texts = [n for n in card if n.get("text")]
-    index = texts.index(handle)
-    if (
-        index != 1
-        or len(texts) not in (3, 4, 5)
-        or not texts[2].get("text").startswith("· ")
-    ):
-        raise _Unsupported("Unrecognized quote text arrangement.")
-    translation = _quoted_translation(card, texts, viewport, overlaps)
-    if translation is not None:
-        texts.remove(translation)
-    name, _, age, *bodies = texts
+    handles = [n for n in card if HANDLE.fullmatch(n.get("text", ""))]
+    if handles:
+        handle = _handle(card, "quoted author")
+        if (
+            texts.index(handle) != 1
+            or len(texts) not in (3, 4, 5)
+            or not texts[2].get("text").startswith("· ")
+        ):
+            raise _Unsupported("Unrecognized quote text arrangement.")
+        translation = _quoted_translation(card, texts, viewport, overlaps)
+        if translation is not None:
+            texts.remove(translation)
+        name, _, age, *bodies = texts
+    else:
+        if len(texts) != 3 or len(card) < 5:
+            raise _Unsupported("Unrecognized quote without an author handle.")
+        name, age, *bodies = texts
+        marker, _, badge, _ = list(card)[:4]
+        first, last, mark = map(_rect, (name, age, badge))
+        if (
+            list(card)[:4] != [marker, name, badge, age]
+            or marker.get("content-desc") != "Quote"
+            or not all(_plain_annotation(n) and n.get("text") for n in (name, age))
+            or "@" in name.get("text")
+            or not age.get("text").startswith("· ")
+            or badge.get("class") != "android.view.View"
+            or badge.get("content-desc")
+            not in {"Verified", "Verified Business", "Verified Governmental Account"}
+            or badge.get("text")
+            or len(badge)
+            or not all(
+                _visibility(n, viewport, overlaps).accessible
+                for n in (name, badge, age)
+            )
+            or any(
+                badge.get(flag) == "true"
+                for flag in ("clickable", "focusable", "long-clickable", "scrollable")
+            )
+            or first[1::2] != last[1::2]
+            or not (first[1] <= mark[1] < mark[3] <= first[3])
+            or not (
+                _rect(marker)[2] <= first[0] < first[2] <= mark[0] < mark[2] <= last[0]
+            )
+            or abs(last[2] - (_rect(card)[2] - (_rect(marker)[0] - _rect(card)[0]))) > 4
+        ):
+            raise _Unsupported("Unrecognized quote without an author handle.")
+        handle, translation = None, None
     body = bodies[0] if bodies else None
     _, annotation_nodes = _body_annotations(body)
     body_view = _visibility(body, viewport, overlaps) if body is not None else None
@@ -925,7 +961,11 @@ def _quote(card, viewport, overlaps):
     if previews and media:
         raise _Unsupported("Mixed compact and expanded quote media.")
     media += previews + articles
-    labels = list(card)[list(card).index(name) + 1 : list(card).index(handle)]
+    labels = list(card)[
+        list(card).index(name) + 1 : list(card).index(
+            handle if handle is not None else age
+        )
+    ]
     for label in labels:
         rect = _rect(label)
         if (
@@ -935,9 +975,9 @@ def _quote(card, viewport, overlaps):
             or label.get("clickable") == "true"
             or label.get("class") != "android.view.View"
             or rect[0] < _rect(name)[2]
-            or rect[2] > _rect(handle)[0]
-            or rect[1] < _rect(handle)[1]
-            or rect[3] > _rect(handle)[3]
+            or rect[2] > _rect(handle if handle is not None else age)[0]
+            or rect[1] < _rect(handle if handle is not None else age)[1]
+            or rect[3] > _rect(handle if handle is not None else age)[3]
         ):
             raise _Unsupported("Unrecognized quoted author label.")
     known = {
@@ -964,7 +1004,7 @@ def _quote(card, viewport, overlaps):
         ):
             raise _Unsupported("Unrecognized quote content.")
     return QuotedPost(
-        handle.get("text"),
+        handle.get("text") if handle is not None else None,
         name.get("text"),
         body.get("text") if body is not None else None,
         # Compact translated quote bounds do not establish full text visibility.
@@ -973,7 +1013,7 @@ def _quote(card, viewport, overlaps):
         and bool(_body_complete(body.get("text"), body_view)),
         media,
         _visibility(card, viewport, overlaps),
-        _visibility(handle, viewport, overlaps),
+        _visibility(handle if handle is not None else name, viewport, overlaps),
         body_view,
         tuple(label.get("content-desc") for label in labels),
         translation.get("text") if translation is not None else None,
@@ -2143,7 +2183,9 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
         identity.append(["body_annotations", body_annotations])
     if quote:
         quoted_identity = [
-            quote.author.lower(),
+            quote.author.lower()
+            if quote.author is not None
+            else [None, quote.display_name],
             quote.body,
             [
                 (m.kind, m.description, m.preview_text)

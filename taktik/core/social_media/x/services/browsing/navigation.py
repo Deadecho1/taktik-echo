@@ -139,6 +139,7 @@ def _quote_content(quote):
         return None
     return (
         quote.author,
+        quote.display_name if quote.author is None else None,
         quote.body,
         quote.translation,
         _fragment_media_content(quote.media),
@@ -1574,6 +1575,15 @@ def _quote_footer_continuity(a, b, shift, before, after):
 
 
 def _metadata_continuity(a, b, shift, before, after):
+    old_quote, new_quote = a.quoted_post, b.quoted_post
+    if (
+        old_quote is not None
+        and new_quote is not None
+        and (old_quote.author is None or new_quote.author is None)
+        and (old_quote.author, old_quote.display_name, old_quote.labels)
+        != (new_quote.author, new_quote.display_name, new_quote.labels)
+    ):
+        return False
     return (
         _advertising_continuity(a, b, shift, before, after)
         and _note_continuity(a, b, shift, before, after)

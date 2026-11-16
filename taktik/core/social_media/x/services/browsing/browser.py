@@ -47,7 +47,9 @@ def post_context(post):
         "media": _media_context(post.media),
         "counts": {action.label: action.count for action in post.actions},
         "quoted_post": {
-            "username": quote.author.removeprefix("@"),
+            "username": quote.author.removeprefix("@")
+            if quote.author is not None
+            else None,
             "display_name": quote.display_name,
             "body": quote.body,
             "body_complete": quote.body_complete,
@@ -66,7 +68,9 @@ def post_context(post):
     if quote is not None and quote.nested_quote is not None:
         nested = quote.nested_quote
         context["quoted_post"]["quoted_post"] = {
-            "username": nested.author.removeprefix("@"),
+            "username": nested.author.removeprefix("@")
+            if nested.author is not None
+            else None,
             "display_name": nested.display_name,
             "body": nested.body,
             "body_complete": nested.body_complete,
