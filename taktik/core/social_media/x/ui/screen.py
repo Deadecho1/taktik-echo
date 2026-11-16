@@ -216,6 +216,7 @@ class PostFragment:
     quoted_footer_annotations: tuple[TextSpan, ...] = ()
     quoted_body_annotations: tuple[TextSpan, ...] = ()
     market_card: MarketCard | None = None
+    quoted_translation: TextSpan | None = None
 
 
 @dataclass(frozen=True)
@@ -2327,6 +2328,68 @@ def _clipped_quoted_body(container, media, media_nodes, actions, viewport, overl
     if len(wrapper) != (3 if footer else 1):
         return None
     card = wrapper[0]
+    if (
+        not media
+        and len(card) in (1, 2)
+        and card[-1].get("class") == "android.widget.TextView"
+    ):
+        body = card[-1]
+        translation = card[0] if len(card) == 2 else None
+        _, annotation_nodes = _body_annotations(body)
+        if (
+            _plain_annotation(body, allowed_children=annotation_nodes)
+            and bool(body.get("text"))
+            and _rect(card)[1] < viewport[1] < _rect(body)[3] < viewport[3]
+            and _intersect(_rect(body), _rect(card)) == _rect(body)
+            and (footer or _rect(wrapper) == _rect(card))
+            and wrapper.get("clickable") != "true"
+            and card.get("clickable") == "true"
+            and all(
+                n.get("class") == "android.view.View"
+                and not n.get("text")
+                and not n.get("content-desc")
+                and n.get("scrollable") != "true"
+                and n.get("long-clickable") != "true"
+                for n in (wrapper, card)
+            )
+            and all(t.visibility.bounds[1] == _rect(wrapper)[3] for t in actions)
+            and (
+                (translation is None and _rect(body)[1] < viewport[1])
+                or (
+                    translation is not None
+                    and _plain_annotation(translation)
+                    and re.fullmatch(
+                        r"Translated from [A-Za-z]+(?:[ ()-][A-Za-z]+)*",
+                        translation.get("text", ""),
+                    )
+                    and _rect(translation)[1]
+                    < viewport[1]
+                    < _rect(translation)[3]
+                    == _rect(body)[1]
+                    and _rect(body)[0]
+                    < _rect(translation)[0]
+                    < _rect(translation)[2]
+                    <= _rect(body)[2]
+                    and _intersect(_rect(translation), _rect(card))
+                    == _rect(translation)
+                )
+            )
+        ):
+            return (
+                TextSpan(body.get("text"), _visibility(body, viewport, overlays)),
+                (),
+                footer,
+                tuple(
+                    TextSpan(n.get("content-desc"), _visibility(n, viewport, overlays))
+                    for n in annotation_nodes
+                ),
+                TextSpan(
+                    translation.get("text"),
+                    _visibility(translation, viewport, overlays),
+                )
+                if translation is not None
+                else None,
+            )
     marker = _clipped_quote_marker(card, viewport)
     if len(card) != (3 if marker is not None else 2):
         return None
@@ -2374,6 +2437,7 @@ def _clipped_quoted_body(container, media, media_nodes, actions, viewport, overl
             TextSpan(n.get("content-desc"), _visibility(n, viewport, overlays))
             for n in annotation_nodes
         ),
+        None,
     )
 
 
@@ -2500,7 +2564,7 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
             container, media, media_nodes, actions, viewport, overlays
         )
         if quoted_content is not None:
-            quoted_body, media, footer, annotations = quoted_content
+            quoted_body, media, footer, annotations, quoted_translation = quoted_content
             return PostFragment(
                 None,
                 media,
@@ -2510,6 +2574,7 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
                 quoted_body=quoted_body,
                 quoted_footer_annotations=footer,
                 quoted_body_annotations=annotations,
+                quoted_translation=quoted_translation,
             )
     if (
         collapsed

@@ -171,13 +171,17 @@ def _video_tail_source(post):
 def _anchor_pairs(a, b, before, after):
     if getattr(b, "quoted_body", None) is not None:
         a = _quoted_content_source(a)
-        if a.body_visibility is None or len(a.media) != 1:
+        if (
+            a.body_visibility is None
+            or len(a.media) != len(b.media)
+            or len(a.media) > 1
+        ):
             return ()
         return [
             (x, y)
             for old, new in (
                 (a.body_visibility, b.quoted_body.visibility),
-                (a.media[0].visibility, b.media[0].visibility),
+                *((x.visibility, y.visibility) for x, y in zip(a.media, b.media)),
                 *((x.visibility, y.visibility) for x, y in zip(a.actions, b.actions)),
             )
             for x, y in zip(old.bounds[1::2], new.bounds[1::2])
@@ -445,6 +449,58 @@ def _quoted_tail_match(a, b, before, after):
     elif getattr(a, "quoted_body", None) is None:
         return False
     source = _quoted_content_source(a)
+    if not source.media and not b.media:
+        old_body = source.body_visibility
+        if old_body is None or source.body != current.text:
+            return False
+        shift = current.visibility.bounds[3] - old_body.bounds[3]
+        old_translation = (
+            TextSpan(quote.translation, quote.translation_visibility)
+            if quote is not None
+            and quote.translation is not None
+            and quote.translation_visibility is not None
+            else getattr(a, "quoted_translation", None)
+        )
+        new_translation = b.quoted_translation
+        lost = []
+        if quote is not None:
+            lost = [quote.header_visibility, *(m.visibility for m in a.media)]
+            if a.body_visibility is not None:
+                lost.append(a.body_visibility)
+            if not isinstance(a, PostFragment):
+                lost.append(a.header_visibility)
+        views = [
+            (old_body, current.visibility),
+            *((x.visibility, y.visibility) for x, y in zip(source.actions, b.actions)),
+        ]
+        if old_translation is not None and new_translation is not None:
+            if old_translation.text != new_translation.text:
+                return False
+            views.append((old_translation.visibility, new_translation.visibility))
+        elif old_translation is not None:
+            lost.append(old_translation.visibility)
+        elif new_translation is not None:
+            return False
+        return (
+            shift <= 0
+            and before.content_viewport[1]
+            < old_body.bounds[3]
+            < before.content_viewport[3]
+            and after.content_viewport[1]
+            < current.visibility.bounds[3]
+            < after.content_viewport[3]
+            and tuple(t.label for t in source.actions) == ACTION_LABELS
+            and tuple(t.label for t in b.actions) == ACTION_LABELS
+            and all(v.bounds[3] + shift <= after.content_viewport[1] for v in lost)
+            and all(
+                x.bounds[::2] == y.bounds[::2]
+                and all(
+                    abs(v - u - shift) <= 2 or (v == 0 and u + shift <= 0)
+                    for u, v in zip(x.bounds[1::2], y.bounds[1::2])
+                )
+                for x, y in views
+            )
+        )
     if (
         source.body != current.text
         or source.body_visibility is None
