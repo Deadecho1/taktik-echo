@@ -1,4 +1,4 @@
-# Synthetic X disclosure fixtures
+# Synthetic X browsing fixtures
 
 These trimmed XML hierarchies retain the geometry and native English controls of
 1080 × 2340 Android captures. Other post containers are removed, and author/body
@@ -13,3 +13,15 @@ below the collapsed Home inset. The fragment must never supply a new author.
 
 Tests cover authored-text separation, exact disclosure structure, geometry,
 independent movement, and conservative rejection of malformed variants.
+
+`quote-body-loss-before.xml` and `quote-body-loss-after.xml` retain the captured
+geometry of simultaneous outer-body loss and quoted article revelation, with
+synthetic author, body, title, and summary text.
+
+`missing-handle-before.xml` and `missing-handle-after.xml` retain the complete
+layout of an older video tail, a leading name/Verified/age post without a handle,
+and an attributed neighbor. The first gesture removes the older tail and the
+unattributed header. Body, media, and neighboring header anchors establish a
+512-pixel upward displacement. Post text and profile names are synthetic; the
+missing handle is never reconstructed. These inputs establish XML continuity,
+not physical traversal or human visual review.

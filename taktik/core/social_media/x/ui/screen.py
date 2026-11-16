@@ -155,7 +155,7 @@ class RejectedPost:
 
 @dataclass(frozen=True)
 class PostFragment:
-    """Clipped content for continuity only; no newly attributed observation."""
+    """Unattributed content for continuity only; never a new observation."""
 
     body: str | None
     media: tuple[Media, ...]
@@ -1029,6 +1029,38 @@ def _covered_author(header, cover, viewport):
     )
 
 
+def _missing_handle_header(header, viewport, overlaps):
+    """Recognize the captured name/badge/age row without inferring its author."""
+    if len(header) != 3 or not _visibility(header, viewport, overlaps).unobscured:
+        return False
+    name, badge, age = header
+    if (
+        not all(_plain_annotation(n) and n.get("text") for n in (name, age))
+        or any("@" in n.get("text", "") for n in header)
+        or not age.get("text").startswith("· ")
+        or badge.get("class") != "android.view.View"
+        or badge.get("content-desc") != "Verified"
+        or badge.get("text")
+        or len(badge)
+        or any(
+            n.get(flag) == "true"
+            for n in (header, badge)
+            for flag in ("clickable", "long-clickable", "scrollable", "focusable")
+        )
+        or not all(_visibility(n, viewport, overlaps).accessible for n in header)
+    ):
+        return False
+    rect, first, mark, last = map(_rect, (header, name, badge, age))
+    return (
+        first[1::2] == last[1::2] == rect[1::2]
+        and rect[1] <= mark[1] < mark[3] <= rect[3]
+        and first[2] <= mark[0] < mark[2] <= last[0]
+        # Captured text bounds protrude slightly beyond the containing row.
+        and abs(first[0] - rect[0]) <= 4
+        and abs(last[2] - rect[2]) <= 4
+    )
+
+
 def _account_annotation(container, header):
     labels = [
         n
@@ -1062,7 +1094,7 @@ def _account_annotation(container, header):
     return label
 
 
-def _post(header, viewport, overlaps, *, header_cover=None):
+def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle=False):
     container = header.getparent()
     if container.get("clickable") != "true":
         raise _Unsupported("Unrecognized post container.")
@@ -1070,6 +1102,7 @@ def _post(header, viewport, overlaps, *, header_cover=None):
     handle = (
         None
         if _covered_author(header, header_cover, viewport)
+        or (allow_missing_handle and _missing_handle_header(header, viewport, overlaps))
         else _handle(header.iter(), "outer author")
     )
     header_text = [n.get("text") for n in header if n.get("text")]
@@ -1213,7 +1246,7 @@ def _post(header, viewport, overlaps, *, header_cover=None):
     body_text = body.get("text") if body is not None else None
     if handle is None:
         if body is None or not body_view.unobscured:
-            raise _Unsupported("Covered author has no unobscured body anchor.")
+            raise _Unsupported("Unattributed post has no unobscured body anchor.")
         return PostFragment(
             body_text,
             media,
@@ -1675,6 +1708,11 @@ def _read(root, area):
                     viewport,
                     tuple(overlays),
                     header_cover=header_cover if not posts and not fragments else None,
+                    # Fragments precede attributed posts in ordered alignment.
+                    # A missing handle later in the list must remain rejected.
+                    allow_missing_handle=(
+                        kind == "home" and not posts and not fragments and not rejected
+                    ),
                 )
                 if isinstance(post, PostFragment):
                     fragments.append(post)

@@ -35,5 +35,9 @@ The interpreter consumes captured XML and recorded screen dimensions.
 The browser verifies the account, supports For you and Following, and exposes text-only post observations with separate quote and media metadata.
 Only watch and skip are enabled; unsupported or ambiguous layouts stop browsing.
 Native Paid partnership disclosures remain separate from authored text.
+The captured leading name/Verified/age header without a handle can retain a body
+and media as an unattributed fragment for ordered continuity. It requires an
+unobscured header and body, a recognized layout, and independently verified
+movement. Display names never supply an author or a new post observation.
 Search, engagement, promoted-placement recognition, and further physical validation remain unfinished.
 This feature builds on the shared browsing implementation on `main`.
