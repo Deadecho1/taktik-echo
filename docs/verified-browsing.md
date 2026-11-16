@@ -23,3 +23,7 @@ Consumers own the resulting dataset, retention policy, and relevance decisions.
 
 Future platform and device capabilities should reuse or extend these Taktik implementations.
 Consumer applications should not duplicate selectors, screen parsing, or gesture execution.
+
+The shared Phone implementation and verified Instagram/TikTok browsing are maintained on `main`.
+The X extension builds on that shared implementation in `feature/x-platform`.
+Consumers pin a tested complete commit hash; branch names describe the development line.
