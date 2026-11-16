@@ -773,9 +773,8 @@ def _quote_preview_revealed(a, b, after):
         and b.body_visibility is not None
         and a.body_visibility.bounds[::2] == b.body_visibility.bounds[::2]
     )
-    previously_lost_body = (
-        isinstance(a, PostFragment)
-        and isinstance(b, PostFragment)
+    no_outer_body = (
+        isinstance(b, PostFragment)
         and a.body is None
         and b.body is None
         and a.body_visibility is None
@@ -785,9 +784,7 @@ def _quote_preview_revealed(a, b, after):
         and _quoted_video_motion(a, b, shift)
     )
     if not (
-        retained_body
-        or previously_lost_body
-        or _preview_body_scrolled_out(a, b, shift, after)
+        retained_body or no_outer_body or _preview_body_scrolled_out(a, b, shift, after)
     ):
         return False
     # An incomplete quote can prevent observation even when the outer body
