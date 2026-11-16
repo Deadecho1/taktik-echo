@@ -23,3 +23,12 @@ Consumers own the resulting dataset, retention policy, and relevance decisions.
 
 Future platform and device capabilities should reuse or extend these Taktik implementations.
 Consumer applications should not duplicate selectors, screen parsing, or gesture execution.
+
+## X extension
+
+The `feature/x-platform` branch adds `taktik.core.social_media.x.ui.screen` and `taktik.core.social_media.x.services.browsing.XBrowser`.
+The interpreter consumes captured XML and recorded screen dimensions.
+The browser verifies the account, supports For you and Following, and exposes text-only post observations with separate quote and media metadata.
+Only watch and skip are enabled; unsupported or ambiguous layouts stop browsing.
+Search, engagement, native ad recognition, and further physical validation remain unfinished.
+This feature is separate from the shared browsing cleanup on `workspace-platforms`.
