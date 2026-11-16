@@ -586,6 +586,34 @@ def _quoted_body_lost(a, b, after):
     )
 
 
+def _advertising_continuity(a, b, shift, before, after):
+    """Disclosures constrain movement established by existing content anchors."""
+    old, new = a.advertising_visibility, b.advertising_visibility
+    if a.advertising == b.advertising:
+        if old is None or new is None:
+            return old is None and new is None
+        return old.bounds[::2] == new.bounds[::2] and all(
+            abs(y - x - shift) <= 2 for x, y in zip(old.bounds[1::2], new.bounds[1::2])
+        )
+    if shift >= -2:
+        return False
+    if a.advertising == "unknown" and b.advertising == "paid_partnership":
+        return (
+            old is None
+            and new is not None
+            and not a.actions
+            and a.visibility.bounds[3] >= before.content_viewport[3]
+            and new.bounds[1] - shift >= a.visibility.bounds[3]
+        )
+    if a.advertising == "paid_partnership" and b.advertising == "unknown":
+        return (
+            old is not None
+            and new is None
+            and old.bounds[3] + shift <= after.content_viewport[1]
+        )
+    return False
+
+
 def _alignment(before, after, *, scrolling=False):
     """Align overlapping ordered occurrences; repeated keys must be unambiguous."""
     old, new = (*before.fragments, *before.posts), (*after.fragments, *after.posts)
@@ -617,12 +645,15 @@ def _alignment(before, after, *, scrolling=False):
         if not compatible(a, b) or not (candidate_shifts := shifts_for(a, b)):
             return False
         combined = shifts + candidate_shifts
-        return max(combined) - min(combined) <= 2
+        return max(combined) - min(combined) <= 2 and _advertising_continuity(
+            a, b, max(combined), before, after
+        )
 
     if not scrolling:
         if len(old) == len(new) and all(
             type(a) is type(b)
             and matches(a, b)
+            and _advertising_continuity(a, b, 0, before, after)
             and all(x == y for x, y in _anchor_pairs(a, b, before, after))
             for a, b in zip(old, new)
         ):
@@ -654,6 +685,10 @@ def _alignment(before, after, *, scrolling=False):
         # only when they agree on the direction and amount of movement.
         shifts = [shift for a, b in pairs for shift in shifts_for(a, b)]
         if not shifts or max(shifts) > 0 or max(shifts) - min(shifts) > 2:
+            continue
+        if not all(
+            _advertising_continuity(a, b, max(shifts), before, after) for a, b in pairs
+        ):
             continue
         # A revealed neighbor cannot bypass a preceding post that became unreadable.
         if not anchored and any(

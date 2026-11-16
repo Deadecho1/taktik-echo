@@ -116,11 +116,12 @@ class Post:
     labels: tuple[str, ...] = ()
     media_tags: tuple[str, ...] = ()
     actions: tuple[Target, ...] = ()
-    # Advertising cannot be classified from the current captures.
+    # Absence of a supported disclosure is not proof of organic content.
     advertising: str = "unknown"
     translation: str | None = None
     media_labels: tuple[str, ...] = ()
     body_annotations: tuple[str, ...] = ()
+    advertising_visibility: Visibility | None = None
 
     @property
     def observable(self):
@@ -164,6 +165,8 @@ class PostFragment:
     quoted_post: QuotedPost | None = None
     translation: str | None = None
     body_annotations: tuple[str, ...] = ()
+    advertising: str = "unknown"
+    advertising_visibility: Visibility | None = None
 
 
 @dataclass(frozen=True)
@@ -942,6 +945,64 @@ def _clipped_annotation(node, header, viewport):
     )
 
 
+def _paid_partnership(container, media, actions, viewport, overlaps):
+    icons = container.xpath('./node[@content-desc="Paid partnership"]')
+    if not icons:
+        return "unknown", None, set()
+    icon = _one(icons, "paid partnership icon")
+    label = _one(
+        container.xpath('./node[@text="Paid partnership"]'), "paid partnership label"
+    )
+    previous, following = icon.getprevious(), label.getnext()
+    icon_rect, label_rect = _rect(icon), _rect(label)
+    if (
+        len(media) != 1
+        or media[0].kind != "video"
+        or not actions
+        or actions[0].label != "Reply"
+        or previous is None
+        or following is None
+        or icon.getnext() is not label
+        or icon.get("class") != "android.view.View"
+        or icon.get("text")
+        or len(icon)
+        or any(
+            icon.get(flag) == "true"
+            for flag in ("clickable", "long-clickable", "scrollable", "focusable")
+        )
+        or not _plain_annotation(label)
+        or any(not _visibility(n, viewport, overlaps).accessible for n in (icon, label))
+        or _rect(previous) != media[0].visibility.bounds
+        or not previous.xpath('.//*[@content-desc="Video"]')
+        or _rect(following) != actions[0].visibility.bounds
+        or min(icon_rect[1], label_rect[1]) < _rect(previous)[3]
+        or icon_rect[0] != _rect(previous)[0]
+        or icon_rect[2] > label_rect[0]
+        or max(icon_rect[1], label_rect[1]) >= min(icon_rect[3], label_rect[3])
+        or icon_rect[3] != label_rect[3]
+        or label_rect[3] != _rect(following)[1]
+        or any(
+            _intersect(_rect(container), _rect(n)) != _rect(n) for n in (icon, label)
+        )
+    ):
+        raise _Unsupported("Unrecognized paid partnership disclosure.")
+    rect = (
+        icon_rect[0],
+        min(icon_rect[1], label_rect[1]),
+        label_rect[2],
+        label_rect[3],
+    )
+    return (
+        "paid_partnership",
+        Visibility(
+            rect,
+            _intersect(rect, viewport),
+            tuple(area for area in overlaps if _intersect(rect, area)),
+        ),
+        {icon, label},
+    )
+
+
 def _covered_author(header, cover, viewport):
     if (
         cover is None
@@ -1041,6 +1102,10 @@ def _post(header, viewport, overlaps, *, header_cover=None):
     known.update(annotation_nodes)
     actions, action_nodes = _actions(container, viewport, overlaps, excluded)
     known.update(action_nodes)
+    advertising, advertising_view, advertising_nodes = _paid_partnership(
+        container, media, actions, viewport, overlaps
+    )
+    known.update(advertising_nodes)
     translation, translation_nodes = _translation(container, header)
     known.update(translation_nodes)
     children = list(container)
@@ -1054,6 +1119,7 @@ def _post(header, viewport, overlaps, *, header_cover=None):
             or node in translation_nodes
             or node in preview_nodes
             or node in annotation_nodes
+            or node in advertising_nodes
         ):
             continue
         if index < header_index:
@@ -1157,6 +1223,8 @@ def _post(header, viewport, overlaps, *, header_cover=None):
             quote,
             translation,
             body_annotations,
+            advertising,
+            advertising_view,
         )
     identity = [
         handle.get("text").lower(),
@@ -1213,6 +1281,8 @@ def _post(header, viewport, overlaps, *, header_cover=None):
         translation=translation,
         media_labels=media_labels,
         body_annotations=body_annotations,
+        advertising=advertising,
+        advertising_visibility=advertising_view,
     )
 
 
@@ -1263,19 +1333,37 @@ def _clipped_scroll_area(container, viewport, overlays):
     return _scroll_container(container, viewport, overlays)
 
 
-def _fragment(container, viewport, overlays):
+def _fragment(container, viewport, overlays, *, collapsed=False):
     if (
         container.get("clickable") != "true"
         or _rect(container)[1] >= viewport[1]
         or container.xpath('.//*[@resource-id="timeline_post"]')
     ):
         raise _Unsupported("Not a clipped post container.")
-    bodies = container.xpath('./node[@class="android.widget.TextView"]')
+    quotes = _desc(container, "Quote")
+    card = _clickable(_one(quotes, "quote marker"), container) if quotes else None
+    quote = _quote(card, viewport, overlays) if card is not None else None
+    excluded = (card,) if card is not None else ()
+    media, media_nodes = _media(container, viewport, overlays, excluded)
+    actions, action_nodes = _actions(container, viewport, overlays, excluded)
+    advertising, advertising_view, advertising_nodes = _paid_partnership(
+        container, media, actions, viewport, overlays
+    )
+    bodies = [
+        n
+        for n in container.xpath('./node[@class="android.widget.TextView"]')
+        if n not in advertising_nodes
+    ]
     body = _one(bodies, "clipped post body") if bodies else None
     if body is not None and (
         not body.get("text")
         or body.get("clickable") == "true"
-        or _rect(body)[1] >= viewport[1]
+        # Collapsed Home can lose a header while its body starts one pixel
+        # below the system inset. Expanded toolbar clipping is separate.
+        or (
+            _rect(body)[1] >= viewport[1]
+            and not (collapsed and _rect(body)[1] <= viewport[1] + 2)
+        )
     ):
         raise _Unsupported("Unrecognized clipped post body.")
     body_annotations, body_annotation_nodes = _body_annotations(body)
@@ -1293,11 +1381,6 @@ def _fragment(container, viewport, overlays):
             _visibility(container, viewport, overlays),
             _visibility(body, viewport, overlays),
         )
-    quotes = _desc(container, "Quote")
-    card = _clickable(_one(quotes, "quote marker"), container) if quotes else None
-    quote = _quote(card, viewport, overlays) if card is not None else None
-    excluded = (card,) if card is not None else ()
-    media, media_nodes = _media(container, viewport, overlays, excluded)
     if (
         (not quote and len(media) != 1 and not (body is not None and not media))
         or len(media) > 1
@@ -1321,7 +1404,6 @@ def _fragment(container, viewport, overlays):
         and not any(m.visibility.visible_bounds for m in media)
     ):
         raise _Unsupported("Clipped post has no visible content.")
-    actions, action_nodes = _actions(container, viewport, overlays, excluded)
     if tuple(action.label for action in actions) != ACTION_LABELS and not (
         quote and not actions and _rect(container)[3] >= viewport[3]
     ):
@@ -1336,7 +1418,13 @@ def _fragment(container, viewport, overlays):
         ):
             raise _Unsupported("Unrecognized clipped text footer.")
         _clipped_scroll_area(container, viewport, overlays)
-    known = {body, *body_annotation_nodes, *media_nodes, *action_nodes}
+    known = {
+        body,
+        *body_annotation_nodes,
+        *media_nodes,
+        *action_nodes,
+        *advertising_nodes,
+    }
     if card is not None:
         known.update(card.iter())
     for child in container:
@@ -1365,6 +1453,8 @@ def _fragment(container, viewport, overlays):
         actions,
         quote,
         body_annotations=body_annotations,
+        advertising=advertising,
+        advertising_visibility=advertising_view,
     )
 
 
@@ -1616,7 +1706,9 @@ def _read(root, area):
             except _Unsupported:
                 pass
             try:
-                fragment = _fragment(container, viewport, tuple(overlays))
+                fragment = _fragment(
+                    container, viewport, tuple(overlays), collapsed=collapsed
+                )
                 scroll_area = _scroll_container(container, viewport, tuple(overlays))
                 fragments.insert(0, fragment)
                 if scroll_area not in scroll_areas:
