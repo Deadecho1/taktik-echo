@@ -1829,7 +1829,46 @@ def _quote_footer_annotations(wrapper, viewport, overlaps):
     return (TextSpan("Paid partnership", view),) if view is not None else ()
 
 
+def _clipped_handle_above_cover(header, cover, viewport):
+    if cover is None or len(header) != 3:
+        return False
+    name, badge, handle = header
+    rect, first, mark, last = map(_rect, (header, name, badge, handle))
+    return (
+        all(_plain_annotation(n) and n.get("text") for n in (name, handle))
+        and "@" not in name.get("text")
+        and HANDLE.fullmatch(handle.get("text")) is not None
+        and badge.get("class") == "android.view.View"
+        and badge.get("content-desc") in VERIFICATION_LABELS
+        and not badge.get("text")
+        and not len(badge)
+        and all(
+            _visibility(n, viewport).accessible
+            and not any(
+                n.get(flag) == "true"
+                for flag in ("clickable", "long-clickable", "focusable", "scrollable")
+            )
+            for n in (header, badge)
+        )
+        and rect[1] < viewport[1] < last[3] == mark[3] == cover[1] < rect[3]
+        and first[1::2] == rect[1::2]
+        and last[1] == rect[1] <= mark[1] < mark[3]
+        and rect[0]
+        == first[0]
+        < first[2]
+        <= mark[0]
+        < mark[2]
+        <= last[0]
+        < last[2]
+        <= rect[2]
+        and last[0] < cover[2]
+        and last[2] > cover[0]
+    )
+
+
 def _covered_author(header, cover, viewport):
+    if _clipped_handle_above_cover(header, cover, viewport):
+        return True
     if cover is None or len(header) not in (2, 3):
         return False
     if len(header) == 3:
