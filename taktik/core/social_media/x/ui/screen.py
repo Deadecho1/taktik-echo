@@ -92,6 +92,9 @@ class QuotedPost:
     footer_annotations: tuple["TextSpan", ...] = ()
     body_annotations: tuple["TextSpan", ...] = ()
     translation_visibility: Visibility | None = None
+    reply_annotation: str | None = None
+    reply_to: tuple[str, ...] = ()
+    reply_visibility: Visibility | None = None
 
     @property
     def observable(self):
@@ -913,8 +916,51 @@ def _quoted_translation(card, texts, viewport, overlaps):
     return label
 
 
+def _reply_recipients(text):
+    recipients = text.removeprefix("Replying to ").replace("\ufeff", "")
+    if not re.fullmatch(
+        r"@[A-Za-z0-9_]{1,15}(?: and @[A-Za-z0-9_]{1,15})*", recipients
+    ):
+        raise _Unsupported("Unrecognized reply recipients.")
+    return tuple(HANDLE.findall(recipients))
+
+
+def _quoted_reply(card, texts, viewport):
+    if len(texts) != 5 or not texts[3].get("text", "").startswith("Replying to "):
+        return None
+    name, handle, age, label, body = texts
+    rect = _rect(label)
+    preceding = body.getprevious()
+    compact = _compact_quote_image(card, body, viewport)
+    if (
+        label.get("class") != "android.widget.TextView"
+        or len(label)
+        or label.get("content-desc")
+        or any(
+            label.get(flag) != "true"
+            for flag in ("clickable", "focusable", "enabled", "visible-to-user")
+        )
+        or any(label.get(flag) == "true" for flag in ("scrollable", "long-clickable"))
+        or label.getprevious() is not age
+        or label.getnext() is not preceding
+        or preceding not in compact
+        or rect[0] != _rect(preceding)[0]
+        or rect[2] > _rect(body)[2]
+        or rect[1] != _rect(name)[3]
+        or not (rect[1] < _rect(body)[1] < rect[3] <= _rect(body)[3])
+        or _intersect(rect, _rect(card)) != rect
+        or not HANDLE.fullmatch(handle.get("text", ""))
+    ):
+        raise _Unsupported("Unrecognized quoted reply annotation.")
+    _reply_recipients(label.get("text"))
+    return label
+
+
 def _quote(card, viewport, overlaps):
     texts = [n for n in card if n.get("text")]
+    reply = _quoted_reply(card, texts, viewport)
+    if reply is not None:
+        texts.remove(reply)
     handles = [n for n in card if HANDLE.fullmatch(n.get("text", ""))]
     if handles:
         handle = _handle(card, "quoted author")
@@ -963,12 +1009,22 @@ def _quote(card, viewport, overlaps):
         handle, translation = None, None
     body = bodies[0] if bodies else None
     _, annotation_nodes = _body_annotations(body)
-    body_view = _visibility(body, viewport, overlaps) if body is not None else None
+    body_view = (
+        _visibility(
+            body, viewport, (*overlaps, *([_rect(reply)] if reply is not None else []))
+        )
+        if body is not None
+        else None
+    )
     media, media_nodes = _media(card, viewport, overlaps)
     compact_nodes = _compact_quote_video(card, body, viewport)
     previews, preview_nodes = _quote_preview(card, body, viewport, overlaps)
     articles, article_nodes = _article_preview(
-        card, body if body is not None else age, viewport, overlaps, compact_nodes
+        card,
+        body if body is not None else age,
+        viewport,
+        overlaps,
+        compact_nodes | {reply},
     )
     header_only = (
         body is None
@@ -1030,6 +1086,7 @@ def _quote(card, viewport, overlaps):
         age,
         body,
         translation,
+        reply,
         *labels,
         *media_nodes,
         *compact_nodes,
@@ -1054,6 +1111,7 @@ def _quote(card, viewport, overlaps):
         # Compact translated quote bounds do not establish full text visibility.
         body is not None
         and translation is None
+        and reply is None
         and bool(_body_complete(body.get("text"), body_view)),
         media,
         _visibility(card, viewport, overlaps),
@@ -1066,6 +1124,11 @@ def _quote(card, viewport, overlaps):
             if translation is not None
             else None
         ),
+        reply_annotation=reply.get("text") if reply is not None else None,
+        reply_to=_reply_recipients(reply.get("text")) if reply is not None else (),
+        reply_visibility=_visibility(reply, viewport, overlaps)
+        if reply is not None
+        else None,
         body_annotations=tuple(
             TextSpan(n.get("content-desc"), _visibility(n, viewport, overlaps))
             for n in annotation_nodes
@@ -2127,12 +2190,7 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
                 if reply_annotation is not None:
                     raise _Unsupported("Multiple reply annotations.")
                 reply_annotation = text
-                recipients = text.removeprefix("Replying to ").replace("\ufeff", "")
-                if not re.fullmatch(
-                    r"@[A-Za-z0-9_]{1,15}(?: and @[A-Za-z0-9_]{1,15})*", recipients
-                ):
-                    raise _Unsupported("Unrecognized reply recipients.")
-                reply_to = tuple(HANDLE.findall(recipients))
+                reply_to = _reply_recipients(text)
             elif node.get("clickable") == "true":
                 if (
                     not media
@@ -2254,6 +2312,8 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
         ]
         if quote.translation:
             quoted_identity.append(quote.translation)
+        if quote.reply_annotation:
+            quoted_identity.append(["reply", quote.reply_annotation, quote.reply_to])
         if quote.body_annotations:
             quoted_identity.append(
                 ["body_annotations", [v.text for v in quote.body_annotations]]

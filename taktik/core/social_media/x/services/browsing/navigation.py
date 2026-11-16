@@ -142,6 +142,8 @@ def _quote_content(quote):
         quote.display_name if quote.author is None else None,
         quote.body,
         quote.translation,
+        quote.reply_annotation,
+        quote.reply_to,
         _fragment_media_content(quote.media),
     )
 
@@ -1641,6 +1643,29 @@ def _metadata_continuity(a, b, shift, before, after):
         and _quote_footer_continuity(a, b, shift, before, after)
         and _quote_body_annotation_continuity(a, b, shift, before, after)
         and _market_card_continuity(a, b, shift, before, after)
+        and _quoted_reply_continuity(a, b, shift, after)
+    )
+
+
+def _quoted_reply_continuity(a, b, shift, after):
+    old, new = a.quoted_post, b.quoted_post
+    x = old.reply_visibility if old else None
+    y = new.reply_visibility if new else None
+    if x is None and y is None:
+        return True
+    if x is None:
+        return old is None or (
+            shift < -2 and y.bounds[1] - shift >= old.visibility.bounds[3]
+        )
+    if y is None:
+        return shift < -2 and x.bounds[3] + shift <= after.content_viewport[1]
+    return (
+        (old.reply_annotation, old.reply_to) == (new.reply_annotation, new.reply_to)
+        and x.bounds[::2] == y.bounds[::2]
+        and all(
+            abs(v - u - shift) <= 2 or (v == 0 and u + shift <= 0)
+            for u, v in zip(x.bounds[1::2], y.bounds[1::2])
+        )
     )
 
 

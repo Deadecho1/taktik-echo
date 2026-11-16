@@ -65,6 +65,9 @@ def post_context(post):
         context["quoted_post"]["footer_annotations"] = [
             v.text for v in quote.footer_annotations
         ]
+    if quote is not None and quote.reply_annotation is not None:
+        context["quoted_post"]["reply_annotation"] = quote.reply_annotation
+        context["quoted_post"]["reply_to"] = list(quote.reply_to)
     if quote is not None and quote.nested_quote is not None:
         nested = quote.nested_quote
         context["quoted_post"]["quoted_post"] = {
@@ -79,6 +82,11 @@ def post_context(post):
             "translation": nested.translation,
             "media": _media_context(nested.media),
         }
+        if nested.reply_annotation is not None:
+            context["quoted_post"]["quoted_post"]["reply_annotation"] = (
+                nested.reply_annotation
+            )
+            context["quoted_post"]["quoted_post"]["reply_to"] = list(nested.reply_to)
     if post.community_note is not None:
         note = post.community_note
         context["community_note"] = {
