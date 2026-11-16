@@ -952,7 +952,9 @@ def _covered_bookmark_row(container, actions, viewport, overlaps):
         return False
     slot = rects[ACTION_LABELS.index("Bookmark")]
     center = (slot[0] + slot[2]) // 2
-    expected = (center - size // 2, top, center - size // 2 + size, bottom)
+    # Narrow slots can clip a right-aligned glyph. Cover the entire band
+    # through the slot's right edge, not only a centered square.
+    expected = (center - size // 2, top, slot[2], bottom)
     return (
         _intersect(expected, slot) == expected
         and _intersect(expected, viewport) == expected
@@ -1798,14 +1800,37 @@ def _clipped_preview_texts(container, actions, viewport, overlays):
     )
 
 
+def _clipped_quote_marker(card, viewport):
+    if len(card) != 3:
+        return None
+    marker = card[0]
+    if (
+        marker.get("content-desc") == "Quote"
+        and marker.get("class") == "android.view.View"
+        and not marker.get("text")
+        and not len(marker)
+        and marker.get("clickable") != "true"
+        and marker.get("long-clickable") != "true"
+        and marker.get("scrollable") != "true"
+        and _rect(marker)[1] < viewport[1] < _rect(marker)[3]
+        and _rect(marker)[3] <= _rect(card[1])[1]
+        and _intersect(_rect(marker), _rect(card)) == _rect(marker)
+    ):
+        return marker
+    return None
+
+
 def _clipped_quoted_body(container, media, media_nodes, actions, viewport, overlays):
     if len(container) != 7 or tuple(t.label for t in actions) != ACTION_LABELS:
         return None
     wrapper = container[0]
-    if len(wrapper) != 1 or len(wrapper[0]) != 2:
+    if len(wrapper) != 1:
         return None
     card = wrapper[0]
-    body, video = card
+    marker = _clipped_quote_marker(card, viewport)
+    if len(card) != (3 if marker is not None else 2):
+        return None
+    body, video = list(card)[-2:]
     if not media:
         media, media_nodes = _article_preview(card, body, viewport, overlays)
     if len(media) != 1 or media[0].kind not in {"video", "preview"}:
@@ -1813,7 +1838,8 @@ def _clipped_quoted_body(container, media, media_nodes, actions, viewport, overl
     if (
         not _plain_annotation(body)
         or not body.get("text")
-        or not (_rect(body)[1] < viewport[1] < _rect(body)[3] <= _rect(video)[1])
+        or not (viewport[1] < _rect(body)[3] <= _rect(video)[1])
+        or (marker is None and _rect(body)[1] >= viewport[1])
         or _rect(wrapper) != _rect(card)
         or wrapper.get("clickable") == "true"
         or card.get("clickable") != "true"
@@ -1831,6 +1857,7 @@ def _clipped_quoted_body(container, media, media_nodes, actions, viewport, overl
         or any(t.visibility.bounds[1] != _rect(card)[3] for t in actions)
         or any(
             n is not body
+            and n is not marker
             and n not in media_nodes
             and (n.get("text") or n.get("content-desc", "") not in ("", "Unmute"))
             for n in card.iter()
@@ -1876,6 +1903,14 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
         raise _Unsupported("Not a clipped post container.")
     quotes = _desc(container, "Quote")
     card = _clickable(_one(quotes, "quote marker"), container) if quotes else None
+    if (
+        collapsed
+        and card is not None
+        and _clipped_quote_marker(card, viewport) is not None
+    ):
+        # The marker can outlive its author row. The tail parser below must
+        # recognize the complete structure; it never supplies an author.
+        card = None
     quote, card = (
         _quote_bundle(card, viewport, overlays) if card is not None else (None, None)
     )

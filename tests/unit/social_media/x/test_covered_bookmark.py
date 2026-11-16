@@ -33,17 +33,21 @@ def test_covered_bookmark_preserves_only_the_five_known_actions():
 
 
 @pytest.mark.parametrize(
-    "mutation", ["cover", "slot_geometry", "slot_text", "extra_slot", "row", "icon"]
+    "mutation",
+    ["cover", "right_cover", "slot_geometry", "slot_text", "extra_slot", "row", "icon"],
 )
 def test_missing_bookmark_requires_exact_row_and_complete_icon_coverage(mutation):
     root = etree.fromstring(document("covered-bookmark-after").encode())
     slot = root.xpath('//*[@bounds="[872,2122][959,2240]"]')[0]
-    if mutation == "cover":
+    if mutation in {"cover", "right_cover"}:
+        cover = (
+            (920, 2076, 1036, 2230) if mutation == "cover" else (882, 2076, 940, 2230)
+        )
         with pytest.raises(_Unsupported):
             _fragment(
                 slot.getparent(),
                 (0, 136, 1080, 2230),
-                ((920, 2076, 1036, 2230),),
+                (cover,),
                 collapsed=True,
             )
         return
