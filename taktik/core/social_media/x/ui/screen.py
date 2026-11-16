@@ -2703,6 +2703,44 @@ def _clipped_avatar_decoration(node, body, viewport):
     )
 
 
+def _clipped_media_before_footer(container, body, media, media_nodes, viewport):
+    """Retain native body/video when the footer has not entered the viewport."""
+    if body is None or len(media) != 1 or media[0].kind != "video":
+        return False
+    video, text = media[0].visibility.bounds, _rect(body)
+    if not (
+        text[::2] == video[::2]
+        and text[3] <= video[1] < viewport[3] <= video[3] <= _rect(container)[3]
+        and media[0].visibility.visible_bounds is not None
+    ):
+        return False
+    for node in container:
+        if node is body or (
+            _rect(node) == video and any(n in media_nodes for n in node.iter())
+        ):
+            continue
+        rect = _rect(node)
+        if (
+            node is not container[-1]
+            or any(
+                len(n) > 1
+                or n.get("class") != "android.view.View"
+                or n.get("text")
+                or n.get("content-desc")
+                or n.get("enabled") != "true"
+                or _rect(n) != rect
+                or any(
+                    n.get(flag) == "true" for flag in ("scrollable", "long-clickable")
+                )
+                for n in node.iter()
+            )
+            or rect[1] < max(viewport[3], video[3])
+            or _intersect(rect, _rect(container)) != rect
+        ):
+            return False
+    return True
+
+
 def _fragment(container, viewport, overlays, *, collapsed=False):
     if (
         container.get("clickable") != "true"
@@ -2882,6 +2920,13 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
             (quote or community_note)
             and not actions
             and _rect(container)[3] >= viewport[3]
+        )
+        and not (
+            collapsed
+            and not actions
+            and _clipped_media_before_footer(
+                container, body, media, media_nodes, viewport
+            )
         )
         and not _covered_bookmark_row(container, actions, viewport, overlays)
     ):
