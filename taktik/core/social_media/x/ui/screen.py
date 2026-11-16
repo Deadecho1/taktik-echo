@@ -85,6 +85,7 @@ class QuotedPost:
     translation: str | None = None
     nested_quote: "QuotedPost | None" = None
     footer_annotations: tuple["TextSpan", ...] = ()
+    body_annotations: tuple["TextSpan", ...] = ()
 
     @property
     def observable(self):
@@ -199,6 +200,7 @@ class PostFragment:
     covered_header_visibility: Visibility | None = None
     covered_handle: TextSpan | None = None
     quoted_footer_annotations: tuple[TextSpan, ...] = ()
+    quoted_body_annotations: tuple[TextSpan, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -709,9 +711,9 @@ def _article_preview(card, preceding, viewport, overlaps, excluded=()):
     ), set(preview.iter())
 
 
-def _plain_annotation(node):
+def _plain_annotation(node, *, allowed_children=()):
     return (
-        not len(node)
+        all(child in allowed_children for child in node)
         and node.get("class") == "android.widget.TextView"
         and not node.get("content-desc")
         and all(
@@ -765,6 +767,7 @@ def _quote(card, viewport, overlaps):
         texts.remove(translation)
     name, _, age, *bodies = texts
     body = bodies[0] if bodies else None
+    _, annotation_nodes = _body_annotations(body)
     body_view = _visibility(body, viewport, overlaps) if body is not None else None
     media, media_nodes = _media(card, viewport, overlaps)
     compact_nodes = _compact_quote_video(card, body)
@@ -816,6 +819,7 @@ def _quote(card, viewport, overlaps):
         *compact_nodes,
         *preview_nodes,
         *article_nodes,
+        *annotation_nodes,
     }
     for node in card.iter():
         if node in known:
@@ -841,6 +845,10 @@ def _quote(card, viewport, overlaps):
         body_view,
         tuple(label.get("content-desc") for label in labels),
         translation.get("text") if translation is not None else None,
+        body_annotations=tuple(
+            TextSpan(n.get("content-desc"), _visibility(n, viewport, overlaps))
+            for n in annotation_nodes
+        ),
     )
 
 
@@ -1704,6 +1712,10 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
         ]
         if quote.translation:
             quoted_identity.append(quote.translation)
+        if quote.body_annotations:
+            quoted_identity.append(
+                ["body_annotations", [v.text for v in quote.body_annotations]]
+            )
         identity.append(quoted_identity)
     key = hashlib.sha256(
         json.dumps(identity, ensure_ascii=False, separators=(",", ":")).encode()
@@ -1877,12 +1889,13 @@ def _clipped_quoted_body(container, media, media_nodes, actions, viewport, overl
     if len(card) != (3 if marker is not None else 2):
         return None
     body, video = list(card)[-2:]
+    _, annotation_nodes = _body_annotations(body)
     if not media:
         media, media_nodes = _article_preview(card, body, viewport, overlays)
     if len(media) != 1 or media[0].kind not in {"video", "preview"}:
         return None
     if (
-        not _plain_annotation(body)
+        not _plain_annotation(body, allowed_children=annotation_nodes)
         or not body.get("text")
         or not (viewport[1] < _rect(body)[3] <= _rect(video)[1])
         or (marker is None and _rect(body)[1] >= viewport[1])
@@ -1904,6 +1917,7 @@ def _clipped_quoted_body(container, media, media_nodes, actions, viewport, overl
         or any(
             n is not body
             and n is not marker
+            and n not in annotation_nodes
             and n not in media_nodes
             and (n.get("text") or n.get("content-desc", "") not in ("", "Unmute"))
             for n in card.iter()
@@ -1914,6 +1928,10 @@ def _clipped_quoted_body(container, media, media_nodes, actions, viewport, overl
         TextSpan(body.get("text"), _visibility(body, viewport, overlays)),
         media,
         footer,
+        tuple(
+            TextSpan(n.get("content-desc"), _visibility(n, viewport, overlays))
+            for n in annotation_nodes
+        ),
     )
 
 
@@ -2010,7 +2028,7 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
             container, media, media_nodes, actions, viewport, overlays
         )
         if quoted_content is not None:
-            quoted_body, media, footer = quoted_content
+            quoted_body, media, footer, annotations = quoted_content
             return PostFragment(
                 None,
                 media,
@@ -2019,6 +2037,7 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
                 actions,
                 quoted_body=quoted_body,
                 quoted_footer_annotations=footer,
+                quoted_body_annotations=annotations,
             )
     if (
         collapsed
