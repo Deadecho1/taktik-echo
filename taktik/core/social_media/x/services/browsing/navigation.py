@@ -2284,14 +2284,19 @@ class X:
                 return None
             screen, index = self._screen, self._index
             pending = False
-            for attempt in range(ADVANCE_SCROLL_ATTEMPTS + 1):
+            attempts = 0
+            while True:
                 for next_index, post in enumerate(screen.posts):
                     if not pending and next_index > index and post.observable:
                         return self._select(screen, next_index)
-                if attempt == ADVANCE_SCROLL_ATTEMPTS:
+                if attempts == ADVANCE_SCROLL_ATTEMPTS:
                     break
                 self._gesture(screen, "up")
                 after, offset, moved = self._advance_snapshot(screen, pending)
+                # Passing an unobservable successor is verified search progress.
+                # Losing only the selected post or moving within it is not.
+                passed_successor = moved is True and offset > max(index + 1, 0)
+                attempts = 0 if passed_successor else attempts + 1
                 pending = moved is None
                 index -= offset
                 screen = after
