@@ -977,7 +977,9 @@ def _preview_body_scrolled_out(a, b, shift, after):
         or b.body is not None
         or b.body_visibility is not None
         or b.body_annotations
-        or a.translation != b.translation
+        # Native translation precedes the body. Once that body's bottom has
+        # left the viewport, the label can leave with it; a new label cannot.
+        or (b.translation is not None and a.translation != b.translation)
         or a.body_visibility.bounds[3] + shift > after.content_viewport[1]
         or (
             not isinstance(a, PostFragment)
