@@ -1120,8 +1120,17 @@ def _quote_below_video(a, b):
         and _same_body(a, b)
         and old.kind == new.kind == "video"
         and old.description == new.description
-        and old.source_label == new.source_label
-        and old.source_prefix == new.source_prefix
+        and (
+            (old.source_label, old.source_prefix)
+            == (new.source_label, new.source_prefix)
+            or (
+                old.source_label is None
+                and old.source_prefix is None
+                and new.source_label is not None
+                and new.source_visibility is not None
+                and new.source_visibility.bounds[1] - shift >= old_rect[3]
+            )
+        )
         and old_rect[::2] == new_rect[::2]
         and shift < -2
         and retained_text

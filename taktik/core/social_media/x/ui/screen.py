@@ -63,6 +63,7 @@ class Media:
     preview_text_visibility: Visibility | None = None
     description_visibility: Visibility | None = None
     source_prefix: str | None = None
+    source_visibility: Visibility | None = None
 
 
 @dataclass(frozen=True)
@@ -554,6 +555,11 @@ def _media(root, viewport, overlaps, excluded=()):
                     _visibility(node, viewport, (*overlaps, *controls)),
                     source_label,
                     source_prefix=source_prefix,
+                    source_visibility=(
+                        _visibility(credit, viewport, overlaps)
+                        if credit is not None
+                        else None
+                    ),
                 )
             )
             covered.add(node)
