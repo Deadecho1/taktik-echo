@@ -740,6 +740,51 @@ def _plain_annotation(node, *, allowed_children=()):
     )
 
 
+def _compact_quote_image(card, body, viewport):
+    """Validate the image wrapper beside translated compact quote text."""
+    if body is None:
+        return set()
+    wrapper = body.getprevious()
+    if wrapper is None or len(wrapper) != 1:
+        return set()
+    image = wrapper[0]
+    rect, body_rect = _rect(wrapper), _rect(body)
+    width, height = rect[2] - rect[0], rect[3] - rect[1]
+    if (
+        wrapper.get("class") != "android.view.View"
+        or wrapper.get("text")
+        or wrapper.get("content-desc")
+        or any(
+            wrapper.get(flag) == "true"
+            for flag in ("clickable", "long-clickable", "focusable", "scrollable")
+        )
+        or image.get("class") != "android.widget.ImageView"
+        or image.get("content-desc") != "Image"
+        or image.get("text")
+        or len(image)
+        or any(
+            image.get(flag) != "true"
+            for flag in ("clickable", "long-clickable", "focusable")
+        )
+        or image.get("scrollable") == "true"
+        or any(
+            n.get("enabled") != "true" or n.get("visible-to-user") != "true"
+            for n in (wrapper, image)
+        )
+        or _rect(image) != rect
+        or rect[1] != body_rect[1]
+        or rect[2] > body_rect[0]
+        or _intersect(rect, _rect(card)) != rect
+        or _intersect(body_rect, _rect(card)) != body_rect
+        or not (
+            height == width
+            or (0 < height < width and rect[3] == _rect(card)[3] >= viewport[3])
+        )
+    ):
+        return set()
+    return {wrapper, image}
+
+
 def _quoted_translation(card, texts, viewport, overlaps):
     if (
         len(texts) == 4
@@ -755,8 +800,9 @@ def _quoted_translation(card, texts, viewport, overlaps):
     if preceding is not body:
         _, preview_nodes = _quote_preview(card, body, viewport, overlaps)
         compact_nodes = _compact_quote_video(card, body)
+        image_nodes = _compact_quote_image(card, body, viewport)
         if (
-            preceding not in preview_nodes | compact_nodes
+            preceding not in preview_nodes | compact_nodes | image_nodes
             or preceding.getnext() is not body
         ):
             raise _Unsupported("Unrecognized quoted translation annotation.")
