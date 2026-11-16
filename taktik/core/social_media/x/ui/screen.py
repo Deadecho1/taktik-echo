@@ -1537,7 +1537,8 @@ def _covered_author(header, cover, viewport):
         badge = header[1]
         if (
             badge.get("class") != "android.view.View"
-            or badge.get("content-desc") != "Verified"
+            or badge.get("content-desc")
+            not in {"Verified", "Verified Business", "Verified Governmental Account"}
             or badge.get("text")
             or len(badge)
             or any(
@@ -1687,6 +1688,54 @@ def _account_annotation(container, header):
     return label
 
 
+def _avatar_live_badge(container):
+    candidates = [n for n in container if n.xpath('./node/node[@text="LIVE"]')]
+    if not candidates:
+        return set()
+    badge = _one(candidates, "avatar LIVE badge")
+    if len(badge) != 1 or len(badge[0]) != 1:
+        raise _Unsupported("Unrecognized avatar LIVE badge.")
+    inner, label = badge[0], badge[0][0]
+    avatar = badge.getprevious()
+    if avatar is None:
+        raise _Unsupported("Avatar LIVE badge has no avatar.")
+    rect, icon, text = _rect(badge), _rect(avatar), _rect(label)
+    if (
+        any(
+            n.get("class") != "android.view.View"
+            or n.get("text")
+            or n.get("content-desc")
+            or n.get("enabled") != "true"
+            or n.get("visible-to-user") != "true"
+            or any(
+                n.get(flag) == "true"
+                for flag in ("clickable", "long-clickable", "focusable", "scrollable")
+            )
+            for n in (badge, inner)
+        )
+        or not _plain_annotation(label)
+        or label.get("text") != "LIVE"
+        or avatar.get("class") != "android.widget.ImageView"
+        or avatar.get("text")
+        or not avatar.get("content-desc")
+        or len(avatar)
+        or any(
+            avatar.get(flag) != "true"
+            for flag in ("clickable", "long-clickable", "focusable", "enabled")
+        )
+        or avatar.get("scrollable") == "true"
+        or _rect(inner) != rect
+        or _intersect(text, rect) != text
+        or rect[::2] != icon[::2]
+        or icon[2] - icon[0] != icon[3] - icon[1]
+        or rect[2] - rect[0] != rect[3] - rect[1]
+        or not (icon[1] < rect[1] < icon[3] < rect[3])
+        or not (text[1] < icon[3] < text[3])
+    ):
+        raise _Unsupported("Unrecognized avatar LIVE badge.")
+    return {avatar, *badge.iter()}
+
+
 def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle=False):
     container = header.getparent()
     if container.get("clickable") != "true":
@@ -1707,6 +1756,10 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
         raise _Unsupported("Unrecognized author header.")
     known = set(header.iter())
     labels = [n.get("content-desc") for n in header if n.get("content-desc")]
+    live_nodes = _avatar_live_badge(container)
+    if live_nodes:
+        labels.append("LIVE")
+        known.update(live_nodes)
     account_label = _account_annotation(container, header)
     if account_label is not None:
         labels.append(account_label.get("text"))
@@ -1750,6 +1803,7 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
     for index, node in enumerate(children):
         if (
             node is header
+            or node in live_nodes
             or node is account_label
             or node in translation_nodes
             or node in preview_nodes
@@ -2166,6 +2220,30 @@ def _header_controls_clipped(container, body, viewport):
     )
 
 
+def _clipped_avatar_decoration(node, body, viewport):
+    rect = _rect(node)
+    return (
+        len(node) <= 1
+        and rect[2] - rect[0] == rect[3] - rect[1]
+        and rect[1] < viewport[1] < rect[3]
+        and viewport[0] <= rect[0] < rect[2] < _rect(body)[0]
+        and all(
+            n.get("class") == "android.view.View"
+            and not n.get("text")
+            and not n.get("content-desc")
+            and n.get("enabled") == "true"
+            and n.get("visible-to-user") == "true"
+            and _rect(n) == rect
+            and (n is node or not len(n))
+            and all(
+                n.get(flag) != "true"
+                for flag in ("clickable", "long-clickable", "focusable", "scrollable")
+            )
+            for n in node.iter()
+        )
+    )
+
+
 def _fragment(container, viewport, overlays, *, collapsed=False):
     if (
         container.get("clickable") != "true"
@@ -2173,6 +2251,7 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
         or container.xpath('.//*[@resource-id="timeline_post"]')
     ):
         raise _Unsupported("Not a clipped post container.")
+    live_nodes = _avatar_live_badge(container)
     quotes = _desc(container, "Quote")
     card = _clickable(_one(quotes, "quote marker"), container) if quotes else None
     if (
@@ -2359,6 +2438,7 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
         _clipped_scroll_area(container, viewport, overlays)
     known = {
         body,
+        *live_nodes,
         *body_annotation_nodes,
         *media_nodes,
         *action_nodes,
@@ -2416,7 +2496,10 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
     for child in container:
         if child is body or body is None:
             break
-        if child in translation_nodes:
+        if child in translation_nodes or child in live_nodes:
+            continue
+        if _clipped_avatar_decoration(child, body, viewport):
+            known.update(child.iter())
             continue
         if child.get("text") or not (
             child.get("class") == "android.widget.ImageView"
