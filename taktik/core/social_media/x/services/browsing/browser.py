@@ -30,7 +30,7 @@ def _media_context(media):
 
 def post_context(post):
     quote = post.quoted_post
-    return {
+    context = {
         "display_name": post.display_name,
         "body_complete": post.body_complete,
         "body_annotations": list(post.body_annotations),
@@ -58,6 +58,15 @@ def post_context(post):
         if quote
         else None,
     }
+    if post.community_note is not None:
+        note = post.community_note
+        context["community_note"] = {
+            "title": note.title,
+            "body": note.body,
+            "body_complete": note.body_complete,
+            "translation": note.translation,
+        }
+    return context
 
 
 def _workflows(enabled_workflows):

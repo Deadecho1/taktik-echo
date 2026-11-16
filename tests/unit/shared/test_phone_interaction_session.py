@@ -252,6 +252,52 @@ def test_precise_drag_preserves_requested_displacement_and_does_not_fling():
     raw.swipe.assert_not_called()
 
 
+@pytest.mark.parametrize("step_cost", [0.0045, 0.012, 0.060])
+@pytest.mark.parametrize("direction", ["up", "down"])
+def test_short_controlled_scroll_stops_before_releasing(
+    monkeypatch, step_cost, direction
+):
+    from taktik.core.shared.behavior import gesture_primitives as gestures
+
+    phone, raw, _ = session()
+    path = [[137, 1485], [100, 856]]
+    if direction == "down":
+        path.reverse()
+    monkeypatch.setattr(
+        gestures,
+        "sample_swipe",
+        lambda *a, **kw: ([[x, y - 567] for x, y in path], 0.2018204323),
+    )
+    phone._backend._transport()._taktik_device_step_s = step_cost
+
+    phone.gesture("scroll", direction, (0, 567, 176, 2230), distance=629).require()
+
+    raw.swipe_points.assert_called_once()
+    points, per_segment = raw.swipe_points.call_args.args
+    assert points[0] == path[0] and points[-1] == path[-1]
+    assert all(0 <= x < 176 and 567 <= y < 2230 for x, y in points)
+    stationary = 0
+    for point in reversed(points[:-1]):
+        if point != points[-1]:
+            break
+        stationary += 1
+    # UiAutomator injects steps - 1 moves and sleeps 5 ms per move.
+    minimum_hold = stationary * (int(per_segment / 0.005) - 1) * 0.005
+    assert minimum_hold >= 0.15, (stationary, minimum_hold)
+    raw.swipe.assert_not_called()
+
+
+def test_uncertain_controlled_scroll_is_never_replayed():
+    phone, raw, _ = session()
+    raw.swipe_points.side_effect = OSError("injected, reply lost")
+
+    result = phone.gesture("scroll", "up", (0, 567, 176, 2230), distance=629)
+
+    assert result.status == Status.UNCERTAIN
+    raw.swipe_points.assert_called_once()
+    raw.swipe.assert_not_called()
+
+
 def test_uncertain_path_injection_is_not_repeated_with_a_fallback():
     phone, raw, _ = session()
     raw.swipe_points.side_effect = OSError("reply lost")

@@ -264,6 +264,7 @@ def _observe_step_cost(raw, seconds_per_move: float) -> None:
 # per segment, so every injected position is one of ours and none is interpolated by the device.
 _DEVICE_SEGMENT_STEPS = 2
 _DEVICE_MAX_POINTS = 400
+_RELEASE_HOLD_S = 0.15
 
 
 # A hand keeping contact with the glass while it drags: roughly 0.8-3.2 k px/s. `_long_drag` already
@@ -623,14 +624,20 @@ class GestureMixin:
         if raw is None:
             return False
         step_cost = _step_cost(raw)
-        n_events = max(2, min(_DEVICE_MAX_POINTS - 1,
+        # A slow final point alone leaves fast movement in Android's velocity history.
+        # Size the stationary tail by the mandatory device sleep, not a stale cadence estimate.
+        release_moves = math.ceil(_RELEASE_HOLD_S / _U2_STEP_QUANTUM)
+        n_events = max(2, min(_DEVICE_MAX_POINTS - 1 - release_moves,
                               int(round(max(duration, 0.02) / step_cost))))
-        points = _resample_by_time(path, n_events + 1, int(self.screen_width))
+        points = _resample_by_time(path, n_events + 1, int(self.screen_width),
+                                   rng=self._interaction_rng)
+        points.extend([points[-1][:] for _ in range(release_moves)])
         n_seg = len(points) - 1
         moves = n_seg * (_DEVICE_SEGMENT_STEPS - 1)
         info = {"mode": "device", "events": moves, "rpc_calls": 1,
                 "step_cost_ms": round(step_cost * 1000, 1),
                 "planned_ms": round(moves * step_cost * 1000),
+                "release_hold_min_ms": round(_RELEASE_HOLD_S * 1000),
                 "planned_hz": round(1.0 / step_cost)}
         started = self._interaction_clock()
         try:
@@ -687,6 +694,7 @@ class GestureMixin:
                 touch.move(x, y)
                 last_x, last_y = x, y
                 touch.sleep(per_move)
+            touch.sleep(_RELEASE_HOLD_S)
             touch.up(path[-1][0], path[-1][1])
             down_sent = False
         finally:

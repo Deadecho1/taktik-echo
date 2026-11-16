@@ -64,6 +64,9 @@ class Gestures:
 
         def record(action, direction, start, end, duration, **details):
             geometry["duration"] = duration
+            injection = getattr(host, "_last_gesture_injection", None) or {}
+            if "release_hold_min_ms" in injection:
+                geometry["release_hold_min_ms"] = injection["release_hold_min_ms"]
             report(action, direction, start, end, duration, **details)
 
         host._prepare_gesture_path = validate_path

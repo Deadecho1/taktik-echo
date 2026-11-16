@@ -97,6 +97,17 @@ class QuotedPost:
 
 
 @dataclass(frozen=True)
+class CommunityNote:
+    title: str
+    body: str
+    body_complete: bool
+    translation: str | None
+    visibility: Visibility
+    header_visibility: Visibility
+    body_visibility: Visibility
+
+
+@dataclass(frozen=True)
 class Post:
     author: str
     display_name: str
@@ -122,6 +133,7 @@ class Post:
     media_labels: tuple[str, ...] = ()
     body_annotations: tuple[str, ...] = ()
     advertising_visibility: Visibility | None = None
+    community_note: CommunityNote | None = None
 
     @property
     def observable(self):
@@ -167,6 +179,7 @@ class PostFragment:
     body_annotations: tuple[str, ...] = ()
     advertising: str = "unknown"
     advertising_visibility: Visibility | None = None
+    community_note: CommunityNote | None = None
 
 
 @dataclass(frozen=True)
@@ -432,7 +445,8 @@ def _video_credit(video):
             len(account) == 3
             and (
                 account[2].get("class") != "android.view.View"
-                or account[2].get("content-desc") != "Verified"
+                or account[2].get("content-desc")
+                not in {"Verified", "Verified Business"}
                 or account[2].get("text")
             )
         )
@@ -776,7 +790,7 @@ def _actions(container, viewport, overlaps, excluded):
     return tuple(actions), covered
 
 
-def _translation(container, header):
+def _translation(container, header=None):
     labels = [n for n in container if n.get("text", "").startswith("Translated from ")]
     controls = [n for n in container if n.get("text") == "Show original"]
     if not labels and not controls:
@@ -788,8 +802,13 @@ def _translation(container, header):
             r"Translated from [A-Za-z]+(?:[ ()-][A-Za-z]+)*", label.get("text")
         )
         or label.getnext() is not control
-        or list(container).index(label) <= list(container).index(header)
-        or _rect(label)[1] < _rect(header)[3]
+        or (
+            header is not None
+            and (
+                list(container).index(label) <= list(container).index(header)
+                or _rect(label)[1] < _rect(header)[3]
+            )
+        )
         or _rect(control)[0] < _rect(label)[2]
         or label.get("clickable") == "true"
         or control.get("clickable") != "true"
@@ -802,6 +821,78 @@ def _translation(container, header):
     ):
         raise _Unsupported("Unrecognized translation annotation.")
     return label.get("text"), {label, control}
+
+
+def _community_note(container, viewport, overlaps):
+    markers = _desc(container, "Community Notes")
+    if not markers:
+        return None, None
+    marker = _one(markers, "Community Notes marker")
+    header = marker.getparent()
+    card = header.getparent()
+    title = marker.getnext()
+    if (
+        card.getparent() is not container
+        or card.get("class") != "android.view.View"
+        or card.get("clickable") != "true"
+        or card.get("text")
+        or card.get("content-desc")
+        or len(header) != 2
+        or header[0] is not marker
+        or title.get("text")
+        != "Readers added context they thought people might want to know"
+        or not _plain_annotation(title)
+        or marker.get("class") != "android.view.View"
+        or marker.get("text")
+        or len(marker)
+        or any(
+            n.get(flag) == "true"
+            for n in (header, marker)
+            for flag in ("clickable", "long-clickable", "scrollable")
+        )
+        or header.get("text")
+        or header.get("content-desc")
+        or _intersect(_rect(header), _rect(marker)) != _rect(marker)
+        or _intersect(_rect(header), _rect(title)) != _rect(title)
+        or _rect(marker)[2] > _rect(title)[0]
+    ):
+        raise _Unsupported("Unrecognized Community Note header.")
+    translation, translation_nodes = _translation(card, header)
+    bodies = [n for n in card if n is not header and n not in translation_nodes]
+    body = _one(bodies, "Community Note body")
+    if (
+        not _plain_annotation(body)
+        or not body.get("text")
+        or card[0] is not header
+        or card[-1] is not body
+        or any(
+            n.get(flag) == "true"
+            for n in card.iter()
+            for flag in ("long-clickable", "scrollable")
+        )
+        or any(
+            _intersect(_rect(card), _rect(n)) != _rect(n)
+            for n in (header, body, *translation_nodes)
+        )
+        or _rect(header)[3] > _rect(body)[1]
+        or any(_rect(n)[3] > _rect(body)[1] for n in translation_nodes)
+        or not _visibility(card, viewport, overlaps).accessible
+        or (
+            card.getprevious() is not None
+            and _rect(card.getprevious())[3] > _rect(card)[1]
+        )
+    ):
+        raise _Unsupported("Unrecognized Community Note body.")
+    body_view = _visibility(body, viewport, overlaps)
+    return CommunityNote(
+        title.get("text"),
+        body.get("text"),
+        _body_complete(body.get("text"), body_view),
+        translation,
+        _visibility(card, viewport, overlaps),
+        _visibility(header, viewport, overlaps),
+        body_view,
+    ), card
 
 
 def _link_preview(container, viewport, overlaps):
@@ -1004,21 +1095,42 @@ def _paid_partnership(container, media, actions, viewport, overlaps):
 
 
 def _covered_author(header, cover, viewport):
-    if (
-        cover is None
-        or len(header) != 2
-        or any(
-            len(n)
-            or n.get("class") != "android.widget.TextView"
-            or not n.get("text")
-            or n.get("content-desc")
-            or n.get("clickable") == "true"
-            or "@" in n.get("text", "")
-            for n in header
-        )
+    if cover is None or len(header) not in (2, 3):
+        return False
+    if len(header) == 3:
+        badge = header[1]
+        if (
+            badge.get("class") != "android.view.View"
+            or badge.get("content-desc") != "Verified"
+            or badge.get("text")
+            or len(badge)
+            or any(
+                badge.get(flag) == "true"
+                for flag in ("clickable", "long-clickable", "scrollable", "focusable")
+            )
+            or not _visibility(badge, viewport).accessible
+            or not (
+                _rect(header[0])[2] <= _rect(badge)[0] < _rect(badge)[2] <= cover[0]
+            )
+            or not (
+                _rect(header)[1]
+                <= _rect(badge)[1]
+                < _rect(badge)[3]
+                <= _rect(header)[3]
+            )
+        ):
+            return False
+    name, age = header[0], header[-1]
+    if any(
+        len(n)
+        or n.get("class") != "android.widget.TextView"
+        or not n.get("text")
+        or n.get("content-desc")
+        or n.get("clickable") == "true"
+        or "@" in n.get("text", "")
+        for n in (name, age)
     ):
         return False
-    name, age = header
     rect = _rect(header)
     return (
         age.get("text").startswith("· ")
@@ -1121,9 +1233,12 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
     quotes = _desc(container, "Quote")
     card = _clickable(_one(quotes, "quote marker"), container) if quotes else None
     quote = _quote(card, viewport, overlaps) if card is not None else None
-    excluded = (card,) if card is not None else ()
+    community_note, note_card = _community_note(container, viewport, overlaps)
+    excluded = tuple(n for n in (card, note_card) if n is not None)
     if card is not None:
         known.update(card.iter())
+    if note_card is not None:
+        known.update(note_card.iter())
     media, media_nodes = _media(container, viewport, overlaps, excluded)
     previews, preview_nodes = _link_preview(container, viewport, overlaps)
     if previews and (media or quote):
@@ -1245,7 +1360,18 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
     body_view = _visibility(body, viewport, overlaps) if body is not None else None
     body_text = body.get("text") if body is not None else None
     if handle is None:
-        if body is None or not body_view.unobscured:
+        if body is None or not (
+            body_view.unobscured
+            or (
+                header_cover is not None
+                and body_view.accessible
+                and not body_view.clipped
+                and body_view.visible_bounds == body_view.bounds
+                and body_view.bounds[1] >= _rect(header)[3]
+                and all(rect == header_cover for rect in body_view.overlaps)
+                and _intersect(body_view.bounds, header_cover) != body_view.bounds
+            )
+        ):
             raise _Unsupported("Unattributed post has no unobscured body anchor.")
         return PostFragment(
             body_text,
@@ -1258,6 +1384,7 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
             body_annotations,
             advertising,
             advertising_view,
+            community_note,
         )
     identity = [
         handle.get("text").lower(),
@@ -1316,6 +1443,7 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
         body_annotations=body_annotations,
         advertising=advertising,
         advertising_visibility=advertising_view,
+        community_note=community_note,
     )
 
 
@@ -1376,16 +1504,18 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
     quotes = _desc(container, "Quote")
     card = _clickable(_one(quotes, "quote marker"), container) if quotes else None
     quote = _quote(card, viewport, overlays) if card is not None else None
-    excluded = (card,) if card is not None else ()
+    community_note, note_card = _community_note(container, viewport, overlays)
+    excluded = tuple(n for n in (card, note_card) if n is not None)
     media, media_nodes = _media(container, viewport, overlays, excluded)
     actions, action_nodes = _actions(container, viewport, overlays, excluded)
     advertising, advertising_view, advertising_nodes = _paid_partnership(
         container, media, actions, viewport, overlays
     )
+    translation, translation_nodes = _translation(container)
     bodies = [
         n
         for n in container.xpath('./node[@class="android.widget.TextView"]')
-        if n not in advertising_nodes
+        if n not in advertising_nodes and n not in translation_nodes
     ]
     body = _one(bodies, "clipped post body") if bodies else None
     if body is not None and (
@@ -1395,11 +1525,48 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
         # below the system inset. Expanded toolbar clipping is separate.
         or (
             _rect(body)[1] >= viewport[1]
-            and not (collapsed and _rect(body)[1] <= viewport[1] + 2)
+            and not (
+                collapsed
+                and (
+                    _rect(body)[1] <= viewport[1] + 2
+                    or (
+                        translation_nodes
+                        and min(_rect(n)[1] for n in translation_nodes) < viewport[1]
+                        and max(_rect(n)[3] for n in translation_nodes)
+                        <= _rect(body)[1]
+                    )
+                )
+            )
         )
     ):
         raise _Unsupported("Unrecognized clipped post body.")
     body_annotations, body_annotation_nodes = _body_annotations(body)
+    if translation_nodes and (
+        body is None
+        or any(
+            list(container).index(n) >= list(container).index(body)
+            or _rect(n)[3] > _rect(body)[1]
+            for n in translation_nodes
+        )
+    ):
+        raise _Unsupported("Clipped translation does not precede the body.")
+    if (
+        collapsed
+        and body is None
+        and not media
+        and quote is None
+        and community_note is None
+        and len(container) == len(ACTION_LABELS)
+        and tuple(action.label for action in actions) == ACTION_LABELS
+        and all(
+            n in action_nodes or not (n.get("text") or n.get("content-desc"))
+            for n in container.iter()
+        )
+    ):
+        _clipped_scroll_area(container, viewport, overlays)
+        return PostFragment(
+            None, (), _visibility(container, viewport, overlays), None, actions
+        )
     if (
         body is not None
         and len(container) == 1
@@ -1445,7 +1612,7 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
     ):
         raise _Unsupported("Clipped post has no visible content.")
     if tuple(action.label for action in actions) != ACTION_LABELS and not (
-        quote and not actions and _rect(container)[3] >= viewport[3]
+        (quote or community_note) and not actions and _rect(container)[3] >= viewport[3]
     ):
         raise _Unsupported("Incomplete clipped post actions.")
     if not media and quote is None:
@@ -1464,12 +1631,17 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
         *media_nodes,
         *action_nodes,
         *advertising_nodes,
+        *translation_nodes,
     }
     if card is not None:
         known.update(card.iter())
+    if note_card is not None:
+        known.update(note_card.iter())
     for child in container:
         if child is body or body is None:
             break
+        if child in translation_nodes:
+            continue
         if child.get("text") or not (
             child.get("class") == "android.widget.ImageView"
             or (
@@ -1492,9 +1664,11 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
         _visibility(body, viewport, overlays) if body is not None else None,
         actions,
         quote,
+        translation=translation,
         body_annotations=body_annotations,
         advertising=advertising,
         advertising_visibility=advertising_view,
+        community_note=community_note,
     )
 
 
