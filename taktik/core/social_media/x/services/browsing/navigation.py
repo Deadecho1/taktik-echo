@@ -516,7 +516,6 @@ def _quote_header_completed(a, b, before, after):
         or old.header_visibility.bounds[3] > old.visibility.bounds[3]
         or old.author != new.author
         or old.labels != new.labels
-        or old.translation != new.translation
         or a.body is None
         or not _same_body(a, b)
         or a.body_visibility is None
@@ -541,6 +540,16 @@ def _quote_header_completed(a, b, before, after):
     return (
         shift < -2
         and _header_loss_explained(a, b, shift, after)
+        and (
+            old.translation == new.translation
+            or (
+                old.translation is None
+                and new.translation is not None
+                and new.translation_visibility is not None
+                and new.translation_visibility.bounds[1] - shift
+                >= old.visibility.bounds[3]
+            )
+        )
         and old.header_visibility.bounds[::2] == new.header_visibility.bounds[::2]
         and new.header_visibility.bounds[1] - old.header_visibility.bounds[1] == shift
         and (

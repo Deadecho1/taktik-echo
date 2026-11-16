@@ -86,6 +86,7 @@ class QuotedPost:
     nested_quote: "QuotedPost | None" = None
     footer_annotations: tuple["TextSpan", ...] = ()
     body_annotations: tuple["TextSpan", ...] = ()
+    translation_visibility: Visibility | None = None
 
     @property
     def observable(self):
@@ -915,6 +916,11 @@ def _quote(card, viewport, overlaps):
         body_view,
         tuple(label.get("content-desc") for label in labels),
         translation.get("text") if translation is not None else None,
+        translation_visibility=(
+            _visibility(translation, viewport, overlaps)
+            if translation is not None
+            else None
+        ),
         body_annotations=tuple(
             TextSpan(n.get("content-desc"), _visibility(n, viewport, overlaps))
             for n in annotation_nodes
@@ -1539,7 +1545,7 @@ def _covered_author(header, cover, viewport):
         ):
             return False
     name, age = header[0], header[-1]
-    if len(header) == 3 and HANDLE.fullmatch(age.get("text", "")):
+    if HANDLE.fullmatch(age.get("text", "")):
         # Android can retain a clipped or overlapping handle node while
         # omitting the age under New posts. This is not author proof.
         rect, first, last = map(_rect, (header, name, age))
@@ -1561,7 +1567,7 @@ def _covered_author(header, cover, viewport):
                 )
             )
             and rect[0] == first[0]
-            and _rect(header[1])[2] <= last[0] < cover[0] <= last[2]
+            and _rect(header[-2])[2] <= last[0] < cover[0] <= last[2]
             and rect[0] < cover[0] < cover[2] < rect[2]
         )
     if any(
@@ -1864,7 +1870,7 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
                 header[-1].get("text"), _visibility(header[-1], viewport, overlaps)
             )
             if header_cover is not None
-            and len(header) == 3
+            and len(header) in (2, 3)
             and HANDLE.fullmatch(header[-1].get("text", ""))
             else None,
         )
