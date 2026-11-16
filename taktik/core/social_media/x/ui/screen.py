@@ -617,7 +617,7 @@ def _quote_preview(card, body, viewport, overlaps):
     ), set(preview.iter())
 
 
-def _compact_quote_video(card, body):
+def _compact_quote_video(card, body, viewport):
     candidates = [
         n
         for n in card
@@ -652,7 +652,13 @@ def _compact_quote_video(card, body):
         or _rect(video) != rect
         or _rect(picture) != rect
         or _intersect(rect, _rect(play)) != _rect(play)
-        or rect[2] - rect[0] != rect[3] - rect[1]
+        or not (
+            rect[2] - rect[0] == rect[3] - rect[1]
+            or (
+                0 < rect[3] - rect[1] < rect[2] - rect[0]
+                and rect[3] == _rect(card)[3] >= viewport[3]
+            )
+        )
         or rect[1] != _rect(body)[1]
         or rect[2] > _rect(body)[0]
         or _intersect(rect, _rect(card)) != rect
@@ -800,7 +806,7 @@ def _quoted_translation(card, texts, viewport, overlaps):
     preceding = label.getnext()
     if preceding is not body:
         _, preview_nodes = _quote_preview(card, body, viewport, overlaps)
-        compact_nodes = _compact_quote_video(card, body)
+        compact_nodes = _compact_quote_video(card, body, viewport)
         image_nodes = _compact_quote_image(card, body, viewport)
         if (
             preceding not in preview_nodes | compact_nodes | image_nodes
@@ -841,7 +847,7 @@ def _quote(card, viewport, overlaps):
     _, annotation_nodes = _body_annotations(body)
     body_view = _visibility(body, viewport, overlaps) if body is not None else None
     media, media_nodes = _media(card, viewport, overlaps)
-    compact_nodes = _compact_quote_video(card, body)
+    compact_nodes = _compact_quote_video(card, body, viewport)
     previews, preview_nodes = _quote_preview(card, body, viewport, overlaps)
     articles, article_nodes = _article_preview(
         card, body if body is not None else age, viewport, overlaps, compact_nodes
