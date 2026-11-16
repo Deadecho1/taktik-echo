@@ -1135,8 +1135,18 @@ def _quote_below_video(a, b):
         and shift < -2
         and retained_text
         and old.visibility.visible_bounds is not None
-        and old_rect[3] > old.visibility.visible_bounds[3]
-        and new_rect[3] - shift >= old_rect[3]
+        and (
+            (
+                old_rect[3] > old.visibility.visible_bounds[3]
+                and new_rect[3] - shift >= old_rect[3]
+            )
+            or (
+                a.market_card is not None
+                and b.market_card is not None
+                and new_rect[3] - shift == old_rect[3]
+                and b.quoted_post.visibility.bounds[1] - shift >= a.visibility.bounds[3]
+            )
+        )
         and b.quoted_post.visibility.bounds[1] >= new_rect[3]
         and a.visibility.visible_bounds is not None
         and b.quoted_post.visibility.bounds[1] - shift >= a.visibility.visible_bounds[3]

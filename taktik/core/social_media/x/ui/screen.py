@@ -1352,7 +1352,7 @@ def _market_adjacent_assets(wrapper, card, viewport, overlays):
     )
 
 
-def _market_card(container, media, actions, viewport, overlays):
+def _market_card(container, media, actions, viewport, overlays, quote_card=None):
     candidates = [
         wrapper
         for wrapper in container
@@ -1373,6 +1373,29 @@ def _market_card(container, media, actions, viewport, overlays):
         if len(wrapper) == 2 or wrapper.get("scrollable") == "true"
         else ()
     )
+    end_rect = _rect(quote_card) if quote_card is not None else rect
+    quote_neighbor = wrapper.getnext()
+    wrapped_quote = (
+        quote_card is not None
+        and quote_neighbor is not None
+        and list(quote_neighbor) == [quote_card]
+        and _rect(quote_neighbor) == end_rect
+        and quote_neighbor.get("class") == "android.view.View"
+        and not quote_neighbor.get("text")
+        and not quote_neighbor.get("content-desc")
+        and quote_neighbor.get("enabled") == "true"
+        and all(
+            quote_neighbor.get(flag) != "true"
+            for flag in ("clickable", "focusable", "long-clickable", "scrollable")
+        )
+    )
+    if quote_card is not None and (
+        (quote_neighbor is not quote_card and not wrapped_quote)
+        or rect[3] > end_rect[1]
+        or not media
+        or end_rect[::2] != media[0].visibility.bounds[::2]
+    ):
+        raise _Unsupported("Unrecognized market card quote layout.")
     if (
         len(media) != 1
         or media[0].kind not in {"video", "gif"}
@@ -1407,8 +1430,8 @@ def _market_card(container, media, actions, viewport, overlays):
         or wrapper.getprevious() is None
         or _rect(wrapper.getprevious()) != media[0].visibility.bounds
         or rect[1] < media[0].visibility.bounds[3]
-        or (not actions and not (adjacent_assets and rect[3] >= viewport[3]))
-        or any(a.visibility.bounds[1] != rect[3] for a in actions)
+        or (not actions and not (adjacent_assets and end_rect[3] >= viewport[3]))
+        or any(a.visibility.bounds[1] != end_rect[3] for a in actions)
         or any(_intersect(_rect(n), rect) != _rect(n) for n in card)
         or _rect(picture)[2] > _rect(name)[0]
         or _rect(name)[0] != _rect(symbol)[0]
@@ -1870,7 +1893,7 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
     actions, action_nodes = _actions(container, viewport, overlaps, excluded)
     known.update(action_nodes)
     market_card, market_nodes = _market_card(
-        container, media, actions, viewport, overlaps
+        container, media, actions, viewport, overlaps, card
     )
     known.update(market_nodes)
     media_labels, annotation_nodes = _media_annotation(container, media, actions)
@@ -2355,7 +2378,7 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
     media, media_nodes = _media(container, viewport, overlays, excluded)
     actions, action_nodes = _actions(container, viewport, overlays, excluded)
     market_card, market_nodes = _market_card(
-        container, media, actions, viewport, overlays
+        container, media, actions, viewport, overlays, card
     )
     media_labels, annotation_nodes = _media_annotation(container, media, actions)
     advertising, advertising_view, advertising_nodes = _paid_partnership(
