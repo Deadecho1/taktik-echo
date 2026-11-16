@@ -83,6 +83,15 @@ def post_context(post):
             "body_complete": note.body_complete,
             "translation": note.translation,
         }
+    if post.market_card is not None:
+        card = post.market_card
+        context["market_card"] = {
+            "name": card.name,
+            "symbol": card.symbol,
+            "price": card.price,
+            "change": card.change,
+            "in_viewport": card.visibility.visible_bounds is not None,
+        }
     return context
 
 

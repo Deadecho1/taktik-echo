@@ -1487,7 +1487,34 @@ def _metadata_continuity(a, b, shift, before, after):
         and _nested_quote_continuity(a, b, shift, before, after)
         and _quote_footer_continuity(a, b, shift, before, after)
         and _quote_body_annotation_continuity(a, b, shift, before, after)
+        and _market_card_continuity(a, b, shift, before, after)
     )
+
+
+def _market_card_continuity(a, b, shift, before, after):
+    old, new = a.market_card, b.market_card
+    if old and new:
+        return (
+            (old.name, old.symbol) == (new.name, new.symbol)
+            and old.visibility.bounds[::2] == new.visibility.bounds[::2]
+            and all(
+                abs(v - u - shift) <= 2 or (v == 0 and u + shift <= 0)
+                for u, v in zip(
+                    old.visibility.bounds[1::2], new.visibility.bounds[1::2]
+                )
+            )
+        )
+    if not old and not new:
+        return True
+    if shift >= -2:
+        return False
+    if new:
+        return (
+            new.visibility.bounds[1] - shift
+            >= a.visibility.bounds[3]
+            >= before.content_viewport[3]
+        )
+    return old.visibility.bounds[3] + shift <= after.content_viewport[1]
 
 
 def _quote_body_annotation_continuity(a, b, shift, before, after):

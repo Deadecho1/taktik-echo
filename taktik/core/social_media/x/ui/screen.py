@@ -116,6 +116,15 @@ class CommunityNote:
 
 
 @dataclass(frozen=True)
+class MarketCard:
+    name: str
+    symbol: str
+    price: str
+    change: str
+    visibility: Visibility
+
+
+@dataclass(frozen=True)
 class Post:
     author: str
     display_name: str
@@ -142,6 +151,7 @@ class Post:
     body_annotations: tuple[str, ...] = ()
     advertising_visibility: Visibility | None = None
     community_note: CommunityNote | None = None
+    market_card: MarketCard | None = None
 
     @property
     def observable(self):
@@ -201,6 +211,7 @@ class PostFragment:
     covered_handle: TextSpan | None = None
     quoted_footer_annotations: tuple[TextSpan, ...] = ()
     quoted_body_annotations: tuple[TextSpan, ...] = ()
+    market_card: MarketCard | None = None
 
 
 @dataclass(frozen=True)
@@ -1205,6 +1216,85 @@ def _media_without_body(header, media, quote):
         raise _Unsupported("Missing body between the header and media.")
 
 
+def _market_card(container, media, actions, viewport, overlays):
+    candidates = [
+        wrapper
+        for wrapper in container
+        if len(wrapper) == 1
+        and len(wrapper[0]) == 5
+        and len(wrapper[0][0]) == 1
+        and not wrapper[0][0].get("content-desc")
+        and len(wrapper[0].xpath('./node[@class="android.widget.TextView"]')) == 4
+    ]
+    if not candidates:
+        return None, set()
+    wrapper = _one(candidates, "market card")
+    card = wrapper[0]
+    picture, name, symbol, price, change = card
+    rect = _rect(card)
+    if (
+        len(media) != 1
+        or media[0].kind not in {"video", "gif"}
+        or len(picture) != 1
+        or any(
+            n.get("class") != "android.view.View"
+            or n.get("text")
+            or n.get("content-desc")
+            or n.get("scrollable") == "true"
+            or n.get("long-clickable") == "true"
+            or n.get("enabled") != "true"
+            for n in (wrapper, card, picture)
+        )
+        or wrapper.get("clickable") == "true"
+        or card.get("clickable") != "true"
+        or any(
+            not _plain_annotation(n) or not n.get("text")
+            for n in (name, symbol, price, change)
+        )
+        or not re.fullmatch(r"[A-Z][A-Z0-9.\-]{0,19}", symbol.get("text"))
+        or not re.fullmatch(r"\$[0-9]+(?:,[0-9]{3})*(?:\.[0-9]+)?", price.get("text"))
+        or not re.fullmatch(r"[+−-]?[0-9]+(?:\.[0-9]+)?%", change.get("text"))
+        or _rect(wrapper) != rect
+        or rect[::2] != media[0].visibility.bounds[::2]
+        or wrapper.getprevious() is None
+        or _rect(wrapper.getprevious()) != media[0].visibility.bounds
+        or rect[1] < media[0].visibility.bounds[3]
+        or not actions
+        or any(a.visibility.bounds[1] != rect[3] for a in actions)
+        or any(_intersect(_rect(n), rect) != _rect(n) for n in card)
+        or _rect(picture)[2] > _rect(name)[0]
+        or _rect(name)[0] != _rect(symbol)[0]
+        or _rect(name)[3] != _rect(symbol)[1]
+        or any(_rect(n)[1::2] != _rect(symbol)[1::2] for n in (price, change))
+        or any(_rect(x)[2] > _rect(y)[0] for x, y in pairwise((symbol, price, change)))
+    ):
+        raise _Unsupported("Unrecognized market card.")
+    icon = picture[0]
+    if (
+        len(icon)
+        or icon.get("class") != "android.view.View"
+        or icon.get("text")
+        or icon.get("content-desc") != name.get("text")
+        or _intersect(_rect(icon), _rect(picture)) != _rect(icon)
+        or _rect(icon)[2] - _rect(icon)[0] != _rect(icon)[3] - _rect(icon)[1]
+        or _rect(picture)[2] - _rect(picture)[0]
+        != _rect(picture)[3] - _rect(picture)[1]
+        or any(
+            n.get("enabled") != "true"
+            or any(
+                n.get(flag) == "true"
+                for flag in ("clickable", "long-clickable", "scrollable", "focusable")
+            )
+            for n in (picture, icon)
+        )
+    ):
+        raise _Unsupported("Unrecognized market card icon.")
+    return MarketCard(
+        *(n.get("text") for n in (name, symbol, price, change)),
+        _visibility(card, viewport, overlays),
+    ), set(wrapper.iter())
+
+
 def _media_annotation(container, media, actions):
     native = container.xpath('./node[@text="Made on X"]')
     if native:
@@ -1570,6 +1660,10 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
     known.update(preview_nodes)
     actions, action_nodes = _actions(container, viewport, overlaps, excluded)
     known.update(action_nodes)
+    market_card, market_nodes = _market_card(
+        container, media, actions, viewport, overlaps
+    )
+    known.update(market_nodes)
     media_labels, annotation_nodes = _media_annotation(container, media, actions)
     known.update(annotation_nodes)
     advertising, advertising_view, advertising_nodes = _paid_partnership(
@@ -1589,6 +1683,7 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
             or node in translation_nodes
             or node in preview_nodes
             or node in annotation_nodes
+            or node in market_nodes
             or node in advertising_nodes
         ):
             continue
@@ -1707,6 +1802,7 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
             advertising,
             advertising_view,
             community_note,
+            market_card=market_card,
             media_labels=media_labels,
             covered_header_visibility=_visibility(header, viewport, overlaps)
             if header_cover is not None
@@ -1778,6 +1874,7 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
         translation=translation,
         media_labels=media_labels,
         body_annotations=body_annotations,
+        market_card=market_card,
         advertising=advertising,
         advertising_visibility=advertising_view,
         community_note=community_note,
@@ -2022,6 +2119,9 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
     excluded = tuple(n for n in (card, note_card) if n is not None)
     media, media_nodes = _media(container, viewport, overlays, excluded)
     actions, action_nodes = _actions(container, viewport, overlays, excluded)
+    market_card, market_nodes = _market_card(
+        container, media, actions, viewport, overlays
+    )
     media_labels, annotation_nodes = _media_annotation(container, media, actions)
     advertising, advertising_view, advertising_nodes = _paid_partnership(
         container, media, actions, viewport, overlays
@@ -2194,6 +2294,7 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
         *advertising_nodes,
         *translation_nodes,
         *annotation_nodes,
+        *market_nodes,
     }
     if card is not None:
         known.update(card.iter())
@@ -2249,6 +2350,7 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
         quote,
         translation=translation,
         body_annotations=body_annotations,
+        market_card=market_card,
         advertising=advertising,
         advertising_visibility=advertising_view,
         community_note=community_note,
