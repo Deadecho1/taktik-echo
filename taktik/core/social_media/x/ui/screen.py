@@ -1728,6 +1728,23 @@ def _covered_author(header, cover, viewport):
 
 def _missing_handle_header(header, viewport, overlaps):
     """Recognize the captured name/badge/age row without inferring its author."""
+    if len(header) == 1:
+        name = header[0]
+        rect, first = _rect(header), _rect(name)
+        return (
+            _plain_annotation(name)
+            and bool(name.get("text"))
+            and "@" not in name.get("text")
+            and not name.get("text").startswith("· ")
+            and _visibility(header, viewport, overlaps).accessible
+            and not any(
+                header.get(flag) == "true"
+                for flag in ("clickable", "long-clickable", "scrollable", "focusable")
+            )
+            and rect[1] < viewport[1] < rect[3]
+            and first[1::2] == rect[1::2]
+            and rect[0] == first[0] < first[2] < rect[2]
+        )
     if (
         len(header) not in (2, 3)
         or not _visibility(header, viewport, overlaps).unobscured
