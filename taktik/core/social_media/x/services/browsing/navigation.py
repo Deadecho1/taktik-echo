@@ -413,14 +413,8 @@ def _image_revelation_anchored(a, b):
 
 def _quote_preview_revealed(a, b, after):
     if (
-        isinstance(a, PostFragment)
-        or not isinstance(b, PostFragment)
-        or not a.observable
+        not isinstance(b, PostFragment)
         or a.body is None
-        or not _same_body(a, b)
-        or a.body_visibility is None
-        or b.body_visibility is None
-        or a.body_visibility.bounds[::2] != b.body_visibility.bounds[::2]
         or (b.translation is not None and a.translation != b.translation)
         or _fragment_media_content(a.media) != _fragment_media_content(b.media)
     ):
@@ -436,6 +430,25 @@ def _quote_preview_revealed(a, b, after):
         return False
     preview = new.media[0]
     shift = new.body_visibility.bounds[1] - old.body_visibility.bounds[1]
+    retained_body = (
+        not isinstance(a, PostFragment)
+        and a.observable
+        and _same_body(a, b)
+        and a.body_visibility is not None
+        and b.body_visibility is not None
+        and a.body_visibility.bounds[::2] == b.body_visibility.bounds[::2]
+    )
+    if not retained_body:
+        if not _preview_body_scrolled_out(a, b, shift, after):
+            return False
+        # A newly present card must itself project below the old clipped quote;
+        # its title alone cannot explain previously missing media.
+        if not old.media and (
+            preview.visibility.bounds[1] - shift < old.visibility.bounds[3]
+            or preview.visibility.bounds[::2] != new.visibility.bounds[::2]
+            or old.visibility.bounds[::2] != new.visibility.bounds[::2]
+        ):
+            return False
     return (
         old.author == new.author
         and old.body == new.body
@@ -443,7 +456,10 @@ def _quote_preview_revealed(a, b, after):
         and old.body_visibility.bounds[::2] == new.body_visibility.bounds[::2]
         and old.header_visibility.bounds[::2] == new.header_visibility.bounds[::2]
         and shift < -2
-        and a.header_visibility.bounds[3] + shift <= after.content_viewport[1]
+        and (
+            isinstance(a, PostFragment)
+            or a.header_visibility.bounds[3] + shift <= after.content_viewport[1]
+        )
         and old.visibility.visible_bounds is not None
         and old.visibility.bounds[3] > old.visibility.visible_bounds[3]
         and preview.kind == "preview"
@@ -480,14 +496,18 @@ def _preview_title_revealed(old, new, shift):
 
 def _preview_body_scrolled_out(a, b, shift, after):
     if (
-        not isinstance(a, PostFragment)
-        or not isinstance(b, PostFragment)
+        not isinstance(b, PostFragment)
         or a.body is None
         or a.body_visibility is None
         or b.body is not None
         or b.body_visibility is not None
         or b.body_annotations
+        or a.translation != b.translation
         or a.body_visibility.bounds[3] + shift > after.content_viewport[1]
+        or (
+            not isinstance(a, PostFragment)
+            and a.header_visibility.bounds[3] + shift > after.content_viewport[1]
+        )
         or a.quoted_post.labels != b.quoted_post.labels
         or len(a.media) != 1
         or len(b.media) != 1
