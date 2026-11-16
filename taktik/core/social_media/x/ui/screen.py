@@ -2368,10 +2368,31 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
     if body is None and media and len(container) > 1:
         avatar = container[0]
         rect, video = _rect(avatar), media[0].visibility.bounds
+        prefix = [avatar]
+        options = container[1]
+        if (
+            options.get("class") == "android.widget.Button"
+            and options.get("content-desc") == "Post options"
+            and not options.get("text")
+            and not len(options)
+            and all(
+                options.get(flag) == "true"
+                for flag in ("clickable", "focusable", "enabled", "visible-to-user")
+            )
+            and all(
+                options.get(flag) != "true" for flag in ("long-clickable", "scrollable")
+            )
+            and _rect(options)[1] <= _rect(container)[1] < viewport[1]
+            and viewport[1] < _rect(options)[3] <= rect[3]
+            and video[0] < _rect(options)[0]
+            and _rect(options)[2] == _rect(container)[2]
+        ):
+            prefix.append(options)
         if (
             len(media) == 1
             and media[0].kind == "video"
-            and _rect(container[1]) == video
+            and len(container) > len(prefix)
+            and _rect(container[len(prefix)]) == video
             and avatar.get("class") == "android.widget.ImageView"
             and not len(avatar)
             and not avatar.get("text")
@@ -2385,7 +2406,7 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
             and rect[1] < viewport[1] < rect[3]
             and rect[1] <= video[1] <= rect[3]
         ):
-            known.add(avatar)
+            known.update(prefix)
     for child in container:
         if child is body or body is None:
             break
