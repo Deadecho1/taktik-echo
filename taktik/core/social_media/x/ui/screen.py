@@ -1504,6 +1504,12 @@ def _media_annotation(container, media, actions):
     label = icon.getnext()
     control = label.getnext() if label is not None else None
     previous = icon.getprevious()
+    direct_footer = (
+        control is not None
+        and tuple(t.label for t in actions) == ACTION_LABELS
+        and _rect(control) == actions[0].visibility.bounds
+        and all(t.visibility.bounds[1] == _rect(label)[3] for t in actions)
+    )
     if (
         not media
         or previous is None
@@ -1515,25 +1521,34 @@ def _media_annotation(container, media, actions):
         or label.get("text") != "Made with AI"
         or label.get("content-desc")
         or any(len(n) or n.get("clickable") == "true" for n in (icon, label))
-        or control.get("class") != "android.view.View"
-        or control.get("clickable") != "true"
-        or control.get("text")
-        or control.get("content-desc")
-        or len(control) != 1
-        or control[0].get("class") != "android.widget.TextView"
-        or control[0].get("text") != "Create your own with Grok"
-        or control[0].get("content-desc")
-        or control[0].get("clickable") == "true"
-        or len(control[0])
+        or (
+            not direct_footer
+            and (
+                control.get("class") != "android.view.View"
+                or control.get("clickable") != "true"
+                or control.get("text")
+                or control.get("content-desc")
+                or len(control) != 1
+                or control[0].get("class") != "android.widget.TextView"
+                or control[0].get("text") != "Create your own with Grok"
+                or control[0].get("content-desc")
+                or control[0].get("clickable") == "true"
+                or len(control[0])
+                or _intersect(_rect(control), _rect(control[0])) != _rect(control[0])
+            )
+        )
         or any(_rect(previous)[3] != m.visibility.bounds[3] for m in media)
         or min(_rect(icon)[1], _rect(label)[1]) < _rect(previous)[3]
         or _rect(icon)[2] > _rect(label)[0]
         or _rect(icon)[3] != _rect(label)[3]
         or _rect(label)[3] != _rect(control)[1]
-        or _intersect(_rect(control), _rect(control[0])) != _rect(control[0])
     ):
         raise _Unsupported("Unrecognized AI media annotation.")
-    return (label.get("text"),), {icon, label, *control.iter()}
+    return (label.get("text"),), {
+        icon,
+        label,
+        *(control.iter() if not direct_footer else ()),
+    }
 
 
 def _clipped_annotation(node, header, viewport):
