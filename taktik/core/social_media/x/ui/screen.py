@@ -2714,10 +2714,10 @@ def _clipped_media_before_footer(container, body, media, media_nodes, viewport):
         and media[0].visibility.visible_bounds is not None
     ):
         return False
-    for node in container:
-        if node is body or (
-            _rect(node) == video and any(n in media_nodes for n in node.iter())
-        ):
+    # Prefix nodes and translation controls are validated by _fragment.
+    children = list(container)
+    for node in children[children.index(body) + 1 :]:
+        if _rect(node) == video and any(n in media_nodes for n in node.iter()):
             continue
         rect = _rect(node)
         if (
@@ -2922,8 +2922,7 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
             and _rect(container)[3] >= viewport[3]
         )
         and not (
-            collapsed
-            and not actions
+            not actions
             and _clipped_media_before_footer(
                 container, body, media, media_nodes, viewport
             )

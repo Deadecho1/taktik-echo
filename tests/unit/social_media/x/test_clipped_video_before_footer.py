@@ -11,12 +11,13 @@ def document(name):
     return (Path(__file__).parent / "fixtures" / f"{name}.xml").read_text()
 
 
-def screen():
-    return read_screen(document("clipped-video-before-footer-after"), (1080, 2340))
+def screen(stage="after"):
+    return read_screen(document(f"clipped-video-before-footer-{stage}"), (1080, 2340))
 
 
-def test_clipped_body_and_video_survive_before_the_footer_enters():
-    s = screen()
+@pytest.mark.parametrize("stage", ["after", "expanded"])
+def test_clipped_body_and_video_survive_before_the_footer_enters(stage):
+    s = screen(stage)
     assert not s.rejected_posts and len(s.fragments) == 1
     p = s.fragments[0]
     assert p.body and p.media[0].kind == "video"
@@ -53,4 +54,23 @@ def test_footerless_fragment_requires_continuing_native_media(mutation):
                 n.set("bounds", "[176,989][1047,2100]")
     else:
         container.remove(container[1])
+    assert read_screen(etree.tostring(root), (1080, 2340)).rejected_posts
+
+
+@pytest.mark.parametrize(
+    "mutation", ["unknown_prefix", "translation", "translation_overlap"]
+)
+def test_expanded_toolbar_preserves_existing_prefix_and_translation_validation(
+    mutation,
+):
+    root = etree.fromstring(document("clipped-video-before-footer-expanded").encode())
+    container = root.xpath(
+        '//*[@scrollable="true"]/*[@scrollable="true"]/*[@clickable="true"]'
+    )[0]
+    if mutation == "unknown_prefix":
+        container[0].set("class", "android.view.View")
+    elif mutation == "translation":
+        container[1].set("text", "Unknown context")
+    else:
+        container[2].set("bounds", "[618,58][849,200]")
     assert read_screen(etree.tostring(root), (1080, 2340)).rejected_posts
