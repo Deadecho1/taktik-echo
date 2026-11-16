@@ -1964,9 +1964,10 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
     if container.get("clickable") != "true":
         raise _Unsupported("Unrecognized post container.")
     _one(container.xpath('.//*[@resource-id="timeline_post"]'), "outer author header")
+    covered_author = _covered_author(header, header_cover, viewport)
     handle = (
         None
-        if _covered_author(header, header_cover, viewport)
+        if covered_author
         or (
             allow_missing_handle
             and _missing_handle_header(
@@ -2134,6 +2135,13 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
             body_view.unobscured
             or (
                 header_cover is not None
+                and (
+                    covered_author
+                    or (
+                        allow_missing_handle
+                        and _missing_handle_header(header, viewport, overlaps)
+                    )
+                )
                 and body_view.accessible
                 and not body_view.clipped
                 and body_view.visible_bounds == body_view.bounds
