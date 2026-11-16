@@ -10,17 +10,22 @@ from taktik.core.social_media.x.ui.screen import PostFragment, read_screen
 FIXTURES = Path(__file__).parent / "fixtures"
 
 
-def screens():
+def screens(family="quote-body-preview"):
     return [
-        read_screen(
-            (FIXTURES / f"quote-body-preview-{stage}.xml").read_bytes(), (1080, 2340)
-        )
+        read_screen((FIXTURES / f"{family}-{stage}.xml").read_bytes(), (1080, 2340))
         for stage in ("before", "after")
     ]
 
 
-def test_lost_body_and_new_preview_use_retained_quote_and_video_movement():
-    before, after = screens()
+@pytest.fixture(params=["quote-body-preview", "quoted-video-inset"])
+def captured_screens(request):
+    return screens(request.param)
+
+
+def test_lost_body_and_new_preview_use_retained_quote_and_video_movement(
+    captured_screens,
+):
+    before, after = captured_screens
 
     assert _alignment(before, after, scrolling=True) == (1, True)
     assert not before.observable_posts and not after.observable_posts
@@ -35,8 +40,10 @@ def test_lost_body_and_new_preview_use_retained_quote_and_video_movement():
     assert _alignment(after, after, scrolling=True) == (0, False)
 
 
-def test_previous_outer_header_loss_does_not_change_the_required_evidence():
-    before, after = screens()
+def test_previous_outer_header_loss_does_not_change_the_required_evidence(
+    captured_screens,
+):
+    before, after = captured_screens
     old = before.posts[0]
     fragment = PostFragment(
         old.body,
@@ -86,8 +93,10 @@ def test_previous_outer_header_loss_does_not_change_the_required_evidence():
         "duplicate_after",
     ],
 )
-def test_revelation_preserves_projected_loss_content_geometry_and_uniqueness(mutation):
-    before, after = screens()
+def test_revelation_preserves_projected_loss_content_geometry_and_uniqueness(
+    mutation, captured_screens
+):
+    before, after = captured_screens
     old, new = before.posts[0], after.fragments[0]
     quote, preview = new.quoted_post, new.quoted_post.media[0]
     if mutation in {"body_still_visible", "header_still_visible"}:
@@ -209,6 +218,8 @@ def test_revelation_preserves_projected_loss_content_geometry_and_uniqueness(mut
         _alignment(before, after, scrolling=True)
 
 
-def test_revelation_outside_a_gesture_cannot_refresh_account_verification():
+def test_revelation_outside_a_gesture_cannot_refresh_account_verification(
+    captured_screens,
+):
     with pytest.raises(XError, match="outside adapter scrolling"):
-        _alignment(*screens())
+        _alignment(*captured_screens)

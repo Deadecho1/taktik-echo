@@ -508,6 +508,15 @@ def _preview_body_scrolled_out(a, b, shift, after):
             not isinstance(a, PostFragment)
             and a.header_visibility.bounds[3] + shift > after.content_viewport[1]
         )
+    ):
+        return False
+    return _quoted_video_motion(a, b, shift)
+
+
+def _quoted_video_motion(a, b, shift):
+    if (
+        a.quoted_post is None
+        or b.quoted_post is None
         or a.quoted_post.labels != b.quoted_post.labels
         or len(a.media) != 1
         or len(b.media) != 1
@@ -523,6 +532,7 @@ def _preview_body_scrolled_out(a, b, shift, after):
         old_header.unobscured
         and new_header.unobscured
         and old.kind == new.kind == "video"
+        and old.description == new.description
         and (old.source_label, old.source_prefix)
         == (new.source_label, new.source_prefix)
         and all(
@@ -532,6 +542,36 @@ def _preview_body_scrolled_out(a, b, shift, after):
             )
             for x, y in ((old_header, new_header), (old.visibility, new.visibility))
         )
+    )
+
+
+def _inset_quote_consistent(a, b, after):
+    """All matching paths must justify a bodyless video below the viewport edge."""
+    if not (
+        isinstance(b, PostFragment)
+        and b.body is None
+        and b.quoted_post is not None
+        and b.media
+        and b.media[0].visibility.bounds[1] >= after.content_viewport[1]
+    ):
+        return True
+    if a.quoted_post is None:
+        return False
+    shift = (
+        b.quoted_post.header_visibility.bounds[1]
+        - a.quoted_post.header_visibility.bounds[1]
+    )
+    if shift > 0:
+        return False
+    if a.body is not None:
+        return _preview_body_scrolled_out(a, b, shift, after)
+    return (
+        isinstance(a, PostFragment)
+        and a.body_visibility is None
+        and b.body_visibility is None
+        and a.body_annotations == b.body_annotations
+        and a.translation == b.translation
+        and _quoted_video_motion(a, b, shift)
     )
 
 
@@ -699,14 +739,14 @@ def _alignment(before, after, *, scrolling=False):
         raise XError("Lost X post continuity: no overlapping candidates.")
 
     def matches(a, b):
-        return (
+        return _inset_quote_consistent(a, b, after) and (
             _same_content(a, b)
             or _tail_match(a, b, before, after, allow_hidden_source=scrolling)
             or _quoted_body_lost(a, b, after)
         )
 
     def compatible(a, b):
-        return (
+        return _inset_quote_consistent(a, b, after) and (
             matches(a, b)
             or _quote_media_revealed(a, b)
             or _quote_preview_revealed(a, b, after)

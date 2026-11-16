@@ -1435,7 +1435,7 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
         body is None
         and media
         and media[0].visibility.bounds[1] >= viewport[1]
-        and not (collapsed and quote is None)
+        and not collapsed
     ):
         raise _Unsupported("Missing body above unclipped media.")
     if (
