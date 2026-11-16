@@ -2850,7 +2850,22 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
             len(media) == 1
             and media[0].kind == "video"
             and len(container) > len(prefix)
-            and _rect(container[len(prefix)]) == video
+            and (
+                _rect(container[len(prefix)]) == video
+                or (
+                    _rect(container[len(prefix)])[:3] == video[:3]
+                    and tuple(a.label for a in actions) == ACTION_LABELS
+                    and all(
+                        a.visibility.bounds[1] == _rect(container[len(prefix)])[3]
+                        for a in actions
+                    )
+                    and _rect(container[len(prefix)])[3]
+                    < video[3]
+                    <= min(a.visibility.bounds[3] for a in actions)
+                    and actions[0].visibility.bounds[0] <= video[0]
+                    and actions[-1].visibility.bounds[2] >= video[2]
+                )
+            )
             and avatar.get("class") == "android.widget.ImageView"
             and not len(avatar)
             and not avatar.get("text")

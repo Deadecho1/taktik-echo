@@ -406,7 +406,11 @@ def _tail_match(
                 outer_quote is None
                 and old_rect[1] >= before.content_viewport[1]
                 and abs(new_rect[1] - old_rect[1] - shift) <= 2
-                and (a.body_visibility is not None or isinstance(a, PostFragment))
+                and (
+                    a.body_visibility is not None
+                    or isinstance(a, PostFragment)
+                    or (a.body is None and not a.body_complete)
+                )
                 and (
                     isinstance(a, PostFragment)
                     or a.header_visibility.bounds[3] + shift
@@ -1238,7 +1242,8 @@ def _quote_below_video(a, b):
     return (
         (isinstance(b, PostFragment) or a.author == b.author)
         and _same_body(a, b)
-        and old.kind == new.kind == "video"
+        and old.kind == new.kind
+        and old.kind in {"video", "gif"}
         and old.description == new.description
         and (
             (old.source_label, old.source_prefix)
