@@ -461,6 +461,43 @@ def _preview_title_revealed(old, new, shift):
     )
 
 
+def _preview_body_scrolled_out(a, b, shift, after):
+    if (
+        not isinstance(a, PostFragment)
+        or not isinstance(b, PostFragment)
+        or a.body is None
+        or a.body_visibility is None
+        or b.body is not None
+        or b.body_visibility is not None
+        or b.body_annotations
+        or a.body_visibility.bounds[3] + shift > after.content_viewport[1]
+        or a.quoted_post.labels != b.quoted_post.labels
+        or len(a.media) != 1
+        or len(b.media) != 1
+    ):
+        return False
+    old, new = a.media[0], b.media[0]
+    old_header, new_header = (
+        a.quoted_post.header_visibility,
+        b.quoted_post.header_visibility,
+    )
+    # The retained quote header measures motion independently of the video tail.
+    return (
+        old_header.unobscured
+        and new_header.unobscured
+        and old.kind == new.kind == "video"
+        and (old.source_label, old.source_prefix)
+        == (new.source_label, new.source_prefix)
+        and all(
+            x.bounds[::2] == y.bounds[::2]
+            and all(
+                abs(q - p - shift) <= 2 for p, q in zip(x.bounds[1::2], y.bounds[1::2])
+            )
+            for x, y in ((old_header, new_header), (old.visibility, new.visibility))
+        )
+    )
+
+
 def _bodyless_quote_preview_revealed(a, b, after):
     old, new = a.quoted_post, b.quoted_post
     if (
@@ -470,17 +507,21 @@ def _bodyless_quote_preview_revealed(a, b, after):
         or new.body is not None
         or old.author != new.author
         or old.translation != new.translation
-        or a.body is None
-        or not _same_body(a, b)
-        or a.body_visibility is None
-        or b.body_visibility is None
-        or a.body_visibility.bounds[::2] != b.body_visibility.bounds[::2]
         or a.translation != b.translation
         or _fragment_media_content(a.media) != _fragment_media_content(b.media)
         or old.header_visibility.bounds[::2] != new.header_visibility.bounds[::2]
     ):
         return False
     shift = new.header_visibility.bounds[1] - old.header_visibility.bounds[1]
+    retained_body = (
+        a.body is not None
+        and _same_body(a, b)
+        and a.body_visibility is not None
+        and b.body_visibility is not None
+        and a.body_visibility.bounds[::2] == b.body_visibility.bounds[::2]
+    )
+    if not retained_body and not _preview_body_scrolled_out(a, b, shift, after):
+        return False
     if not isinstance(a, PostFragment):
         if isinstance(b, PostFragment):
             if a.header_visibility.bounds[3] + shift > after.content_viewport[1]:
