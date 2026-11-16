@@ -881,11 +881,27 @@ def _compact_quote_image(card, body, viewport):
 
 def _quoted_translation(card, texts, viewport, overlaps, *, has_handle=True):
     header_count = 3 if has_handle else 2
+    language_pattern = r"Translated from [A-Za-z]+(?:[ ()-][A-Za-z]+)*"
     if (
         len(texts) == header_count + 1
         and texts[-1].get("text", "").startswith("Translated from ")
         and _rect(texts[-1])[0] > _rect(_one(_desc(card, "Quote"), "quote marker"))[0]
     ):
+        *header, label = texts
+        rect = _rect(label)
+        if (
+            _rect(card)[1] >= viewport[3]
+            and label is card[-1]
+            and label.getprevious() is header[-1]
+            and _plain_annotation(label)
+            and re.fullmatch(language_pattern, label.get("text"))
+            and rect[1] >= max(_rect(n)[3] for n in header)
+            and rect[3] == _rect(card)[3]
+            and all(
+                _intersect(_rect(n), _rect(card)) == _rect(n) for n in (*header, label)
+            )
+        ):
+            return label
         raise _Unsupported("Quoted translation has no separate body.")
     if len(texts) != header_count + 2:
         return None
@@ -904,9 +920,7 @@ def _quoted_translation(card, texts, viewport, overlaps, *, has_handle=True):
             raise _Unsupported("Unrecognized quoted translation annotation.")
     content_left = min(body_rect[0], _rect(preceding)[0])
     if (
-        not re.fullmatch(
-            r"Translated from [A-Za-z]+(?:[ ()-][A-Za-z]+)*", label.get("text")
-        )
+        not re.fullmatch(language_pattern, label.get("text"))
         or not _plain_annotation(label)
         or label.getprevious() is not age
         or rect[1] < max(_rect(n)[3] for n in header)
@@ -1045,6 +1059,7 @@ def _quote(card, viewport, overlaps):
         and all(
             _rect(n)[1] >= viewport[3] and _intersect(_rect(n), _rect(card)) == _rect(n)
             for n in (name, handle, age)
+            if n is not None
         )
     )
     image_only = (
