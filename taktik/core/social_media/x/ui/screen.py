@@ -1814,7 +1814,7 @@ def _clipped_preview_texts(container, actions, viewport, overlays):
                 or _intersect(_rect(picture), _rect(preview)) != _rect(picture)
             )
         )
-        or not (_rect(preview)[1] < viewport[1] < _rect(preview)[3] < viewport[3])
+        or not (_rect(card)[1] < viewport[1] < _rect(preview)[3] < viewport[3])
         or (not footer and _rect(wrapper) != _rect(card))
         or _rect(card)[::2] != _rect(preview)[::2]
         or _rect(card)[3] != _rect(preview)[3]
