@@ -58,6 +58,17 @@ def post_context(post):
         if quote
         else None,
     }
+    if quote is not None and quote.nested_quote is not None:
+        nested = quote.nested_quote
+        context["quoted_post"]["quoted_post"] = {
+            "username": nested.author.removeprefix("@"),
+            "display_name": nested.display_name,
+            "body": nested.body,
+            "body_complete": nested.body_complete,
+            "author_labels": list(nested.labels),
+            "translation": nested.translation,
+            "media": _media_context(nested.media),
+        }
     if post.community_note is not None:
         note = post.community_note
         context["community_note"] = {

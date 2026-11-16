@@ -6,6 +6,7 @@ The caller owns device reservations, locks, the deadline, and Phone.close().
 
 from contextlib import contextmanager
 from dataclasses import replace
+from itertools import pairwise
 
 from taktik.core.shared.phone_interaction import InteractionError, Phone
 from taktik.core.social_media.x.ui.screen import (
@@ -14,6 +15,7 @@ from taktik.core.social_media.x.ui.screen import (
     PACKAGE,
     PostFragment,
     Screen,
+    TextSpan,
     read_screen,
 )
 
@@ -144,6 +146,14 @@ def _quote_content(quote):
 
 
 def _video_tail_source(post):
+    if getattr(post, "quoted_body", None) is not None:
+        return PostFragment(
+            post.quoted_body.text,
+            post.media,
+            post.visibility,
+            post.quoted_body.visibility,
+            post.actions,
+        )
     quote = post.quoted_post
     if quote and not post.media:
         return PostFragment(
@@ -157,6 +167,41 @@ def _video_tail_source(post):
 
 
 def _anchor_pairs(a, b, before, after):
+    if getattr(b, "quoted_body", None) is not None:
+        a = _quoted_content_source(a)
+        if a.body_visibility is None or len(a.media) != 1:
+            return ()
+        return [
+            (x, y)
+            for old, new in (
+                (a.body_visibility, b.quoted_body.visibility),
+                (a.media[0].visibility, b.media[0].visibility),
+                *((x.visibility, y.visibility) for x, y in zip(a.actions, b.actions)),
+            )
+            for x, y in zip(old.bounds[1::2], new.bounds[1::2])
+            if before.content_viewport[1] < x < before.content_viewport[3]
+            and after.content_viewport[1] < y < after.content_viewport[3]
+        ]
+    if getattr(b, "preview_texts", ()):
+        previous, current = _preview_spans(a), b.preview_texts
+        if len(previous) < len(current):
+            return ()
+        return [
+            (x, y)
+            for old, new in zip(previous[-len(current) :], current)
+            for x, y in zip(old.visibility.bounds[1::2], new.visibility.bounds[1::2])
+            if before.content_viewport[1] < x < before.content_viewport[3]
+            and after.content_viewport[1] < y < after.content_viewport[3]
+        ] + [
+            (x.visibility.bounds[1], y.visibility.bounds[1])
+            for x, y in zip(a.actions, b.actions)
+            if before.content_viewport[1]
+            < x.visibility.bounds[1]
+            < before.content_viewport[3]
+            and after.content_viewport[1]
+            < y.visibility.bounds[1]
+            < after.content_viewport[3]
+        ]
     if (
         isinstance(b, PostFragment)
         and b.body is None
@@ -288,7 +333,11 @@ def _tail_anchors_available(post, viewport):
 def _tail_match(
     a, b, before, after, *, require_overlap=False, allow_hidden_source=False
 ):
-    if not isinstance(b, PostFragment) or b.body is not None:
+    if (
+        not isinstance(b, PostFragment)
+        or b.body is not None
+        or b.quoted_body is not None
+    ):
         return False
     outer_quote = a.quoted_post
     a = _video_tail_source(a)
@@ -351,6 +400,138 @@ def _tail_match(
             x.visibility.bounds[::2] == y.visibility.bounds[::2]
             and abs(y.visibility.bounds[1] - x.visibility.bounds[1] - shift) <= 2
             for x, y in zip(a.actions, b.actions)
+        )
+    )
+
+
+def _quoted_content_source(post):
+    quote = post.quoted_post
+    if quote is not None:
+        return PostFragment(
+            quote.body,
+            quote.media,
+            post.visibility,
+            quote.body_visibility,
+            post.actions,
+        )
+    return _video_tail_source(post)
+
+
+def _quoted_tail_match(a, b, before, after):
+    current = getattr(b, "quoted_body", None)
+    if current is None or b.body is not None or b.quoted_post is not None:
+        return False
+    quote = a.quoted_post
+    if quote is not None:
+        if quote.nested_quote is not None:
+            return False
+    elif getattr(a, "quoted_body", None) is None:
+        return False
+    source = _quoted_content_source(a)
+    if (
+        source.body != current.text
+        or source.body_visibility is None
+        or not all(
+            len(p.media) == 1
+            and p.media[0].kind in {"video", "preview"}
+            and tuple(t.label for t in p.actions) == ACTION_LABELS
+            and s.content_viewport[1]
+            < p.media[0].visibility.bounds[3]
+            < s.content_viewport[3]
+            for p, s in ((source, before), (b, after))
+        )
+    ):
+        return False
+    old, new = source.media[0], b.media[0]
+    shift = new.visibility.bounds[3] - old.visibility.bounds[3]
+    lost = []
+    if quote is not None:
+        lost.append(quote.header_visibility)
+        lost.extend(m.visibility for m in a.media)
+        if a.body_visibility is not None:
+            lost.append(a.body_visibility)
+        if not isinstance(a, PostFragment):
+            lost.append(a.header_visibility)
+    return (
+        shift <= 0
+        and _fragment_media_content((old,)) == _fragment_media_content((new,))
+        and (
+            (old.source_label, old.source_prefix)
+            == (new.source_label, new.source_prefix)
+            or (new.source_label is None and new.source_prefix is None)
+        )
+        and all(v.bounds[3] + shift <= after.content_viewport[1] for v in lost)
+        and all(
+            (x is None and y is None)
+            or (
+                x is not None
+                and y is not None
+                and x.bounds[::2] == y.bounds[::2]
+                and all(
+                    abs(v - u - shift) <= 2 or (v == 0 and u + shift <= 0)
+                    for u, v in zip(x.bounds[1::2], y.bounds[1::2])
+                )
+            )
+            for x, y in (
+                (source.body_visibility, current.visibility),
+                (old.visibility, new.visibility),
+                (old.description_visibility, new.description_visibility),
+                (old.preview_text_visibility, new.preview_text_visibility),
+                *(
+                    (x.visibility, y.visibility)
+                    for x, y in zip(source.actions, b.actions)
+                ),
+            )
+        )
+    )
+
+
+def _quote_header_completed(a, b, before, after):
+    old, new = a.quoted_post, b.quoted_post
+    if (
+        old is None
+        or new is None
+        or old.body is not None
+        or old.media
+        or new.body is None
+        or new.body_visibility is None
+        or old.header_visibility.bounds[1] < before.content_viewport[3]
+        or old.header_visibility.bounds[3] != old.visibility.bounds[3]
+        or old.author != new.author
+        or old.labels != new.labels
+        or old.translation != new.translation
+        or a.body is None
+        or not _same_body(a, b)
+        or a.body_visibility is None
+        or b.body_visibility is None
+        or not (
+            before.content_viewport[1]
+            < a.body_visibility.bounds[3]
+            < before.content_viewport[3]
+        )
+        or not (
+            after.content_viewport[1]
+            < b.body_visibility.bounds[3]
+            < after.content_viewport[3]
+        )
+        or a.body_visibility.bounds[::2] != b.body_visibility.bounds[::2]
+        or _fragment_media_content(a.media) != _fragment_media_content(b.media)
+        or (
+            not isinstance(b, PostFragment)
+            and (isinstance(a, PostFragment) or a.author != b.author)
+        )
+    ):
+        return False
+    shift = b.body_visibility.bounds[3] - a.body_visibility.bounds[3]
+    return (
+        shift < -2
+        and old.header_visibility.bounds[::2] == new.header_visibility.bounds[::2]
+        and new.header_visibility.bounds[1] - old.header_visibility.bounds[1] == shift
+        and new.header_visibility.bounds[3] - shift >= old.header_visibility.bounds[3]
+        and new.body_visibility.bounds[1] - shift >= old.visibility.bounds[3]
+        and all(
+            m.visibility.bounds[1] - shift >= old.visibility.bounds[3]
+            for m in new.media
         )
     )
 
@@ -424,7 +605,12 @@ def _media_revelation_anchored(a, b):
         or a.body_visibility is None
         or b.body_visibility is None
         or not a.body_visibility.clipped
-        or not b.body_visibility.unobscured
+        or not b.body_visibility.accessible
+        or b.body_visibility.clipped
+        or b.body_visibility.visible_bounds != b.body_visibility.bounds
+        # The body start measures movement alongside the intact header. A
+        # lower overlay still prevents observation, but cannot hide this anchor.
+        or any(r[1] <= b.body_visibility.bounds[1] for r in b.body_visibility.overlaps)
         or a.body_visibility.bounds[::2] != b.body_visibility.bounds[::2]
         or a.visibility.visible_bounds is None
         or a.visibility.bounds[3] <= a.visibility.visible_bounds[3]
@@ -456,8 +642,11 @@ def _media_revelation_anchored(a, b):
 
 def _quote_preview_revealed(a, b, after):
     if (
-        not isinstance(b, PostFragment)
-        or a.body is None
+        a.body is None
+        or (
+            not isinstance(b, PostFragment)
+            and (isinstance(a, PostFragment) or a.author != b.author)
+        )
         or (b.translation is not None and a.translation != b.translation)
         or _fragment_media_content(a.media) != _fragment_media_content(b.media)
     ):
@@ -473,25 +662,30 @@ def _quote_preview_revealed(a, b, after):
         return False
     preview = new.media[0]
     shift = new.body_visibility.bounds[1] - old.body_visibility.bounds[1]
+    observable_body = not isinstance(a, PostFragment) and a.observable
     retained_body = (
         not isinstance(a, PostFragment)
-        and a.observable
+        and (observable_body or _quoted_video_motion(a, b, shift))
         and _same_body(a, b)
         and a.body_visibility is not None
         and b.body_visibility is not None
         and a.body_visibility.bounds[::2] == b.body_visibility.bounds[::2]
     )
-    if not retained_body:
-        if not _preview_body_scrolled_out(a, b, shift, after):
-            return False
-        # A newly present card must itself project below the old clipped quote;
-        # its title alone cannot explain previously missing media.
-        if not old.media and (
+    if not retained_body and not _preview_body_scrolled_out(a, b, shift, after):
+        return False
+    # An incomplete quote can prevent observation even when the outer body
+    # survives. Its retained header and video prove motion, while the new card
+    # must itself project below the old quote, not merely its title.
+    if (
+        not observable_body
+        and not old.media
+        and (
             preview.visibility.bounds[1] - shift < old.visibility.bounds[3]
             or preview.visibility.bounds[::2] != new.visibility.bounds[::2]
             or old.visibility.bounds[::2] != new.visibility.bounds[::2]
-        ):
-            return False
+        )
+    ):
+        return False
     return (
         old.author == new.author
         and old.body == new.body
@@ -500,15 +694,25 @@ def _quote_preview_revealed(a, b, after):
         and old.header_visibility.bounds[::2] == new.header_visibility.bounds[::2]
         and shift < -2
         and (
-            isinstance(a, PostFragment)
+            not isinstance(b, PostFragment)
+            or isinstance(a, PostFragment)
             or a.header_visibility.bounds[3] + shift <= after.content_viewport[1]
         )
         and old.visibility.visible_bounds is not None
         and old.visibility.bounds[3] > old.visibility.visible_bounds[3]
         and preview.kind == "preview"
         and preview.description_visibility is not None
-        and preview.description_visibility.bounds[1] - shift >= old.visibility.bounds[3]
-        and (not old.media or _preview_title_revealed(old, new, shift))
+        and (
+            (
+                preview.description_visibility.bounds[1] - shift
+                >= old.visibility.bounds[3]
+                and (not old.media or _preview_title_revealed(old, new, shift))
+            )
+            or (
+                _preview_summary_revealed(old, new, shift)
+                and _quoted_video_motion(a, b, shift)
+            )
+        )
     )
 
 
@@ -581,9 +785,14 @@ def _preview_summary_revealed(old, new, shift):
         and previous.visibility.bounds[::2] == current.visibility.bounds[::2]
         and current.visibility.bounds[1] - previous.visibility.bounds[1] == shift
         and old_title.bounds[::2] == new_title.bounds[::2]
-        and all(
-            y - x == shift
-            for x, y in zip(old_title.bounds[1::2], new_title.bounds[1::2])
+        and new_title.bounds[1] - old_title.bounds[1] == shift
+        and (
+            new_title.bounds[3] - old_title.bounds[3] == shift
+            or (
+                old_title.clipped
+                and old_title.bounds[3] == previous.visibility.bounds[3]
+                and new_title.bounds[3] - shift >= old_title.bounds[3]
+            )
         )
         and current.preview_text_visibility.bounds[1] - shift
         >= previous.visibility.bounds[3]
@@ -612,12 +821,16 @@ def _quoted_video_motion(a, b, shift):
         and old.description == new.description
         and (old.source_label, old.source_prefix)
         == (new.source_label, new.source_prefix)
+        and old_header.bounds[::2] == new_header.bounds[::2]
         and all(
-            x.bounds[::2] == y.bounds[::2]
-            and all(
-                abs(q - p - shift) <= 2 for p, q in zip(x.bounds[1::2], y.bounds[1::2])
-            )
-            for x, y in ((old_header, new_header), (old.visibility, new.visibility))
+            abs(q - p - shift) <= 2
+            for p, q in zip(old_header.bounds[1::2], new_header.bounds[1::2])
+        )
+        and old.visibility.bounds[::2] == new.visibility.bounds[::2]
+        and abs(new.visibility.bounds[3] - old.visibility.bounds[3] - shift) <= 2
+        and (
+            abs(new.visibility.bounds[1] - old.visibility.bounds[1] - shift) <= 2
+            or (new.visibility.bounds[1] == 0 and old.visibility.bounds[1] + shift <= 0)
         )
     )
 
@@ -819,6 +1032,26 @@ def _note_content(note):
     return (note.title, note.body, note.translation) if note else None
 
 
+def _footer_media_lost(media, actions, shift, viewport):
+    view = media.visibility
+    if view.bounds[3] + shift <= viewport[1]:
+        return True
+    if media.kind != "video" or view.visible_bounds is None or not actions:
+        return False
+    rows = [a.visibility.bounds for a in actions]
+    top = rows[0][1]
+    cover = (rows[0][0], top, rows[-1][2], min(r[3] for r in rows))
+    padding = (view.bounds[0], top, view.bounds[2], view.bounds[3])
+    return (
+        view.visible_bounds[::2] == view.bounds[::2]
+        and view.visible_bounds[3] == top
+        and top + shift <= viewport[1]
+        and all(r[1] == top for r in rows)
+        and all(left[2] == right[0] for left, right in pairwise(rows))
+        and _intersection(padding, cover) == padding
+    )
+
+
 def _footer_match(a, b, after):
     if (
         not isinstance(b, PostFragment)
@@ -826,6 +1059,7 @@ def _footer_match(a, b, after):
         or b.media
         or b.quoted_post
         or b.community_note
+        or b.preview_texts
         or tuple(t.label for t in a.actions) != ACTION_LABELS
         or tuple(t.label for t in b.actions) != ACTION_LABELS
         or [(t.count, t.selected) for t in a.actions]
@@ -840,7 +1074,16 @@ def _footer_match(a, b, after):
             or a.body_visibility.bounds[3] + shift <= after.content_viewport[1]
         )
         and all(
-            m.visibility.bounds[3] + shift <= after.content_viewport[1] for m in a.media
+            _footer_media_lost(m, a.actions, shift, after.content_viewport)
+            for m in a.media
+        )
+        and all(
+            t.visibility.bounds[3] + shift <= after.content_viewport[1]
+            for t in getattr(a, "preview_texts", ())
+        )
+        and (
+            getattr(a, "quoted_body", None) is None
+            or a.quoted_body.visibility.bounds[3] + shift <= after.content_viewport[1]
         )
         and (
             a.quoted_post is None
@@ -864,6 +1107,86 @@ def _footer_match(a, b, after):
                     else y.visibility.bounds[1::2],
                 )
             )
+            for x, y in zip(a.actions, b.actions)
+        )
+    )
+
+
+def _preview_spans(post):
+    if getattr(post, "preview_texts", ()):
+        return post.preview_texts
+    quote = post.quoted_post
+    source = (
+        quote
+        if quote is not None
+        else post
+        if getattr(post, "quoted_body", None) is not None
+        else None
+    )
+    if source is None or len(source.media) != 1:
+        return ()
+    media = source.media[0]
+    if media.kind != "preview":
+        return ()
+    return tuple(
+        TextSpan(text, view)
+        for text, view in (
+            (media.description, media.description_visibility),
+            (media.preview_text, media.preview_text_visibility),
+        )
+        if text is not None and view is not None
+    )
+
+
+def _preview_tail_match(a, b, before, after):
+    current = getattr(b, "preview_texts", ())
+    previous = _preview_spans(a)
+    if (
+        not current
+        or len(previous) < len(current)
+        or b.body is not None
+        or b.media
+        or b.quoted_post
+        or b.community_note
+    ):
+        return False
+    if [p.text for p in previous[-len(current) :]] != [p.text for p in current]:
+        return False
+    pairs = _anchor_pairs(a, b, before, after)
+    shifts = [y - x for x, y in pairs]
+    if (
+        len({x for x, y in pairs}) < 2
+        or not shifts
+        or max(shifts) > 0
+        or max(shifts) - min(shifts) > 2
+    ):
+        return False
+    shift = max(shifts)
+    lost = [p.visibility for p in previous[: -len(current)]]
+    if getattr(a, "quoted_body", None) is not None:
+        lost.append(a.quoted_body.visibility)
+    else:
+        lost.extend(m.visibility for m in a.media)
+    if a.body_visibility is not None:
+        lost.append(a.body_visibility)
+    if a.quoted_post is not None:
+        lost.append(a.quoted_post.header_visibility)
+        if a.quoted_post.body_visibility is not None:
+            lost.append(a.quoted_post.body_visibility)
+    if not isinstance(a, PostFragment):
+        lost.append(a.header_visibility)
+    return (
+        all(v.bounds[3] + shift <= after.content_viewport[1] for v in lost)
+        and all(
+            x.visibility.bounds[::2] == y.visibility.bounds[::2]
+            for x, y in zip(previous[-len(current) :], current)
+        )
+        and tuple(t.label for t in a.actions)
+        == tuple(t.label for t in b.actions)
+        == ACTION_LABELS
+        and all(
+            x.visibility.bounds[::2] == y.visibility.bounds[::2]
+            and abs(y.visibility.bounds[1] - x.visibility.bounds[1] - shift) <= 2
             for x, y in zip(a.actions, b.actions)
         )
     )
@@ -920,9 +1243,50 @@ def _note_continuity(a, b, shift, before, after):
     return True
 
 
+def _nested_quote_continuity(a, b, shift, before, after):
+    old = a.quoted_post.nested_quote if a.quoted_post is not None else None
+    new = b.quoted_post.nested_quote if b.quoted_post is not None else None
+    if old is None and new is None:
+        return True
+    if old is None:
+        return (
+            a.quoted_post is not None
+            and shift < -2
+            and not a.actions
+            and a.quoted_post.visibility.bounds[3] >= before.content_viewport[3]
+            and new.visibility.bounds[1] - shift >= a.quoted_post.visibility.bounds[3]
+        )
+    if new is None:
+        return (
+            shift < -2 and old.visibility.bounds[3] + shift <= after.content_viewport[1]
+        )
+    if _quote_content(old) != _quote_content(new) or old.labels != new.labels:
+        return False
+    for name in ("visibility", "header_visibility", "body_visibility"):
+        x, y = getattr(old, name), getattr(new, name)
+        if x is None or y is None:
+            if x != y:
+                return False
+            continue
+        if x.bounds[::2] != y.bounds[::2]:
+            return False
+        for u, v in zip(x.bounds[1::2], y.bounds[1::2]):
+            if (
+                abs(v - u - shift) > 2
+                and not (v == 0 and u + shift <= 0)
+                and not (
+                    u >= before.content_viewport[3] and v >= after.content_viewport[3]
+                )
+            ):
+                return False
+    return True
+
+
 def _metadata_continuity(a, b, shift, before, after):
-    return _advertising_continuity(a, b, shift, before, after) and _note_continuity(
-        a, b, shift, before, after
+    return (
+        _advertising_continuity(a, b, shift, before, after)
+        and _note_continuity(a, b, shift, before, after)
+        and _nested_quote_continuity(a, b, shift, before, after)
     )
 
 
@@ -938,6 +1302,8 @@ def _alignment(before, after, *, scrolling=False):
             or _tail_match(a, b, before, after, allow_hidden_source=scrolling)
             or _quoted_body_lost(a, b, after)
             or _footer_match(a, b, after)
+            or _preview_tail_match(a, b, before, after)
+            or _quoted_tail_match(a, b, before, after)
         )
 
     def compatible(a, b):
@@ -949,6 +1315,7 @@ def _alignment(before, after, *, scrolling=False):
             or _quote_below_video(a, b)
             or _revealed_content(a, b)
             or _link_preview_revealed(a, b)
+            or _quote_header_completed(a, b, before, after)
         )
 
     def shifts_for(a, b):
@@ -988,6 +1355,9 @@ def _alignment(before, after, *, scrolling=False):
             or _quote_below_video(a, b)
             or _quoted_body_lost(a, b, after)
             or _tail_match(a, b, before, after, require_overlap=True)
+            or _preview_tail_match(a, b, before, after)
+            or _quoted_tail_match(a, b, before, after)
+            or _quote_header_completed(a, b, before, after)
             for a, b in pairs
         )
         if not (
@@ -1335,6 +1705,9 @@ class X:
             )
             edges.extend(
                 p.media[0].visibility.bounds[3]
+                # A short video must overlap its prior position after the
+                # gesture. Empty space above it is not a retained anchor.
+                - max(0, p.media[0].visibility.bounds[1] - screen.content_viewport[1])
                 for p in anchors
                 if _tail_anchors_available(p, screen.content_viewport)
             )
@@ -1342,6 +1715,9 @@ class X:
                 p.community_note.body_visibility.bounds[3]
                 for p in anchors
                 if p.community_note is not None
+            )
+            edges.extend(
+                t.visibility.bounds[3] for p in anchors for t in _preview_spans(p)
             )
             remaining = max(edges, default=0) - screen.content_viewport[1]
             if remaining <= 1:

@@ -123,6 +123,13 @@ def test_missing_handle_fragment_requires_known_structure_and_leading_position(
 
     screen = read_screen(etree.tostring(root), SIZE)
 
+    if mutation == "missing_badge":
+        # Captured unbadged name/age rows are now recognized, still without
+        # inferring any author or making the fragment observable.
+        fragment = next(f for f in screen.fragments if f.body == body.get("text"))
+        assert not hasattr(fragment, "author")
+        assert not any(p.body == fragment.body for p in screen.posts)
+        return
     assert not any(
         f.body == "Fixture unattributed body\u00a0Show more" for f in screen.fragments
     )

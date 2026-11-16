@@ -7,7 +7,7 @@ Targets and content keys are snapshot evidence, not permission to engage.
 import hashlib
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from itertools import pairwise
 
 from lxml import etree
@@ -83,15 +83,21 @@ class QuotedPost:
     body_visibility: Visibility | None
     labels: tuple[str, ...] = ()
     translation: str | None = None
+    nested_quote: "QuotedPost | None" = None
 
     @property
     def observable(self):
-        return self.header_visibility.unobscured and (
-            self.body_visibility.unobscured
-            if self.body_visibility is not None
-            else any(
-                m.description and (m.description_visibility or m.visibility).unobscured
-                for m in self.media
+        return (
+            (self.nested_quote is None or self.nested_quote.observable)
+            and self.header_visibility.unobscured
+            and (
+                self.body_visibility.unobscured
+                if self.body_visibility is not None
+                else any(
+                    m.description
+                    and (m.description_visibility or m.visibility).unobscured
+                    for m in self.media
+                )
             )
         )
 
@@ -166,6 +172,12 @@ class RejectedPost:
 
 
 @dataclass(frozen=True)
+class TextSpan:
+    text: str
+    visibility: Visibility
+
+
+@dataclass(frozen=True)
 class PostFragment:
     """Unattributed content for continuity only; never a new observation."""
 
@@ -180,6 +192,9 @@ class PostFragment:
     advertising: str = "unknown"
     advertising_visibility: Visibility | None = None
     community_note: CommunityNote | None = None
+    preview_texts: tuple[TextSpan, ...] = ()
+    media_labels: tuple[str, ...] = ()
+    quoted_body: TextSpan | None = None
 
 
 @dataclass(frozen=True)
@@ -474,7 +489,13 @@ def _video_credit(video):
             >= min(_rect(left)[3], _rect(right)[3])
             for left, right in pairwise(children)
         )
-        or _intersect(_rect(credit), _rect(video)) != _rect(credit)
+        or not (
+            _rect(video)[0] <= _rect(credit)[0] < _rect(credit)[2] <= _rect(video)[2]
+            and _rect(video)[1] <= _rect(credit)[1]
+        )
+        or any(
+            _intersect(_rect(child), _rect(video)) != _rect(child) for child in children
+        )
     ):
         raise _Unsupported("Unrecognized video source label.")
     return (
@@ -574,8 +595,54 @@ def _quote_preview(card, body, viewport, overlaps):
     ), set(preview.iter())
 
 
-def _article_preview(card, preceding, viewport, overlaps):
-    candidates = [n for n in card if n.get("clickable") == "true"]
+def _compact_quote_video(card, body):
+    candidates = [
+        n
+        for n in card
+        if n.xpath('./node[@content-desc="Video"]') and n.get("clickable") == "true"
+    ]
+    if not candidates:
+        return set()
+    preview = _one(candidates, "compact quoted video")
+    if body is None or len(preview) != 3:
+        raise _Unsupported("Unrecognized compact quoted video.")
+    video, picture, play = preview
+    rect = _rect(preview)
+    if (
+        preview.get("class") != "android.view.View"
+        or preview.get("text")
+        or preview.get("content-desc")
+        or preview.get("enabled") != "true"
+        or preview.get("focusable") != "true"
+        or preview.get("long-clickable") == "true"
+        or preview.get("scrollable") == "true"
+        or [n.get("content-desc", "") for n in preview] != ["Video", "", "play"]
+        or any(
+            len(n)
+            or n.get("text")
+            or n.get("class") != "android.view.View"
+            or any(
+                n.get(flag) == "true"
+                for flag in ("clickable", "long-clickable", "scrollable", "focusable")
+            )
+            for n in preview
+        )
+        or _rect(video) != rect
+        or _rect(picture) != rect
+        or _intersect(rect, _rect(play)) != _rect(play)
+        or rect[2] - rect[0] != rect[3] - rect[1]
+        or rect[1] != _rect(body)[1]
+        or rect[2] > _rect(body)[0]
+        or _intersect(rect, _rect(card)) != rect
+        or _intersect(_rect(body), _rect(card)) != _rect(body)
+        or preview.getnext() is not body
+    ):
+        raise _Unsupported("Unrecognized compact quoted video.")
+    return set(preview.iter())
+
+
+def _article_preview(card, preceding, viewport, overlaps, excluded=()):
+    candidates = [n for n in card if n.get("clickable") == "true" and n not in excluded]
     if not candidates:
         return (), set()
     preview = _one(candidates, "quoted article preview")
@@ -696,11 +763,23 @@ def _quote(card, viewport, overlaps):
     body = bodies[0] if bodies else None
     body_view = _visibility(body, viewport, overlaps) if body is not None else None
     media, media_nodes = _media(card, viewport, overlaps)
+    compact_nodes = _compact_quote_video(card, body)
     previews, preview_nodes = _quote_preview(card, body, viewport, overlaps)
     articles, article_nodes = _article_preview(
-        card, body if body is not None else age, viewport, overlaps
+        card, body if body is not None else age, viewport, overlaps, compact_nodes
     )
-    if body is None and not articles:
+    header_only = (
+        body is None
+        and not media
+        and not articles
+        and not previews
+        and _rect(card)[3] >= viewport[3]
+        and all(
+            _rect(n)[1] >= viewport[3] and _rect(n)[3] == _rect(card)[3]
+            for n in (name, handle, age)
+        )
+    )
+    if body is None and not articles and not header_only:
         raise _Unsupported("Bodyless quote has no recognized preview.")
     if articles and (previews or media):
         raise _Unsupported("Mixed article and quote media.")
@@ -730,6 +809,7 @@ def _quote(card, viewport, overlaps):
         translation,
         *labels,
         *media_nodes,
+        *compact_nodes,
         *preview_nodes,
         *article_nodes,
     }
@@ -758,6 +838,44 @@ def _quote(card, viewport, overlaps):
         tuple(label.get("content-desc") for label in labels),
         translation.get("text") if translation is not None else None,
     )
+
+
+def _quote_bundle(card, viewport, overlaps):
+    quote = _quote(card, viewport, overlaps)
+    wrapper = card.getparent()
+    nested = [n for n in wrapper if n.get("resource-id") == "nested_quote_preview"]
+    if not nested:
+        return quote, card
+    node = _one(nested, "nested quote preview")
+    texts = [n for n in node if n.get("text")]
+    if (
+        list(wrapper) != [card, node]
+        or wrapper.get("clickable") == "true"
+        or node.get("class") != "android.view.View"
+        or node.get("clickable") != "true"
+        or node.get("text")
+        or node.get("content-desc")
+        or node.get("long-clickable") == "true"
+        or node.get("scrollable") == "true"
+        or len(texts) != 4
+        or texts[-1].get("resource-id") != "nested_quote_body"
+        or any(not _plain_annotation(n) for n in texts)
+        or any(len(n) or n.get("clickable") == "true" for n in node)
+        or any(_intersect(_rect(n), _rect(node)) != _rect(n) for n in texts)
+        or len({(_rect(n)[1], _rect(n)[3]) for n in texts[:3]}) != 1
+        or _rect(texts[-1])[1] <= _rect(texts[2])[3]
+        or _rect(node)[1] <= _rect(card)[3]
+        or _intersect(_rect(node), _rect(wrapper)) != _rect(node)
+    ):
+        raise _Unsupported("Unrecognized nested quote preview.")
+    nested_quote = _quote(node, viewport, overlaps)
+    if nested_quote.media or nested_quote.translation:
+        raise _Unsupported("Unrecognized nested quote media.")
+    return replace(
+        quote,
+        nested_quote=nested_quote,
+        visibility=_visibility(wrapper, viewport, overlaps),
+    ), wrapper
 
 
 def _actions(container, viewport, overlaps, excluded):
@@ -979,7 +1097,36 @@ def _media_without_body(header, media, quote):
         raise _Unsupported("Missing body between the header and media.")
 
 
-def _media_annotation(container, media):
+def _media_annotation(container, media, actions):
+    native = container.xpath('./node[@text="Made on X"]')
+    if native:
+        label = _one(native, "native media annotation")
+        previous = label.getprevious()
+        rect = _rect(label)
+        if (
+            len(media) != 1
+            or media[0].kind != "video"
+            or previous is None
+            or _rect(previous) != media[0].visibility.bounds
+            or label.get("class") != "android.widget.Button"
+            or label.get("content-desc")
+            or len(label)
+            or any(
+                label.get(flag) != "true"
+                for flag in ("enabled", "clickable", "focusable")
+            )
+            or any(
+                label.get(flag) == "true" for flag in ("long-clickable", "scrollable")
+            )
+            or rect[0] != media[0].visibility.bounds[0]
+            or rect[2] > media[0].visibility.bounds[2]
+            or not (rect[1] <= media[0].visibility.bounds[3] < rect[3])
+            or media[0].visibility.bounds[3] - rect[1] > (rect[3] - rect[1]) / 2
+            or tuple(t.label for t in actions) != ACTION_LABELS
+            or any(t.visibility.bounds[1] != rect[3] for t in actions)
+        ):
+            raise _Unsupported("Unrecognized native media annotation.")
+        return (label.get("text"),), {label}
     icons = container.xpath('./node[@content-desc="Made with AI"]')
     if not icons:
         return (), set()
@@ -1121,6 +1268,24 @@ def _covered_author(header, cover, viewport):
         ):
             return False
     name, age = header[0], header[-1]
+    if len(header) == 3 and HANDLE.fullmatch(age.get("text", "")):
+        # Android retains the handle text while clipping its bounds at the
+        # overlay edge and omitting the covered age. It is not author proof.
+        rect, first, last = map(_rect, (header, name, age))
+        return (
+            all(
+                _plain_annotation(n) and _visibility(n, viewport).accessible
+                for n in (name, age)
+            )
+            and bool(name.get("text"))
+            and "@" not in name.get("text", "")
+            and first[1::2] == last[1::2] == rect[1::2]
+            and viewport[1] < rect[1] < rect[3] < viewport[3]
+            and cover[1] <= rect[1] < rect[3] <= cover[3]
+            and rect[0] == first[0]
+            and _rect(header[1])[2] <= last[0] < last[2] == cover[0]
+            and rect[0] < cover[0] < cover[2] < rect[2]
+        )
     if any(
         len(n)
         or n.get("class") != "android.widget.TextView"
@@ -1143,8 +1308,28 @@ def _covered_author(header, cover, viewport):
 
 def _missing_handle_header(header, viewport, overlaps):
     """Recognize the captured name/badge/age row without inferring its author."""
-    if len(header) != 3 or not _visibility(header, viewport, overlaps).unobscured:
+    if (
+        len(header) not in (2, 3)
+        or not _visibility(header, viewport, overlaps).unobscured
+    ):
         return False
+    if len(header) == 2:
+        name, age = header
+        rect, first, last = map(_rect, (header, name, age))
+        return (
+            all(_plain_annotation(n) and n.get("text") for n in (name, age))
+            and not any(
+                header.get(flag) == "true"
+                for flag in ("clickable", "long-clickable", "scrollable", "focusable")
+            )
+            and all("@" not in n.get("text", "") for n in header)
+            and age.get("text").startswith("· ")
+            and first[1::2] == rect[1::2]
+            and rect[1] <= last[1] < last[3] <= rect[3]
+            and first[2] <= last[0]
+            and abs(first[0] - rect[0]) <= 4
+            and abs(last[2] - rect[2]) <= 4
+        )
     name, badge, age = header
     if (
         not all(_plain_annotation(n) and n.get("text") for n in (name, age))
@@ -1232,7 +1417,9 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
         known.add(account_label)
     quotes = _desc(container, "Quote")
     card = _clickable(_one(quotes, "quote marker"), container) if quotes else None
-    quote = _quote(card, viewport, overlaps) if card is not None else None
+    quote, card = (
+        _quote_bundle(card, viewport, overlaps) if card is not None else (None, None)
+    )
     community_note, note_card = _community_note(container, viewport, overlaps)
     excluded = tuple(n for n in (card, note_card) if n is not None)
     if card is not None:
@@ -1246,10 +1433,10 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
     media += previews
     known.update(media_nodes)
     known.update(preview_nodes)
-    media_labels, annotation_nodes = _media_annotation(container, media)
-    known.update(annotation_nodes)
     actions, action_nodes = _actions(container, viewport, overlaps, excluded)
     known.update(action_nodes)
+    media_labels, annotation_nodes = _media_annotation(container, media, actions)
+    known.update(annotation_nodes)
     advertising, advertising_view, advertising_nodes = _paid_partnership(
         container, media, actions, viewport, overlaps
     )
@@ -1385,6 +1572,7 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
             advertising,
             advertising_view,
             community_note,
+            media_labels=media_labels,
         )
     identity = [
         handle.get("text").lower(),
@@ -1494,6 +1682,134 @@ def _clipped_scroll_area(container, viewport, overlays):
     return _scroll_container(container, viewport, overlays)
 
 
+def _clipped_preview_texts(container, actions, viewport, overlays):
+    if len(container) != 7 or tuple(t.label for t in actions) != ACTION_LABELS:
+        return ()
+    wrapper = container[0]
+    if len(wrapper) != 1 or len(wrapper[0]) != 1:
+        return ()
+    card, preview = wrapper[0], wrapper[0][0]
+    picture = preview[0] if len(preview) == 3 else None
+    texts = list(preview)[1:] if picture is not None else list(preview)
+    if (
+        len(texts) not in (1, 2)
+        or (
+            picture is not None
+            and (
+                len(picture)
+                or picture.get("class") != "android.view.View"
+                or picture.get("text")
+                or picture.get("content-desc")
+                or any(
+                    picture.get(flag) == "true"
+                    for flag in (
+                        "clickable",
+                        "long-clickable",
+                        "scrollable",
+                        "focusable",
+                    )
+                )
+                or _intersect(_rect(picture), _rect(preview)) != _rect(picture)
+            )
+        )
+        or not (_rect(preview)[1] < viewport[1] < _rect(preview)[3] < viewport[3])
+        or _rect(wrapper) != _rect(card)
+        or _rect(card) != _rect(preview)
+        or wrapper.get("clickable") == "true"
+        or card.get("clickable") != "true"
+        or preview.get("clickable") != "true"
+        or any(
+            n.get("class") != "android.view.View"
+            or n.get("text")
+            or n.get("content-desc")
+            or n.get("scrollable") == "true"
+            or n.get("long-clickable") == "true"
+            for n in (wrapper, card, preview)
+        )
+        or any(
+            not _plain_annotation(n)
+            or not n.get("text")
+            or _intersect(_rect(n), _rect(preview)) != _rect(n)
+            for n in texts
+        )
+        or any(_rect(a)[3] >= _rect(b)[1] for a, b in pairwise(preview))
+        or any(t.visibility.bounds[1] != _rect(preview)[3] for t in actions)
+    ):
+        return ()
+    return tuple(
+        TextSpan(n.get("text"), _visibility(n, viewport, overlays)) for n in texts
+    )
+
+
+def _clipped_quoted_body(container, media, media_nodes, actions, viewport, overlays):
+    if len(container) != 7 or tuple(t.label for t in actions) != ACTION_LABELS:
+        return None
+    wrapper = container[0]
+    if len(wrapper) != 1 or len(wrapper[0]) != 2:
+        return None
+    card = wrapper[0]
+    body, video = card
+    if not media:
+        media, media_nodes = _article_preview(card, body, viewport, overlays)
+    if len(media) != 1 or media[0].kind not in {"video", "preview"}:
+        return None
+    if (
+        not _plain_annotation(body)
+        or not body.get("text")
+        or not (_rect(body)[1] < viewport[1] < _rect(body)[3] <= _rect(video)[1])
+        or _rect(wrapper) != _rect(card)
+        or wrapper.get("clickable") == "true"
+        or card.get("clickable") != "true"
+        or any(
+            n.get("text")
+            or n.get("content-desc")
+            or n.get("class") != "android.view.View"
+            or n.get("scrollable") == "true"
+            or n.get("long-clickable") == "true"
+            for n in (wrapper, card)
+        )
+        or _intersect(_rect(body), _rect(card)) != _rect(body)
+        or _intersect(_rect(video), _rect(card)) != _rect(video)
+        or media[0].visibility.bounds != _rect(video)
+        or any(t.visibility.bounds[1] != _rect(card)[3] for t in actions)
+        or any(
+            n is not body
+            and n not in media_nodes
+            and (n.get("text") or n.get("content-desc", "") not in ("", "Unmute"))
+            for n in card.iter()
+        )
+    ):
+        return None
+    return TextSpan(body.get("text"), _visibility(body, viewport, overlays)), media
+
+
+def _header_controls_clipped(container, body, viewport):
+    prefix = list(container)[: list(container).index(body)]
+    if len(prefix) != 3:
+        return False
+    avatar, grok, options = prefix
+    return (
+        avatar.get("class") == "android.widget.ImageView"
+        and grok.get("class") == "android.widget.ImageView"
+        and grok.get("content-desc") == "Explain this post with Grok"
+        and options.get("class") == "android.widget.Button"
+        and options.get("content-desc") == "Post options"
+        and all(
+            not len(n)
+            and not n.get("text")
+            and n.get("clickable") == "true"
+            and n.get("enabled") == "true"
+            for n in prefix
+        )
+        and _rect(grok)[1] == _rect(options)[1] == _rect(container)[1]
+        and _rect(grok)[1] < viewport[1] < _rect(grok)[3] == _rect(body)[1]
+        and _rect(grok)[2] == _rect(options)[0]
+        and _rect(options)[2] == _rect(container)[2]
+        and _rect(avatar)[1] < viewport[1]
+        and _rect(avatar)[2] < _rect(body)[0] < _rect(grok)[0]
+    )
+
+
 def _fragment(container, viewport, overlays, *, collapsed=False):
     if (
         container.get("clickable") != "true"
@@ -1503,11 +1819,14 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
         raise _Unsupported("Not a clipped post container.")
     quotes = _desc(container, "Quote")
     card = _clickable(_one(quotes, "quote marker"), container) if quotes else None
-    quote = _quote(card, viewport, overlays) if card is not None else None
+    quote, card = (
+        _quote_bundle(card, viewport, overlays) if card is not None else (None, None)
+    )
     community_note, note_card = _community_note(container, viewport, overlays)
     excluded = tuple(n for n in (card, note_card) if n is not None)
     media, media_nodes = _media(container, viewport, overlays, excluded)
     actions, action_nodes = _actions(container, viewport, overlays, excluded)
+    media_labels, annotation_nodes = _media_annotation(container, media, actions)
     advertising, advertising_view, advertising_nodes = _paid_partnership(
         container, media, actions, viewport, overlays
     )
@@ -1515,7 +1834,9 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
     bodies = [
         n
         for n in container.xpath('./node[@class="android.widget.TextView"]')
-        if n not in advertising_nodes and n not in translation_nodes
+        if n not in advertising_nodes
+        and n not in translation_nodes
+        and n not in annotation_nodes
     ]
     body = _one(bodies, "clipped post body") if bodies else None
     if body is not None and (
@@ -1529,6 +1850,7 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
                 collapsed
                 and (
                     _rect(body)[1] <= viewport[1] + 2
+                    or _header_controls_clipped(container, body, viewport)
                     or (
                         translation_nodes
                         and min(_rect(n)[1] for n in translation_nodes) < viewport[1]
@@ -1541,6 +1863,37 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
     ):
         raise _Unsupported("Unrecognized clipped post body.")
     body_annotations, body_annotation_nodes = _body_annotations(body)
+    if collapsed and body is None and quote is None and community_note is None:
+        quoted_content = _clipped_quoted_body(
+            container, media, media_nodes, actions, viewport, overlays
+        )
+        if quoted_content is not None:
+            quoted_body, media = quoted_content
+            return PostFragment(
+                None,
+                media,
+                _visibility(container, viewport, overlays),
+                None,
+                actions,
+                quoted_body=quoted_body,
+            )
+    if (
+        collapsed
+        and body is None
+        and not media
+        and quote is None
+        and community_note is None
+    ):
+        preview_texts = _clipped_preview_texts(container, actions, viewport, overlays)
+        if preview_texts:
+            return PostFragment(
+                None,
+                (),
+                _visibility(container, viewport, overlays),
+                None,
+                actions,
+                preview_texts=preview_texts,
+            )
     if translation_nodes and (
         body is None
         or any(
@@ -1632,6 +1985,7 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
         *action_nodes,
         *advertising_nodes,
         *translation_nodes,
+        *annotation_nodes,
     }
     if card is not None:
         known.update(card.iter())
@@ -1669,6 +2023,7 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
         advertising=advertising,
         advertising_visibility=advertising_view,
         community_note=community_note,
+        media_labels=media_labels,
     )
 
 
