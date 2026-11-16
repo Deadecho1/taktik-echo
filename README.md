@@ -1,302 +1,77 @@
-<div align="center">
-  <h1>Social Media Automation Platform</h1>
+# Taktik Echo
 
-  <p><strong>Instagram, TikTok, YouTube, Threads and Gmail automation on real Android devices. Likes, follows, DMs, scraping, publishing, hashtag targeting, AI comments and profile qualification. Built with Python, uiautomator2 and ADB.</strong></p>
+Taktik Echo is a maintained fork of [Taktik](https://github.com/masterFuf/taktik-bot) for platform browsing and device interaction on real Android phones.
+It supplies the platform implementation used by [Persona Engine](https://github.com/Deadecho1/persona-engine), whose repository is private.
 
-  [![GitHub stars](https://img.shields.io/github/stars/masterFuf/taktik-bot?style=social)](https://github.com/masterFuf/taktik-bot/stargazers)
-  [![GitHub forks](https://img.shields.io/github/forks/masterFuf/taktik-bot?style=social)](https://github.com/masterFuf/taktik-bot/network/members)
-  [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-  [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-  [![Discord](https://img.shields.io/badge/Discord-Join%20Community-7289da?logo=discord&logoColor=white)](https://discord.com/invite/6tTBRTMhBj)
+## Responsibilities
 
-  <br/>
+Taktik Echo owns screen recognition, selectors, content extraction, account verification, navigation, action verification, gestures, typing, and evidence capture.
+Persona Engine owns persona configuration, model decisions, interests, beliefs, learning, search intent, query coordination, scheduling, history, and exports.
 
-  <a href="https://taktik-bot.com/">Website</a> •
-  <a href="https://taktik-bot.com/en/docs">Documentation</a> •
-  <a href="https://www.youtube.com/@taktik-bot">YouTube</a> •
-  <a href="https://discord.com/invite/6tTBRTMhBj">Discord</a> •
-  <a href="./README.fr.md">Français</a>
-</div>
+Extend the existing Taktik platform readers and device helpers when adding a capability.
+Keep platform interaction inside this repository and expose structured observations and supported actions to callers.
 
----
+## Branches
 
-<div align="center">
+| Branch | Contents |
+| --- | --- |
+| `main` | Upstream baseline with this fork overview. |
+| `workspace-platforms` | Maintained shared Phone implementation and verified Instagram and TikTok browsing used by Persona Engine's `main`. |
+| `feature/x-platform` | Shared platform implementation plus the ongoing X extension, paired with Persona Engine's branch of the same name. |
 
-  **The desktop app for Windows is in the [latest release](https://github.com/masterFuf/taktik-bot/releases/latest)**
+Persona Engine's `taktik-install.json` selects the exact tested commit and local dependency directory.
+A branch name alone is not a reproducible dependency pin.
 
-  It needs a taktik-bot.com account and a subscription, which starts with a 14-day free trial.<br/>
-  A card is asked for when the trial starts, and nothing is charged during those 14 days.
+## Browsing interface
 
-  [Start the free trial](https://taktik-bot.com/en/auth/trial?utm_source=github&utm_medium=readme&utm_campaign=v1.9.9) •
-  [Plans and prices](https://taktik-bot.com/en/pricing?utm_source=github&utm_medium=readme&utm_campaign=v1.9.9)
+On the maintained extension branches:
 
-  <br/>
+- `taktik.core.shared.phone_interaction.Phone` owns the device session, execution constraints, cancellation, diagnostics, and keyboard lifecycle. It reuses Taktik's existing device and input helpers.
+- `taktik.core.shared.browsing` defines `PostObservation`, action results, and supported capabilities.
+- Each platform's `ui/` modules interpret captured screen hierarchies; its `services/browsing/` modules navigate and verify outcomes.
+- Instagram exposes `Instagram`; TikTok exposes `TikTok`; the X feature branch exposes `XBrowser` from the respective platform's `services.browsing` package.
 
-  [![TAKTIK Demo](https://img.youtube.com/vi/mFh0iv3Hzck/maxresdefault.jpg)](https://www.youtube.com/watch?v=mFh0iv3Hzck)
+Use the same Phone object throughout a session. Preserve device reservations, persona and device locks, deadlines, uncertainty handling, and cleanup.
+The workspace's `phone_interaction.Phone` import is a compatibility reexport of this implementation.
+See the [browsing guide](https://github.com/Deadecho1/taktik-echo/blob/workspace-platforms/docs/verified-browsing.md) and [X extension guide](https://github.com/Deadecho1/taktik-echo/blob/feature/x-platform/docs/verified-browsing.md).
 
-  <br/><br/>
+## X extension status
 
-</div>
+The X branch supports account-verified For you and Following browsing, text-only post observations, and separate quote, media, and account metadata.
+Watch and skip are enabled. Unsupported or ambiguous layouts stop browsing.
 
----
+X search, engagement, native ad recognition, the recorded two-body layout, physical long-text traversal, human visual review, and real-model validation remain incomplete.
+The maintained branch does not imply that every installed X layout is supported.
 
-## What is TAKTIK?
+## Installation
 
-**TAKTIK** automates Instagram, TikTok, YouTube, Threads and Gmail on real Android phones. It has two
-halves:
+For Persona Engine, run its `scripts/install_taktik.py` and install the resulting pinned checkout into that workspace's environment.
+The checkout lives at `vendor/taktik-echo`.
 
-- **The engine (this repository, GPLv3).** A Python bot that drives the phone through ADB and
-  uiautomator2, with a command line (`taktik`). Every workflow in the list below runs from the
-  command line, with no licence limit.
-- **The desktop app (commercial).** A graphical interface that launches the same engine, and adds
-  what is listed under [What needs the desktop app](#what-needs-the-desktop-app).
-
-The command line and the app run the same workflows with the same settings (changing the IP before
-a run excepted, which is the app's): the app launches the engine's own launchers, it does not have a
-second copy of them.
-
----
-
-## Features
-
-Every row runs from the command line (`taktik workflows run <id>`) unless it says otherwise.
-`taktik workflows list` prints every id.
-
-### Instagram
-
-| Feature | Workflow ids / command |
-|---------|------------------------|
-| **Followers or following of target accounts** | `instagram.automation.target_followers`, `target_following` |
-| **A list of target profiles** | `instagram.automation.target_profiles` |
-| **Hashtags** | `instagram.automation.hashtags` |
-| **Likers of a post** | `instagram.automation.post_url` |
-| **Home feed** | `instagram.automation.feed` |
-| **Unfollow** | `instagram.automation.unfollow` |
-| **Sync of the following and followers lists** | `instagram.automation.sync_following`, `sync_followers_following` |
-| **Scraping**: followers or following of an account, a hashtag, the likers and commenters of a post, a list of usernames, the posts of accounts; the profiles are written to a CSV file at the end | `instagram.scraping.target`, `hashtag`, `post_url`, `usernames`, `profile_posts` |
-| **Cold DM**: a list of accounts, fixed messages or one message written by AI per recipient | `instagram.engagement.coldDm` |
-| **DM inbox**: read the inbox or the requests folder, reply in a conversation | `instagram.engagement.dm_read`, `dm_send` |
-| **Notifications**: scan the activity feed, accept follow requests, like, follow back, reply, batches | `instagram.engagement.notifications` |
-| **Story relay**: re-share a source account's stories | `instagram.task.story_relay` |
-| **Publishing**: post, carousel, reel, story | `taktik publish post\|carousel\|reel\|story` |
-| **Accounts**: login, signup, logout, switch account, list accounts, change the app language | `instagram.account.*` |
-
-> Details: [Instagram automation](https://taktik-bot.com/en/features/instagram-automation) and
-> [Instagram AI DMs](https://taktik-bot.com/en/features/instagram-ai-dm) on the website.
-
-### TikTok
-
-| Feature | Workflow ids |
-|---------|--------------|
-| **For You feed** | `tiktok.automation.for_you` |
-| **Hashtags** | `tiktok.automation.hashtag` |
-| **Followers of target accounts, a list of target profiles** | `tiktok.automation.followers`, `target_profiles` |
-| **Commenters of a video** | `tiktok.automation.post_url` |
-| **Sync of the following and followers lists** | `tiktok.automation.sync_lists`, `sync_following`, `sync_followers` |
-| **DM**: read and send | `tiktok.automation.dm_read`, `dm_send` |
-| **Inbox**: new followers (with an AI welcome pass), unanswered conversations, message requests, activity | `tiktok.automation.new_followers`, `dm_unreplied`, `dm_requests`, `dm_activity` |
-| **Notifications** | `tiktok.automation.notifications` |
-| **Cold DM**: fixed messages or one written by AI per recipient | `tiktok.standalone.tiktok_dm_outreach` |
-| **Unfollow** | `tiktok.standalone.tiktok_unfollow` |
-| **Scraping**: followers of an account, a hashtag, the commenters of a video, a sound, the posts of accounts | `tiktok.standalone.tiktok_scraping` |
-| **Publishing**: a video, or a text post | `tiktok.standalone.upload_post` |
-| **Accounts**: login, signup, logout, change the app language | `tiktok.account.*` |
-
-> Details: [TikTok automation](https://taktik-bot.com/en/features/tiktok-automation) on the website.
-
-### YouTube, Threads, Gmail
-
-| Feature | Workflow ids |
-|---------|--------------|
-| **YouTube**: login, logout; upload a Short or a video with its title, description and visibility | `youtube.account.login`, `logout`, `youtube.publish.upload_post` |
-| **Threads**: follow accounts found by a search, engage with the feed | `threads.automation.follow`, `feed` |
-| **Gmail**: add and remove an account, read the latest code, list the accounts on the phone | `gmail.account.login`, `logout`, `read_otp`, `scan_accounts` |
-
-### AI in the engine
-
-These run from the command line with your own [OpenRouter](https://openrouter.ai) key (asked for
-at launch when a run uses AI; a manual run needs no key).
-
-| Feature | Where |
-|---------|-------|
-| **AI comments**: a comment written for the post it goes under | the `ai` block of an automation run |
-| **Profile qualification**: a vision model reads a visited profile, gives its niche and a relevance score | the `ai` block of an automation or scraping run |
-| **Cold DM written by AI**, one message per recipient | `messageMode: "ai"` (Instagram and TikTok) |
-| **TikTok welcome pass**: new followers qualified, the relevant ones followed back | `tiktok.automation.new_followers` with `ai.newFollowers` |
-| **Taktik Agent**: an autonomous Instagram session where a vision model decides each like, comment, profile visit and follow | `taktik agent run` |
-
----
-
-## What needs the desktop app
-
-| Feature | Without the app |
-|---------|-----------------|
-| **Graphical interface**, live panels, session history, analytics dashboards | The command line prints logs and the final result. |
-| **Scheduler** (visual workflow builder, day and period plans, AI-generated plans), **autonomous campaigns** | A cron job can chain CLI commands. |
-| **Change the IP before a run** (mobile data or airplane mode), network pools, one phone at a time on a shared connection | The command line never changes the IP. |
-| **Warmup curve**: caps computed from the account's age and intensity (`warmupPolicy`) | You may write `warmupPolicy` in a run's JSON yourself; the engine applies those caps. |
-| **Account persona**: the operated account analysed (profile, posts, writing style) to guide what the AI writes (`ai.accountProfile`) | You may write `ai.accountProfile` yourself. |
-| **Niche taxonomy** (categories, sub-niches, aliases) used by AI qualification (`ai.nicheTaxonomy`) | Qualification is free-form, or you write `ai.nicheTaxonomy` yourself. |
-| **Decision mode**: the app plans the actions on each profile | The engine refuses to act without the app's plan. |
-| **AI replies to DMs**, AI-written welcome messages on Instagram, AI replies to comments | Replies are typed at the terminal. |
-| **AI content for publishing**: images, captions, hashtags | Publishing takes your own media and text. |
-| **Target Search** (explore the local database), world map, audience insights | The database is a local SQLite file you can query yourself. |
-| **Cartography Lab** (test bench of atomic actions), screen mirroring, device wall, device groups | - |
-| **Multi-PC sync** | - |
-
-The number of phones the app drives depends on its subscription. The engine has no such limit: run
-one command per phone.
-
-> Full catalog: [all features](https://taktik-bot.com/en/features), including the
-> [scheduler](https://taktik-bot.com/en/features/app-scheduler), the
-> [analytics](https://taktik-bot.com/en/features/app-sessions-analytics) and
-> [target search](https://taktik-bot.com/en/features/app-target-search).
-
----
-
-## Quick start
-
-### Desktop app
-
-1. **Sign up** at [taktik-bot.com](https://taktik-bot.com/en/pricing)
-2. **Download** the desktop app for Windows
-3. **Connect** your Android device via ADB
-4. **Launch** a workflow from the interface
-
-### Command line
+For standalone development of the shared platform implementation:
 
 ```bash
-git clone https://github.com/masterFuf/taktik-bot.git
-cd taktik-bot
-pip install -r requirements.txt
-
-python -m taktik                         # interactive menu
-python -m taktik workflows list          # every workflow id
-python -m taktik workflows run instagram.automation.feed --dry-run
+git clone --branch workspace-platforms https://github.com/Deadecho1/taktik-echo.git
+cd taktik-echo
+python3 -m venv .venv
+.venv/bin/python -m pip install --constraint requirements.lock --editable .
 ```
 
-At startup the command line says which database it writes to. Without `TAKTIK_DB_PATH` it is the
-desktop app's own database (`%APPDATA%/taktik-desktop/taktik-data.db` on Windows); set
-`TAKTIK_DB_PATH` to use another file. Run from its folder, it creates a new database but does not upgrade
-an existing older one, which an older installed app could then no longer open: it stops and says how to
-agree (`TAKTIK_ALLOW_SCHEMA_UPGRADE_TO=<version>`, a backup is made first).
+Select `feature/x-platform` before installing when working on X.
+The Python distribution remains `taktik-bot`, the import package remains `taktik`, and the CLI command remains `taktik` for compatibility.
+Android device operations require the appropriate local tools, USB authorization, and signed-in platform accounts.
 
-The command line reference (parameters, AI key, one example per workflow) is in the documentation.
+## Validation and contributions
 
-### Requirements
+Use captured XML with its recorded screen dimensions, parser records, and replays through the Phone interface for implementation diagnostics.
+Keep live-feed screenshots and contact sheets local, preserve raw evidence, and track human visual review separately from XML checks.
+Do not bypass the shared Phone implementation with direct device operations.
 
-- An **Android** phone reachable by **ADB** (the phones TAKTIK is tested on: [Tested on](#tested-on))
-- **Instagram** and/or **TikTok** installed, in a version listed in [COMPATIBILITY.md](COMPATIBILITY.md)
-- **Python 3.10+** for the command line
+Tests for the shared Phone implementation live in `tests/unit/shared/test_phone_interaction_session.py`.
+Persona Engine also carries browsing and integration regression tests, including its ownership checks in `tests/test_phone_architecture.py`.
+Publish and test changes to this fork before advancing Persona Engine's dependency pin.
 
-### Supported app versions and languages
+## Upstream and license
 
-The Instagram and TikTok versions TAKTIK supports, per CPU architecture, with a link to download
-the original APK of each, are listed in **[COMPATIBILITY.md](COMPATIBILITY.md)**. That file is
-generated from the bot's own selector data (`python scripts/audits/audit_compatibility_file.py --write`)
-and checked by the same script, so it always matches the code.
-
-The bot reads the app's language, English or French, at the start of a run and uses the matching
-labels. The command line itself speaks English and French (`--lang en|fr`).
-
-### Tested on
-
-What TAKTIK is tested on, as of 2026-09-28: real runs and the Lab's test bench, on these four phones.
-
-| Phone | Android | Instagram | TikTok |
-|---|---|---|---|
-| Pixel 3 | 12 | 410.0.0.53.71, in French | not tested |
-| Pixel 3a | 12 | 410.0.0.53.71, in English | 43.1.4, in French |
-| Pixel 4a | 13 | 410.0.0.53.71, in French | not tested |
-| Pixel 6a | 16 | 447.0.0.55.81, in French | 47.0.3, in French |
-
-The computer is a Windows PC.
-
-Everything else is **not tested**: other phones and brands, other Android versions, emulators, the
-versions marked "Adjusted, not validated" in [COMPATIBILITY.md](COMPATIBILITY.md) (the bot carries selector
-adjustments for them, but none of these phones runs them), Instagram 447 in English, TikTok
-in English, macOS and Linux. Not tested promises nothing, either way.
-
-### Development tests
-
-```bash
-pip install -r requirements-dev.txt   # the engine's requirements, plus the test and format tools
-python -m pytest
-```
-
-The tests live under `tests/unit`, filed like the code they test (`tests/unit/kernel/` for
-`taktik/core/kernel/`, `tests/unit/bridges/` for `bridges/`, one folder per platform; see
-`tests/README.md`). Local POC and device smoke scripts belong under `tests/poc/` and `tests/smoke/`; they are
-ignored by git because they may contain dumps, screenshots or device-specific experiments.
-
----
-
-## Commercial access
-
-The Python engine in this repository is open source.
-
-The desktop application, premium tooling and commercial access terms evolve separately from the codebase. For current availability, onboarding and commercial details, refer to the official website:
-
-- [taktik-bot.com](https://taktik-bot.com/en)
-- [Contact us](https://taktik-bot.com/en/contact)
-
----
-
-## Documentation
-
-Full documentation available at **[taktik-bot.com/en/docs](https://taktik-bot.com/en/docs)**.
-
----
-
-## Contributing
-
-Issues are welcome: bug reports, a version of Instagram or TikTok that breaks a workflow, questions.
-Pull requests from outside the project are not accepted for now. See
-[CONTRIBUTING.md](CONTRIBUTING.md).
-
-## Community and support
-
-- **[Discord Server](https://discord.com/invite/6tTBRTMhBj)**: help and tips
-- **[GitHub Issues](https://github.com/masterFuf/taktik-bot/issues)**: bugs and feature requests
-- **[Contact Form](https://taktik-bot.com/en/contact)**: business inquiries
-
----
-
-## Keywords
-
-`instagram bot` `instagram automation` `tiktok bot` `tiktok automation` `social media automation` `instagram growth` `instagram scraper` `instagram dm bot` `cold dm` `instagram marketing` `social media manager` `instagram followers` `engagement bot` `python instagram bot` `open source bot`
-
----
-
-## License
-
-This project is licensed under **GNU General Public License v3.0**: see [LICENSE](LICENSE).
-
-One data file is under another licence: `taktik/core/ai/data/agreement_fr.tsv` derives from
-Lexique 3.83 and is distributed under CC BY-SA 4.0. See [NOTICE](NOTICE).
-
-The desktop application is a commercial product with separate access terms published on the official website.
-
----
-
-## Disclaimer
-
-**For educational and research purposes only.**
-
-This software is provided as-is. Users must comply with Instagram's and TikTok's Terms of Service. The developers are not responsible for any account restrictions or bans. Use responsibly and at your own risk.
-
----
-
-<div align="center">
-
-  **Star this repo to support the project!**
-
-  <br/>
-
-  Made with care by <a href="https://github.com/masterFuf">masterFuf</a>
-
-  <br/>
-
-  <a href="https://taktik-bot.com">taktik-bot.com</a> • <a href="https://discord.com/invite/6tTBRTMhBj">Discord</a>
-
-</div>
+This fork retains Taktik's [GNU GPL v3 license](LICENSE) and upstream attribution.
+See the [upstream README](https://github.com/masterFuf/taktik-bot/blob/main/README.md) for the broader upstream CLI, desktop product, supported workflows, and documentation.
