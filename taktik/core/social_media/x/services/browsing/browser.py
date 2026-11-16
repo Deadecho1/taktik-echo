@@ -112,6 +112,13 @@ def post_context(post):
                 }
                 for a in card.adjacent_assets
             ]
+    if post.sports_card is not None:
+        card = post.sports_card
+        context["sports_card"] = {
+            "teams": list(card.teams),
+            "status": card.status,
+            "in_viewport": card.visibility.visible_bounds is not None,
+        }
     return context
 
 

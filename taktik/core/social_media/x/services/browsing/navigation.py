@@ -1706,6 +1706,7 @@ def _metadata_continuity(a, b, shift, before, after):
         and _quote_footer_continuity(a, b, shift, before, after)
         and _quote_body_annotation_continuity(a, b, shift, before, after)
         and _market_card_continuity(a, b, shift, before, after)
+        and _sports_card_continuity(a, b, shift, before, after)
         and _quoted_reply_continuity(a, b, shift, after)
     )
 
@@ -1730,6 +1731,30 @@ def _quoted_reply_continuity(a, b, shift, after):
             for u, v in zip(x.bounds[1::2], y.bounds[1::2])
         )
     )
+
+
+def _sports_card_continuity(a, b, shift, before, after):
+    old, new = a.sports_card, b.sports_card
+    if old and new:
+        return (
+            (old.teams, old.status) == (new.teams, new.status)
+            and old.visibility.bounds[::2] == new.visibility.bounds[::2]
+            and all(
+                abs(v - u - shift) <= 2 or (v == 0 and u + shift <= 0)
+                for u, v in zip(
+                    old.visibility.bounds[1::2], new.visibility.bounds[1::2]
+                )
+            )
+        )
+    if not old and not new:
+        return True
+    if shift >= -2:
+        return False
+    if new:
+        # Its blank native wrapper can exist in XML below the old viewport.
+        # Retained post anchors must independently establish this displacement.
+        return new.visibility.bounds[1] - shift >= before.content_viewport[3]
+    return old.visibility.bounds[3] + shift <= after.content_viewport[1]
 
 
 def _market_card_continuity(a, b, shift, before, after):

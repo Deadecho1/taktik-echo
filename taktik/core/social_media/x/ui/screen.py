@@ -136,6 +136,13 @@ class MarketCard:
 
 
 @dataclass(frozen=True)
+class SportsCard:
+    teams: tuple[str, str]
+    status: str
+    visibility: Visibility
+
+
+@dataclass(frozen=True)
 class Post:
     author: str
     display_name: str
@@ -163,6 +170,7 @@ class Post:
     advertising_visibility: Visibility | None = None
     community_note: CommunityNote | None = None
     market_card: MarketCard | None = None
+    sports_card: SportsCard | None = None
 
     @property
     def observable(self):
@@ -224,6 +232,7 @@ class PostFragment:
     quoted_body_annotations: tuple[TextSpan, ...] = ()
     market_card: MarketCard | None = None
     quoted_translation: TextSpan | None = None
+    sports_card: SportsCard | None = None
 
 
 @dataclass(frozen=True)
@@ -1522,6 +1531,68 @@ def _media_without_body(header, media, quote):
         raise _Unsupported("Missing body between the header and media.")
 
 
+def _sports_card(container, media, actions, viewport, overlays):
+    candidates = [
+        n
+        for n in container
+        if n.xpath('./node[@text="Final"]') and n.get("class") == "android.view.View"
+    ]
+    if not candidates:
+        return None, set()
+    card = _one(candidates, "sports result card")
+    rect = _rect(card)
+    if len(card) != 6:
+        raise _Unsupported("Unrecognized sports result card.")
+    first_icon, first, middle, second_icon, second, status = card
+    labels = (first, second, status)
+    icons = (first_icon, middle, second_icon)
+    if (
+        len(media) != 1
+        or media[0].kind not in {"video", "gif"}
+        or card.get("text")
+        or card.get("content-desc")
+        or card.get("clickable") != "true"
+        or card.get("focusable") != "true"
+        or card.get("enabled") != "true"
+        or card.get("long-clickable") == "true"
+        or card.get("scrollable") == "true"
+        or any(not _plain_annotation(n) or not n.get("text") for n in labels)
+        or any(not re.fullmatch(r"[A-Z]{2,4}", n.get("text")) for n in (first, second))
+        or status.get("text") != "Final"
+        or any(_intersect(_rect(n), rect) != _rect(n) for n in labels)
+        or any(_rect(n)[1::2] != _rect(first)[1::2] for n in labels)
+        or any(_rect(x)[2] > _rect(y)[0] for x, y in pairwise(labels))
+        or any(
+            len(n)
+            or n.get("class") != "android.view.View"
+            or n.get("text")
+            or n.get("content-desc")
+            or n.get("enabled") != "true"
+            or any(
+                n.get(flag) == "true"
+                for flag in ("clickable", "focusable", "long-clickable", "scrollable")
+            )
+            or not (rect[0] - 6 <= _rect(n)[0] < _rect(n)[2] <= rect[2])
+            or not (rect[1] <= _rect(n)[1] <= rect[1] + 2)
+            or _rect(n)[3] != rect[3]
+            for n in icons
+        )
+        or any(_rect(x)[0] >= _rect(y)[0] for x, y in pairwise(icons))
+        or rect[::2] != media[0].visibility.bounds[::2]
+        or card.getprevious() is None
+        or _rect(card.getprevious()) != media[0].visibility.bounds
+        or rect[1] < media[0].visibility.bounds[3]
+        or tuple(a.label for a in actions) != ACTION_LABELS
+        or any(a.visibility.bounds[1] != rect[3] for a in actions)
+    ):
+        raise _Unsupported("Unrecognized sports result card.")
+    return SportsCard(
+        (first.get("text"), second.get("text")),
+        status.get("text"),
+        _visibility(card, viewport, overlays),
+    ), set(card.iter())
+
+
 def _market_adjacent_assets(wrapper, card, viewport, overlays):
     if len(wrapper) != 2 or wrapper.get("scrollable") != "true":
         raise _Unsupported("Unrecognized market carousel.")
@@ -2217,6 +2288,10 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
         container, media, actions, viewport, overlaps, card
     )
     known.update(market_nodes)
+    sports_card, sports_nodes = _sports_card(
+        container, media, actions, viewport, overlaps
+    )
+    known.update(sports_nodes)
     media_labels, annotation_nodes = _media_annotation(container, media, actions)
     known.update(annotation_nodes)
     advertising, advertising_view, advertising_nodes = _paid_partnership(
@@ -2238,6 +2313,7 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
             or node in preview_nodes
             or node in annotation_nodes
             or node in market_nodes
+            or node in sports_nodes
             or node in advertising_nodes
         ):
             continue
@@ -2359,6 +2435,7 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
             advertising_view,
             community_note,
             market_card=market_card,
+            sports_card=sports_card,
             media_labels=media_labels,
             covered_header_visibility=_visibility(header, viewport, overlaps)
             if header_cover is not None
@@ -2435,6 +2512,7 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
         media_labels=media_labels,
         body_annotations=body_annotations,
         market_card=market_card,
+        sports_card=sports_card,
         advertising=advertising,
         advertising_visibility=advertising_view,
         community_note=community_note,
@@ -2822,6 +2900,9 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
     market_card, market_nodes = _market_card(
         container, media, actions, viewport, overlays, card
     )
+    sports_card, sports_nodes = _sports_card(
+        container, media, actions, viewport, overlays
+    )
     media_labels, annotation_nodes = _media_annotation(container, media, actions)
     advertising, advertising_view, advertising_nodes = _paid_partnership(
         container, media, actions, viewport, overlays
@@ -3009,6 +3090,7 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
         *translation_nodes,
         *annotation_nodes,
         *market_nodes,
+        *sports_nodes,
     }
     if card is not None:
         known.update(card.iter())
@@ -3126,6 +3208,7 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
         translation=translation,
         body_annotations=body_annotations,
         market_card=market_card,
+        sports_card=sports_card,
         advertising=advertising,
         advertising_visibility=advertising_view,
         community_note=community_note,
