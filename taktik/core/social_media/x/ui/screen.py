@@ -1760,7 +1760,10 @@ def _market_card(container, media, actions, viewport, overlays, quote_card=None)
     ), set(wrapper.iter())
 
 
-def _media_annotation(container, media, actions):
+def _media_annotation(container, media, actions, viewport, overlaps):
+    complete_footer = tuple(
+        t.label for t in actions
+    ) == ACTION_LABELS or _covered_bookmark_row(container, actions, viewport, overlaps)
     native = container.xpath('./node[@text="Made on X"]')
     if native:
         label = _one(native, "native media annotation")
@@ -1785,7 +1788,7 @@ def _media_annotation(container, media, actions):
             or rect[2] > media[0].visibility.bounds[2]
             or not (rect[1] <= media[0].visibility.bounds[3] < rect[3])
             or media[0].visibility.bounds[3] - rect[1] > (rect[3] - rect[1]) / 2
-            or tuple(t.label for t in actions) != ACTION_LABELS
+            or not complete_footer
             or any(t.visibility.bounds[1] != rect[3] for t in actions)
         ):
             raise _Unsupported("Unrecognized native media annotation.")
@@ -1799,7 +1802,7 @@ def _media_annotation(container, media, actions):
     previous = icon.getprevious()
     direct_footer = (
         control is not None
-        and tuple(t.label for t in actions) == ACTION_LABELS
+        and complete_footer
         and _rect(control) == actions[0].visibility.bounds
         and all(t.visibility.bounds[1] == _rect(label)[3] for t in actions)
     )
@@ -2292,7 +2295,9 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
         container, media, actions, viewport, overlaps
     )
     known.update(sports_nodes)
-    media_labels, annotation_nodes = _media_annotation(container, media, actions)
+    media_labels, annotation_nodes = _media_annotation(
+        container, media, actions, viewport, overlaps
+    )
     known.update(annotation_nodes)
     advertising, advertising_view, advertising_nodes = _paid_partnership(
         container, media, actions, viewport, overlaps
@@ -2903,7 +2908,9 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
     sports_card, sports_nodes = _sports_card(
         container, media, actions, viewport, overlays
     )
-    media_labels, annotation_nodes = _media_annotation(container, media, actions)
+    media_labels, annotation_nodes = _media_annotation(
+        container, media, actions, viewport, overlays
+    )
     advertising, advertising_view, advertising_nodes = _paid_partnership(
         container, media, actions, viewport, overlays
     )
