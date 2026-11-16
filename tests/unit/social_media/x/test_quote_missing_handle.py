@@ -78,7 +78,7 @@ def test_missing_handle_requires_the_native_name_badge_age_arrangement(mutation)
     elif mutation == "age_edge":
         age.set("bounds", "[950,2041][1020,2090]")
     elif mutation == "height":
-        age.set("bounds", "[956,2045][1026,2090]")
+        age.set("bounds", "[956,2037][1026,2090]")
     else:
         name.addprevious(age)
     assert not read_screen(etree.tostring(root), (1080, 2340)).posts

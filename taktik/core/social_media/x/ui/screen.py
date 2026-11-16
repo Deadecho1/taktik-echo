@@ -879,16 +879,18 @@ def _compact_quote_image(card, body, viewport):
     return nodes
 
 
-def _quoted_translation(card, texts, viewport, overlaps):
+def _quoted_translation(card, texts, viewport, overlaps, *, has_handle=True):
+    header_count = 3 if has_handle else 2
     if (
-        len(texts) == 4
+        len(texts) == header_count + 1
         and texts[-1].get("text", "").startswith("Translated from ")
         and _rect(texts[-1])[0] > _rect(_one(_desc(card, "Quote"), "quote marker"))[0]
     ):
         raise _Unsupported("Quoted translation has no separate body.")
-    if len(texts) != 5:
+    if len(texts) != header_count + 2:
         return None
-    name, handle, age, label, body = texts
+    *header, label, body = texts
+    age = header[-1]
     rect, body_rect = _rect(label), _rect(body)
     preceding = label.getnext()
     if preceding is not body:
@@ -907,7 +909,7 @@ def _quoted_translation(card, texts, viewport, overlaps):
         )
         or not _plain_annotation(label)
         or label.getprevious() is not age
-        or rect[1] < max(_rect(n)[3] for n in (name, handle, age))
+        or rect[1] < max(_rect(n)[3] for n in header)
         or rect[3] > body_rect[1]
         or rect[0] <= content_left
         or rect[2] > body_rect[2]
@@ -975,7 +977,7 @@ def _quote(card, viewport, overlaps):
             texts.remove(translation)
         name, _, age, *bodies = texts
     else:
-        if len(texts) != 3 or len(card) < 5:
+        if len(texts) not in (3, 4) or len(card) < 5:
             raise _Unsupported("Unrecognized quote without an author handle.")
         name, age, *bodies = texts
         marker, _, badge, _ = list(card)[:4]
@@ -998,15 +1000,23 @@ def _quote(card, viewport, overlaps):
                 badge.get(flag) == "true"
                 for flag in ("clickable", "focusable", "long-clickable", "scrollable")
             )
-            or first[1::2] != last[1::2]
+            or not (first[1] <= last[1] < last[3] <= first[3])
             or not (first[1] <= mark[1] < mark[3] <= first[3])
             or not (
                 _rect(marker)[2] <= first[0] < first[2] <= mark[0] < mark[2] <= last[0]
             )
-            or abs(last[2] - (_rect(card)[2] - (_rect(marker)[0] - _rect(card)[0]))) > 4
+            # Native date glyph bounds can overhang the inset by five pixels.
+            or not -4
+            <= last[2] - (_rect(card)[2] - (_rect(marker)[0] - _rect(card)[0]))
+            <= 5
         ):
             raise _Unsupported("Unrecognized quote without an author handle.")
-        handle, translation = None, None
+        handle = None
+        translation = _quoted_translation(
+            card, texts, viewport, overlaps, has_handle=False
+        )
+        if translation is not None:
+            bodies.remove(translation)
     body = bodies[0] if bodies else None
     _, annotation_nodes = _body_annotations(body)
     body_view = (
@@ -2002,7 +2012,8 @@ def _missing_handle_header(header, viewport, overlaps, *, header_cover=None):
         return False
     rect, first, mark, last = map(_rect, (header, name, badge, age))
     return (
-        first[1::2] == last[1::2] == rect[1::2]
+        first[1::2] == rect[1::2]
+        and rect[1] <= last[1] < last[3] <= rect[3]
         and rect[1] <= mark[1] < mark[3] <= rect[3]
         and first[2] <= mark[0] < mark[2] <= last[0]
         # Captured text bounds protrude slightly beyond the containing row.
