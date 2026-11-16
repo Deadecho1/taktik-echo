@@ -1494,8 +1494,8 @@ def _covered_author(header, cover, viewport):
             return False
     name, age = header[0], header[-1]
     if len(header) == 3 and HANDLE.fullmatch(age.get("text", "")):
-        # Android retains the handle text while clipping its bounds at the
-        # overlay edge and omitting the covered age. It is not author proof.
+        # Android can retain a clipped or overlapping handle node while
+        # omitting the age under New posts. This is not author proof.
         rect, first, last = map(_rect, (header, name, age))
         return (
             all(
@@ -1507,9 +1507,15 @@ def _covered_author(header, cover, viewport):
             and first[1::2] == rect[1::2]
             and rect[1] <= last[1] < last[3] <= rect[3]
             and viewport[1] < rect[1] < rect[3] < viewport[3]
-            and cover[1] <= last[1] < last[3] <= cover[3]
+            and (
+                (last[2] == cover[0] and cover[1] <= last[1] < last[3] <= cover[3])
+                or (
+                    cover[0] < last[2] <= cover[2]
+                    and _intersect(last, cover) is not None
+                )
+            )
             and rect[0] == first[0]
-            and _rect(header[1])[2] <= last[0] < last[2] == cover[0]
+            and _rect(header[1])[2] <= last[0] < cover[0] <= last[2]
             and rect[0] < cover[0] < cover[2] < rect[2]
         )
     if any(
