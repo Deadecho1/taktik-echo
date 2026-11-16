@@ -323,8 +323,12 @@ def _target(node, label, boundary, viewport, overlaps=(), count=None):
     )
 
 
-def _handle(nodes, description):
-    candidates = [node for node in nodes if node.get("text", "").startswith("@")]
+def _handle(nodes, description, *, display_name=None):
+    candidates = [
+        node
+        for node in nodes
+        if node is not display_name and node.get("text", "").startswith("@")
+    ]
     node = _one(candidates, description)
     if not HANDLE.fullmatch(node.get("text", "")):
         raise _Unsupported(f"Invalid {description}.")
@@ -982,7 +986,7 @@ def _quote(card, viewport, overlaps):
         texts.remove(reply)
     handles = [n for n in card if HANDLE.fullmatch(n.get("text", ""))]
     if handles:
-        handle = _handle(card, "quoted author")
+        handle = _handle(card, "quoted author", display_name=texts[0])
         if (
             texts.index(handle) != 1
             or len(texts) not in (3, 4, 5)
@@ -2152,7 +2156,11 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
                 header, viewport, overlaps, header_cover=header_cover
             )
         )
-        else _handle(header.iter(), "outer author")
+        else _handle(
+            header.iter(),
+            "outer author",
+            display_name=next((n for n in header if n.get("text")), None),
+        )
     )
     header_text = [n.get("text") for n in header if n.get("text")]
     if handle is not None and (
