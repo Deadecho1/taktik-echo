@@ -745,10 +745,23 @@ def _quote_preview_revealed(a, b, after):
         and old.visibility.visible_bounds is not None
         and old.visibility.bounds[3] > old.visibility.visible_bounds[3]
         and preview.kind == "preview"
-        and preview.description_visibility is not None
         and (
             (
-                preview.description_visibility.bounds[1] - shift
+                # The article image can enter before either text field. It
+                # cannot measure motion: the retained quote/video must do so.
+                not old.media
+                and preview.description is None
+                and preview.description_visibility is None
+                and preview.preview_text is None
+                and preview.preview_text_visibility is None
+                and _quoted_video_motion(a, b, shift)
+                and preview.visibility.bounds[::2] == new.visibility.bounds[::2]
+                and old.visibility.bounds[::2] == new.visibility.bounds[::2]
+                and preview.visibility.bounds[1] - shift >= old.visibility.bounds[3]
+            )
+            or (
+                preview.description_visibility is not None
+                and preview.description_visibility.bounds[1] - shift
                 >= old.visibility.bounds[3]
                 and (not old.media or _preview_title_revealed(old, new, shift))
             )
