@@ -31,7 +31,7 @@ def test_offscreen_translation_does_not_invent_a_quoted_body():
 @pytest.mark.parametrize(
     "mutation",
     [
-        "visible_card",
+        "visible_header",
         "label_control",
         "label_disabled",
         "label_overlap",
@@ -44,8 +44,8 @@ def test_translation_without_body_requires_an_offscreen_native_clipped_label(mut
     root = etree.fromstring(document("offscreen-quote-translation-after").encode())
     card = root.xpath('//*[@content-desc="Quote"]')[0].getparent()
     label = card[-1]
-    if mutation == "visible_card":
-        card.set("bounds", "[176,2200][1047,2340]")
+    if mutation == "visible_header":
+        card[1].set("bounds", "[264,2200][450,2256]")
     elif mutation == "label_control":
         label.set("clickable", "true")
     elif mutation == "label_disabled":

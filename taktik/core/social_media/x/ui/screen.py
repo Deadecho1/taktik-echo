@@ -897,7 +897,7 @@ def _quoted_translation(card, texts, viewport, overlaps, *, has_handle=True):
         *header, label = texts
         rect = _rect(label)
         if (
-            _rect(card)[1] >= viewport[3]
+            all(_rect(n)[1] >= viewport[3] for n in header)
             and label is card[-1]
             and label.getprevious() is header[-1]
             and _plain_annotation(label)
