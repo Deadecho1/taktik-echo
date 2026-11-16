@@ -909,6 +909,57 @@ def _actions(container, viewport, overlaps, excluded):
     return tuple(actions), covered
 
 
+def _covered_bookmark_row(container, actions, viewport, overlaps):
+    """Recognize a covered empty slot without synthesizing a Bookmark target."""
+    if tuple(a.label for a in actions) != tuple(
+        label for label in ACTION_LABELS if label != "Bookmark"
+    ) or len(container) < len(ACTION_LABELS):
+        return False
+    row = list(container)[-len(ACTION_LABELS) :]
+    rects = [_rect(n) for n in row]
+    if (
+        any(n.get("clickable") != "true" for n in row)
+        or len({r[1::2] for r in rects}) != 1
+        or any(a[2] != b[0] for a, b in pairwise(rects))
+        or rects[-1][2:] != _rect(container)[2:]
+    ):
+        return False
+    icons = []
+    for label, target in zip(ACTION_LABELS, row):
+        if label == "Bookmark":
+            if (
+                len(target)
+                or target.get("text")
+                or target.get("content-desc")
+                or target.get("class") != "android.view.View"
+                or target.get("enabled") != "true"
+            ):
+                return False
+            continue
+        candidates = _desc(target, label)
+        if len(candidates) != 1 or _clickable(candidates[0], container) is not target:
+            return False
+        icons.append(_rect(candidates[0]))
+    # Four retained square icons locate the glyph row. Share may be clipped
+    # horizontally by the same composer, but must retain its vertical edges.
+    size = icons[0][2] - icons[0][0]
+    top, bottom = icons[0][1::2]
+    if (
+        size != bottom - top
+        or any(r[1::2] != (top, bottom) for r in icons)
+        or any(r[2] - r[0] != size for r in icons[:-1])
+    ):
+        return False
+    slot = rects[ACTION_LABELS.index("Bookmark")]
+    center = (slot[0] + slot[2]) // 2
+    expected = (center - size // 2, top, center - size // 2 + size, bottom)
+    return (
+        _intersect(expected, slot) == expected
+        and _intersect(expected, viewport) == expected
+        and any(_intersect(expected, cover) == expected for cover in overlaps)
+    )
+
+
 def _translation(container, header=None):
     labels = [n for n in container if n.get("text", "").startswith("Translated from ")]
     controls = [n for n in container if n.get("text") == "Show original"]
@@ -1970,8 +2021,14 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
         and not any(m.visibility.visible_bounds for m in media)
     ):
         raise _Unsupported("Clipped post has no visible content.")
-    if tuple(action.label for action in actions) != ACTION_LABELS and not (
-        (quote or community_note) and not actions and _rect(container)[3] >= viewport[3]
+    if (
+        tuple(action.label for action in actions) != ACTION_LABELS
+        and not (
+            (quote or community_note)
+            and not actions
+            and _rect(container)[3] >= viewport[3]
+        )
+        and not _covered_bookmark_row(container, actions, viewport, overlays)
     ):
         raise _Unsupported("Incomplete clipped post actions.")
     if not media and quote is None:
