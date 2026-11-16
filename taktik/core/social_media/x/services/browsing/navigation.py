@@ -254,6 +254,7 @@ def _tail_match(
 ):
     if not isinstance(b, PostFragment) or b.body is not None:
         return False
+    outer_quote = a.quoted_post
     a = _video_tail_source(a)
     if not all(
         _tail_anchors_available(p, s.content_viewport)
@@ -289,7 +290,23 @@ def _tail_match(
             or max(old_rect[1], new_rect[1], before.content_viewport[1])
             < min(old_rect[3], new_rect[3])
         )
-        and new_rect[1] < after.content_viewport[1]
+        and (
+            new_rect[1] < after.content_viewport[1]
+            or (
+                # The viewport edge can fall in the existing text/video gap.
+                # Both video edges must retain their measured displacement;
+                # an inset start cannot be explained by clamping or resizing.
+                outer_quote is None
+                and old_rect[1] >= before.content_viewport[1]
+                and abs(new_rect[1] - old_rect[1] - shift) <= 2
+                and (a.body_visibility is not None or isinstance(a, PostFragment))
+                and (
+                    isinstance(a, PostFragment)
+                    or a.header_visibility.bounds[3] + shift
+                    <= after.content_viewport[1]
+                )
+            )
+        )
         and (
             a.body_visibility is None
             or a.body_visibility.bounds[3] + shift <= after.content_viewport[1]

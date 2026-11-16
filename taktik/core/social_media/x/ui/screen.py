@@ -1429,7 +1429,14 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
         )
     ):
         raise _Unsupported("Unrecognized clipped post media.")
-    if body is None and media and media[0].visibility.bounds[1] >= viewport[1]:
+    # Collapsed Home may clip the body in the gap before a video. Retain only
+    # unattributed content here; navigation must prove the loss and video motion.
+    if (
+        body is None
+        and media
+        and media[0].visibility.bounds[1] >= viewport[1]
+        and not (collapsed and quote is None)
+    ):
         raise _Unsupported("Missing body above unclipped media.")
     if (
         body is None
