@@ -642,9 +642,10 @@ def _compact_quote_video(card, body, viewport):
     if not candidates:
         return set()
     preview = _one(candidates, "compact quoted video")
-    if len(preview) != 3:
+    if len(preview) not in (2, 3):
         raise _Unsupported("Unrecognized compact quoted video.")
-    video, picture, play = preview
+    video, picture = preview[:2]
+    play = preview[2] if len(preview) == 3 else None
     rect = _rect(preview)
     if (
         preview.get("class") != "android.view.View"
@@ -654,7 +655,9 @@ def _compact_quote_video(card, body, viewport):
         or preview.get("focusable") != "true"
         or preview.get("long-clickable") == "true"
         or preview.get("scrollable") == "true"
-        or [n.get("content-desc", "") for n in preview] != ["Video", "", "play"]
+        or [n.get("content-desc", "") for n in preview]
+        != ["Video", "", *(["play"] if play is not None else [])]
+        or (play is None and not (rect[1] >= viewport[3] and rect[3] == _rect(card)[3]))
         or any(
             len(n)
             or n.get("text")
@@ -667,7 +670,7 @@ def _compact_quote_video(card, body, viewport):
         )
         or _rect(video) != rect
         or _rect(picture) != rect
-        or _intersect(rect, _rect(play)) != _rect(play)
+        or (play is not None and _intersect(rect, _rect(play)) != _rect(play))
         or not (
             rect[2] - rect[0] == rect[3] - rect[1]
             or (
