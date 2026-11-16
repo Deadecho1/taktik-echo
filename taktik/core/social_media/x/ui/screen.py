@@ -2199,6 +2199,27 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
         known.update(card.iter())
     if note_card is not None:
         known.update(note_card.iter())
+    if body is None and media and len(container) > 1:
+        avatar = container[0]
+        rect, video = _rect(avatar), media[0].visibility.bounds
+        if (
+            len(media) == 1
+            and media[0].kind == "video"
+            and _rect(container[1]) == video
+            and avatar.get("class") == "android.widget.ImageView"
+            and not len(avatar)
+            and not avatar.get("text")
+            and avatar.get("clickable") == "true"
+            and avatar.get("long-clickable") == "true"
+            and avatar.get("enabled") == "true"
+            and avatar.get("visible-to-user") != "false"
+            and avatar.get("scrollable") != "true"
+            and _rect(container)[0] <= rect[0] < rect[2] <= video[0]
+            and rect[2] - rect[0] == rect[3] - rect[1]
+            and rect[1] < viewport[1] < rect[3]
+            and rect[1] <= video[1] <= rect[3]
+        ):
+            known.add(avatar)
     for child in container:
         if child is body or body is None:
             break
