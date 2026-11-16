@@ -1811,7 +1811,7 @@ def _account_annotation(container, header):
     return label
 
 
-def _avatar_live_badge(container):
+def _avatar_live_badge(container, clipped_viewport=None):
     candidates = [n for n in container if n.xpath('./node/node[@text="LIVE"]')]
     if not candidates:
         return set()
@@ -1820,9 +1820,7 @@ def _avatar_live_badge(container):
         raise _Unsupported("Unrecognized avatar LIVE badge.")
     inner, label = badge[0], badge[0][0]
     avatar = badge.getprevious()
-    if avatar is None:
-        raise _Unsupported("Avatar LIVE badge has no avatar.")
-    rect, icon, text = _rect(badge), _rect(avatar), _rect(label)
+    rect, text = _rect(badge), _rect(label)
     if (
         any(
             n.get("class") != "android.view.View"
@@ -1838,7 +1836,28 @@ def _avatar_live_badge(container):
         )
         or not _plain_annotation(label)
         or label.get("text") != "LIVE"
-        or avatar.get("class") != "android.widget.ImageView"
+        or _rect(inner) != rect
+        or _intersect(text, rect) != text
+        or rect[2] - rect[0] != rect[3] - rect[1]
+    ):
+        raise _Unsupported("Unrecognized avatar LIVE badge.")
+    if avatar is None:
+        body = badge.getnext()
+        if (
+            clipped_viewport is None
+            or body is None
+            or not _plain_annotation(body)
+            or not body.get("text")
+            or not (rect[1] < clipped_viewport[1] < rect[3])
+            or not (text[1] < clipped_viewport[1] < text[3])
+            or not (_rect(body)[1] < clipped_viewport[1] < _rect(body)[3])
+            or not (clipped_viewport[0] <= rect[0] < rect[2] < _rect(body)[0])
+        ):
+            raise _Unsupported("Unrecognized clipped LIVE badge.")
+        return set(badge.iter())
+    icon = _rect(avatar)
+    if (
+        avatar.get("class") != "android.widget.ImageView"
         or avatar.get("text")
         or not avatar.get("content-desc")
         or len(avatar)
@@ -1847,11 +1866,8 @@ def _avatar_live_badge(container):
             for flag in ("clickable", "long-clickable", "focusable", "enabled")
         )
         or avatar.get("scrollable") == "true"
-        or _rect(inner) != rect
-        or _intersect(text, rect) != text
         or rect[::2] != icon[::2]
         or icon[2] - icon[0] != icon[3] - icon[1]
-        or rect[2] - rect[0] != rect[3] - rect[1]
         or not (icon[1] < rect[1] < icon[3] < rect[3])
         or not (text[1] < icon[3] < text[3])
     ):
@@ -2374,7 +2390,7 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
         or container.xpath('.//*[@resource-id="timeline_post"]')
     ):
         raise _Unsupported("Not a clipped post container.")
-    live_nodes = _avatar_live_badge(container)
+    live_nodes = _avatar_live_badge(container, viewport if collapsed else None)
     quotes = _desc(container, "Quote")
     card = _clickable(_one(quotes, "quote marker"), container) if quotes else None
     if (
