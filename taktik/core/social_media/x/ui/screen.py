@@ -610,19 +610,31 @@ def _quote_preview(card, body, viewport, overlaps):
     if not previews:
         return (), set()
     preview = _one(previews, "compact quote preview")
+    # Offscreen bottom-clipped wrappers can precede their native count glyph.
+    pending_count = (
+        not len(preview)
+        and _rect(preview)[1] >= viewport[3]
+        and _rect(preview)[3] == _rect(card)[3]
+        and _intersect(_rect(preview), _rect(card)) == _rect(preview)
+    )
     if (
         body is None
         or preview.get("content-desc") != "1 more media item"
         or preview.get("class") != "android.view.View"
         or preview.get("clickable") == "true"
         or preview.get("text")
-        or len(preview) != 1
-        or len(preview[0])
-        or preview[0].get("class") != "android.widget.TextView"
-        or preview[0].get("text") != "+1"
-        or preview[0].get("content-desc")
-        or preview[0].get("clickable") == "true"
-        or _intersect(_rect(preview), _rect(preview[0])) != _rect(preview[0])
+        or (
+            not pending_count
+            and (
+                len(preview) != 1
+                or len(preview[0])
+                or preview[0].get("class") != "android.widget.TextView"
+                or preview[0].get("text") != "+1"
+                or preview[0].get("content-desc")
+                or preview[0].get("clickable") == "true"
+                or _intersect(_rect(preview), _rect(preview[0])) != _rect(preview[0])
+            )
+        )
         or _rect(preview)[1] != _rect(body)[1]
         or _rect(preview)[2] > _rect(body)[0]
         or list(card).index(preview) != list(card).index(body) - 1
