@@ -1504,9 +1504,10 @@ def _covered_author(header, cover, viewport):
             )
             and bool(name.get("text"))
             and "@" not in name.get("text", "")
-            and first[1::2] == last[1::2] == rect[1::2]
+            and first[1::2] == rect[1::2]
+            and rect[1] <= last[1] < last[3] <= rect[3]
             and viewport[1] < rect[1] < rect[3] < viewport[3]
-            and cover[1] <= rect[1] < rect[3] <= cover[3]
+            and cover[1] <= last[1] < last[3] <= cover[3]
             and rect[0] == first[0]
             and _rect(header[1])[2] <= last[0] < last[2] == cover[0]
             and rect[0] < cover[0] < cover[2] < rect[2]
