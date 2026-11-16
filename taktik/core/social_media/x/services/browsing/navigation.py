@@ -497,7 +497,7 @@ def _quote_header_completed(a, b, before, after):
         or (new.body is None and not new.media)
         or (new.body is not None and new.body_visibility is None)
         or old.header_visibility.bounds[1] < before.content_viewport[3]
-        or old.header_visibility.bounds[3] != old.visibility.bounds[3]
+        or old.header_visibility.bounds[3] > old.visibility.bounds[3]
         or old.author != new.author
         or old.labels != new.labels
         or old.translation != new.translation
@@ -527,7 +527,14 @@ def _quote_header_completed(a, b, before, after):
         and _header_loss_explained(a, b, shift, after)
         and old.header_visibility.bounds[::2] == new.header_visibility.bounds[::2]
         and new.header_visibility.bounds[1] - old.header_visibility.bounds[1] == shift
-        and new.header_visibility.bounds[3] - shift >= old.header_visibility.bounds[3]
+        and (
+            new.header_visibility.bounds[3] - old.header_visibility.bounds[3] == shift
+            or (
+                old.header_visibility.bounds[3] == old.visibility.bounds[3]
+                and new.header_visibility.bounds[3] - shift
+                >= old.header_visibility.bounds[3]
+            )
+        )
         and (
             new.body_visibility is None
             or new.body_visibility.bounds[1] - shift >= old.visibility.bounds[3]

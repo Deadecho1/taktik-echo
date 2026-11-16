@@ -779,7 +779,7 @@ def _quote(card, viewport, overlaps):
         and not previews
         and _rect(card)[3] >= viewport[3]
         and all(
-            _rect(n)[1] >= viewport[3] and _rect(n)[3] == _rect(card)[3]
+            _rect(n)[1] >= viewport[3] and _intersect(_rect(n), _rect(card)) == _rect(n)
             for n in (name, handle, age)
         )
     )
