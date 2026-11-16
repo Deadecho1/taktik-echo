@@ -1290,7 +1290,7 @@ def _footer_media_lost(media, actions, shift, viewport):
     view = media.visibility
     if view.bounds[3] + shift <= viewport[1]:
         return True
-    if media.kind != "video" or view.visible_bounds is None or not actions:
+    if media.kind not in {"video", "gif"} or view.visible_bounds is None or not actions:
         return False
     rows = [a.visibility.bounds for a in actions]
     top = rows[0][1]
