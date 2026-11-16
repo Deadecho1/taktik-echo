@@ -155,7 +155,9 @@ def _video_tail_source(post):
             post.actions,
         )
     quote = post.quoted_post
-    if quote and not post.media:
+    if quote and (
+        not post.media or (len(quote.media) == 1 and quote.media[0].kind == "video")
+    ):
         return PostFragment(
             quote.body,
             quote.media,
@@ -339,6 +341,7 @@ def _tail_match(
         or b.quoted_body is not None
     ):
         return False
+    outer = a
     outer_quote = a.quoted_post
     a = _video_tail_source(a)
     if not all(
@@ -349,6 +352,19 @@ def _tail_match(
     old, new = a.media[0], b.media[0]
     old_rect, new_rect = old.visibility.bounds, new.visibility.bounds
     shift = new_rect[3] - old_rect[3]
+    if (
+        outer_quote is not None
+        and a is not outer
+        and not all(
+            v.bounds[3] + shift <= after.content_viewport[1]
+            for v in (
+                outer_quote.header_visibility,
+                *([outer.body_visibility] if outer.body_visibility is not None else []),
+                *(m.visibility for m in outer.media),
+            )
+        )
+    ):
+        return False
     return (
         shift <= 0
         and old.kind == new.kind
