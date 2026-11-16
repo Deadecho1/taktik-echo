@@ -58,6 +58,10 @@ def post_context(post):
         if quote
         else None,
     }
+    if quote is not None and quote.footer_annotations:
+        context["quoted_post"]["footer_annotations"] = [
+            v.text for v in quote.footer_annotations
+        ]
     if quote is not None and quote.nested_quote is not None:
         nested = quote.nested_quote
         context["quoted_post"]["quoted_post"] = {

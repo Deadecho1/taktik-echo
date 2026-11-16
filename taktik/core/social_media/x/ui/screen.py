@@ -84,6 +84,7 @@ class QuotedPost:
     labels: tuple[str, ...] = ()
     translation: str | None = None
     nested_quote: "QuotedPost | None" = None
+    footer_annotations: tuple["TextSpan", ...] = ()
 
     @property
     def observable(self):
@@ -197,6 +198,7 @@ class PostFragment:
     quoted_body: TextSpan | None = None
     covered_header_visibility: Visibility | None = None
     covered_handle: TextSpan | None = None
+    quoted_footer_annotations: tuple[TextSpan, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -845,6 +847,13 @@ def _quote(card, viewport, overlaps):
 def _quote_bundle(card, viewport, overlaps):
     quote = _quote(card, viewport, overlaps)
     wrapper = card.getparent()
+    footer = _quote_footer_annotations(wrapper, viewport, overlaps)
+    if footer:
+        return replace(
+            quote,
+            footer_annotations=footer,
+            visibility=_visibility(wrapper, viewport, overlaps),
+        ), wrapper
     nested = [n for n in wrapper if n.get("resource-id") == "nested_quote_preview"]
     if not nested:
         return quote, card
@@ -1238,7 +1247,7 @@ def _clipped_annotation(node, header, viewport):
     )
 
 
-def _paid_partnership(container, media, actions, viewport, overlaps):
+def _paid_partnership(container, media, actions, viewport, overlaps, *, quoted=False):
     icons = container.xpath('./node[@content-desc="Paid partnership"]')
     if not icons:
         return "unknown", None, set()
@@ -1249,12 +1258,37 @@ def _paid_partnership(container, media, actions, viewport, overlaps):
     previous, following = icon.getprevious(), label.getnext()
     icon_rect, label_rect = _rect(icon), _rect(label)
     if (
-        len(media) != 1
-        or media[0].kind != "video"
-        or not actions
-        or actions[0].label != "Reply"
-        or previous is None
-        or following is None
+        previous is None
+        or (
+            not quoted
+            and (
+                len(media) != 1
+                or media[0].kind != "video"
+                or not actions
+                or actions[0].label != "Reply"
+                or following is None
+                or _rect(previous) != media[0].visibility.bounds
+                or not previous.xpath('.//*[@content-desc="Video"]')
+                or _rect(following) != actions[0].visibility.bounds
+                or icon_rect[0] != _rect(previous)[0]
+                or label_rect[3] != _rect(following)[1]
+            )
+        )
+        or (
+            quoted
+            and (
+                list(container) != [previous, icon, label]
+                or following is not None
+                or container.get("clickable") == "true"
+                or container.get("class") != "android.view.View"
+                or container.get("text")
+                or container.get("content-desc")
+                or previous.get("clickable") != "true"
+                or _rect(previous)[:3] != _rect(container)[:3]
+                or icon_rect[0] < _rect(previous)[0]
+                or label_rect[3] != _rect(container)[3]
+            )
+        )
         or icon.getnext() is not label
         or icon.get("class") != "android.view.View"
         or icon.get("text")
@@ -1265,15 +1299,10 @@ def _paid_partnership(container, media, actions, viewport, overlaps):
         )
         or not _plain_annotation(label)
         or any(not _visibility(n, viewport, overlaps).accessible for n in (icon, label))
-        or _rect(previous) != media[0].visibility.bounds
-        or not previous.xpath('.//*[@content-desc="Video"]')
-        or _rect(following) != actions[0].visibility.bounds
         or min(icon_rect[1], label_rect[1]) < _rect(previous)[3]
-        or icon_rect[0] != _rect(previous)[0]
         or icon_rect[2] > label_rect[0]
         or max(icon_rect[1], label_rect[1]) >= min(icon_rect[3], label_rect[3])
         or icon_rect[3] != label_rect[3]
-        or label_rect[3] != _rect(following)[1]
         or any(
             _intersect(_rect(container), _rect(n)) != _rect(n) for n in (icon, label)
         )
@@ -1294,6 +1323,13 @@ def _paid_partnership(container, media, actions, viewport, overlaps):
         ),
         {icon, label},
     )
+
+
+def _quote_footer_annotations(wrapper, viewport, overlaps):
+    if wrapper.get("clickable") == "true":
+        return ()
+    _, view, _ = _paid_partnership(wrapper, (), (), viewport, overlaps, quoted=True)
+    return (TextSpan("Paid partnership", view),) if view is not None else ()
 
 
 def _covered_author(header, cover, viewport):
@@ -1751,7 +1787,8 @@ def _clipped_preview_texts(container, actions, viewport, overlays):
     if len(container) != 7 or tuple(t.label for t in actions) != ACTION_LABELS:
         return ()
     wrapper = container[0]
-    if len(wrapper) != 1 or len(wrapper[0]) != 1:
+    footer = _quote_footer_annotations(wrapper, viewport, overlays)
+    if len(wrapper) != (3 if footer else 1) or len(wrapper[0]) != 1:
         return ()
     card, preview = wrapper[0], wrapper[0][0]
     picture = preview[0] if len(preview) == 3 else None
@@ -1778,7 +1815,7 @@ def _clipped_preview_texts(container, actions, viewport, overlays):
             )
         )
         or not (_rect(preview)[1] < viewport[1] < _rect(preview)[3] < viewport[3])
-        or _rect(wrapper) != _rect(card)
+        or (not footer and _rect(wrapper) != _rect(card))
         or _rect(card)[::2] != _rect(preview)[::2]
         or _rect(card)[3] != _rect(preview)[3]
         or _rect(card)[1] > _rect(preview)[1]
@@ -1800,12 +1837,12 @@ def _clipped_preview_texts(container, actions, viewport, overlays):
             for n in texts
         )
         or any(_rect(a)[3] >= _rect(b)[1] for a, b in pairwise(preview))
-        or any(t.visibility.bounds[1] != _rect(preview)[3] for t in actions)
+        or any(t.visibility.bounds[1] != _rect(wrapper)[3] for t in actions)
     ):
         return ()
     return tuple(
         TextSpan(n.get("text"), _visibility(n, viewport, overlays)) for n in texts
-    )
+    ), footer
 
 
 def _clipped_quote_marker(card, viewport):
@@ -1832,7 +1869,8 @@ def _clipped_quoted_body(container, media, media_nodes, actions, viewport, overl
     if len(container) != 7 or tuple(t.label for t in actions) != ACTION_LABELS:
         return None
     wrapper = container[0]
-    if len(wrapper) != 1:
+    footer = _quote_footer_annotations(wrapper, viewport, overlays)
+    if len(wrapper) != (3 if footer else 1):
         return None
     card = wrapper[0]
     marker = _clipped_quote_marker(card, viewport)
@@ -1848,7 +1886,7 @@ def _clipped_quoted_body(container, media, media_nodes, actions, viewport, overl
         or not body.get("text")
         or not (viewport[1] < _rect(body)[3] <= _rect(video)[1])
         or (marker is None and _rect(body)[1] >= viewport[1])
-        or _rect(wrapper) != _rect(card)
+        or (not footer and _rect(wrapper) != _rect(card))
         or wrapper.get("clickable") == "true"
         or card.get("clickable") != "true"
         or any(
@@ -1862,7 +1900,7 @@ def _clipped_quoted_body(container, media, media_nodes, actions, viewport, overl
         or _intersect(_rect(body), _rect(card)) != _rect(body)
         or _intersect(_rect(video), _rect(card)) != _rect(video)
         or media[0].visibility.bounds != _rect(video)
-        or any(t.visibility.bounds[1] != _rect(card)[3] for t in actions)
+        or any(t.visibility.bounds[1] != _rect(wrapper)[3] for t in actions)
         or any(
             n is not body
             and n is not marker
@@ -1872,7 +1910,11 @@ def _clipped_quoted_body(container, media, media_nodes, actions, viewport, overl
         )
     ):
         return None
-    return TextSpan(body.get("text"), _visibility(body, viewport, overlays)), media
+    return (
+        TextSpan(body.get("text"), _visibility(body, viewport, overlays)),
+        media,
+        footer,
+    )
 
 
 def _header_controls_clipped(container, body, viewport):
@@ -1968,7 +2010,7 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
             container, media, media_nodes, actions, viewport, overlays
         )
         if quoted_content is not None:
-            quoted_body, media = quoted_content
+            quoted_body, media, footer = quoted_content
             return PostFragment(
                 None,
                 media,
@@ -1976,6 +2018,7 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
                 None,
                 actions,
                 quoted_body=quoted_body,
+                quoted_footer_annotations=footer,
             )
     if (
         collapsed
@@ -1986,6 +2029,7 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
     ):
         preview_texts = _clipped_preview_texts(container, actions, viewport, overlays)
         if preview_texts:
+            preview_texts, footer = preview_texts
             return PostFragment(
                 None,
                 (),
@@ -1993,6 +2037,7 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
                 None,
                 actions,
                 preview_texts=preview_texts,
+                quoted_footer_annotations=footer,
             )
     if translation_nodes and (
         body is None

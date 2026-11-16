@@ -1372,11 +1372,50 @@ def _nested_quote_continuity(a, b, shift, before, after):
     return True
 
 
+def _quote_footer_continuity(a, b, shift, before, after):
+    old = (
+        a.quoted_post.footer_annotations
+        if a.quoted_post
+        else getattr(a, "quoted_footer_annotations", ())
+    )
+    new = (
+        b.quoted_post.footer_annotations
+        if b.quoted_post
+        else getattr(b, "quoted_footer_annotations", ())
+    )
+    if old and new:
+        return len(old) == len(new) and all(
+            x.text == y.text
+            and x.visibility.bounds[::2] == y.visibility.bounds[::2]
+            and all(
+                abs(v - u - shift) <= 2
+                for u, v in zip(x.visibility.bounds[1::2], y.visibility.bounds[1::2])
+            )
+            for x, y in zip(old, new)
+        )
+    if not old and not new:
+        return True
+    if shift >= -2:
+        return False
+    if new:
+        quote = a.quoted_post
+        return (
+            quote is not None
+            and not a.actions
+            and quote.visibility.bounds[3] >= before.content_viewport[3]
+            and len(new) == 1
+            and new[0].text == "Paid partnership"
+            and new[0].visibility.bounds[1] - shift >= quote.visibility.bounds[3]
+        )
+    return all(v.visibility.bounds[3] + shift <= after.content_viewport[1] for v in old)
+
+
 def _metadata_continuity(a, b, shift, before, after):
     return (
         _advertising_continuity(a, b, shift, before, after)
         and _note_continuity(a, b, shift, before, after)
         and _nested_quote_continuity(a, b, shift, before, after)
+        and _quote_footer_continuity(a, b, shift, before, after)
     )
 
 
