@@ -1532,10 +1532,15 @@ def _media_without_body(header, media, quote):
 
 
 def _sports_card(container, media, actions, viewport, overlays):
+    status_pattern = (
+        r"Final|(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun), "
+        r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (?:[1-9]|[12][0-9]|3[01])"
+    )
     candidates = [
         n
         for n in container
-        if n.xpath('./node[@text="Final"]') and n.get("class") == "android.view.View"
+        if n.get("class") == "android.view.View"
+        and any(re.fullmatch(status_pattern, child.get("text", "")) for child in n)
     ]
     if not candidates:
         return None, set()
@@ -1558,7 +1563,7 @@ def _sports_card(container, media, actions, viewport, overlays):
         or card.get("scrollable") == "true"
         or any(not _plain_annotation(n) or not n.get("text") for n in labels)
         or any(not re.fullmatch(r"[A-Z]{2,4}", n.get("text")) for n in (first, second))
-        or status.get("text") != "Final"
+        or not re.fullmatch(status_pattern, status.get("text"))
         or any(_intersect(_rect(n), rect) != _rect(n) for n in labels)
         or any(_rect(n)[1::2] != _rect(first)[1::2] for n in labels)
         or any(_rect(x)[2] > _rect(y)[0] for x, y in pairwise(labels))
