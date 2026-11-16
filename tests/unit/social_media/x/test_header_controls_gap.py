@@ -24,6 +24,16 @@ def test_retained_header_controls_explain_body_start_below_viewport():
     assert not hasattr(fragment, "author")
 
 
+def test_native_header_control_padding_can_extend_above_its_container():
+    before, after = (
+        read_screen(document(f"header-control-padding-{s}"), (1080, 2340))
+        for s in ("before", "after")
+    )
+    assert not after.rejected_posts
+    assert _alignment(before, after, scrolling=True) == (1, True)
+    assert after.fragments[0].body_visibility.bounds[1] == 139
+
+
 @pytest.mark.parametrize("mutation", ["label", "gap", "unclipped", "interactive_body"])
 def test_body_gap_requires_native_clipped_controls(mutation):
     root = etree.fromstring(document("header-controls-gap-after").encode())

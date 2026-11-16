@@ -321,7 +321,7 @@ def _tail_anchors_available(post, viewport):
     return (
         not getattr(post, "quoted_post", None)
         and len(post.media) == 1
-        and post.media[0].kind == "video"
+        and post.media[0].kind in {"video", "gif"}
         and tuple(t.label for t in post.actions) == ACTION_LABELS
         and viewport[1] < post.media[0].visibility.bounds[3] < viewport[3]
         and all(
@@ -351,6 +351,7 @@ def _tail_match(
     shift = new_rect[3] - old_rect[3]
     return (
         shift <= 0
+        and old.kind == new.kind
         and old.description == new.description
         and (
             (old.source_label, old.source_prefix)
@@ -504,16 +505,6 @@ def _quote_header_completed(a, b, before, after):
         or not _same_body(a, b)
         or a.body_visibility is None
         or b.body_visibility is None
-        or not (
-            before.content_viewport[1]
-            < a.body_visibility.bounds[3]
-            < before.content_viewport[3]
-        )
-        or not (
-            after.content_viewport[1]
-            < b.body_visibility.bounds[3]
-            < after.content_viewport[3]
-        )
         or a.body_visibility.bounds[::2] != b.body_visibility.bounds[::2]
         or _fragment_media_content(a.media) != _fragment_media_content(b.media)
         or (
@@ -522,7 +513,15 @@ def _quote_header_completed(a, b, before, after):
         )
     ):
         return False
-    shift = b.body_visibility.bounds[3] - a.body_visibility.bounds[3]
+    shifts = [
+        y - x
+        for x, y in zip(a.body_visibility.bounds[1::2], b.body_visibility.bounds[1::2])
+        if before.content_viewport[1] < x < before.content_viewport[3]
+        and after.content_viewport[1] < y < after.content_viewport[3]
+    ]
+    if not shifts or max(shifts) - min(shifts) > 2:
+        return False
+    shift = max(shifts)
     return (
         shift < -2
         and old.header_visibility.bounds[::2] == new.header_visibility.bounds[::2]
@@ -562,6 +561,15 @@ def _quote_media_revealed(a, b):
     )
 
 
+def _unseen_quote_header(quote):
+    return quote is None or (
+        quote.body is None
+        and not quote.media
+        and quote.visibility.visible_bounds is None
+        and quote.header_visibility.visible_bounds is None
+    )
+
+
 def _revealed_content(a, b):
     if isinstance(a, PostFragment) or isinstance(b, PostFragment):
         return False
@@ -575,7 +583,7 @@ def _revealed_content(a, b):
         and a.body_visibility is not None
         and not a.body_visibility.unobscured
         and (
-            (not a.media and bool(b.media) and b.quoted_post is None)
+            (not a.media and bool(b.media) and _unseen_quote_header(b.quoted_post))
             or (same_media and b.quoted_post is not None)
         )
     )
@@ -590,7 +598,7 @@ def _media_revelation_anchored(a, b):
         or not _same_body(a, b)
         or a.translation != b.translation
         or a.quoted_post is not None
-        or b.quoted_post is not None
+        or not _unseen_quote_header(b.quoted_post)
         or a.media
         or a.actions
         or not b.media
@@ -637,13 +645,38 @@ def _media_revelation_anchored(a, b):
             m.visibility.bounds[1] - max(shifts) >= a.visibility.bounds[3]
             for m in b.media
         )
+        and (
+            b.quoted_post is None
+            or b.quoted_post.visibility.bounds[1] - max(shifts)
+            >= a.visibility.bounds[3]
+        )
+    )
+
+
+def _header_loss_explained(a, b, shift, after):
+    if not isinstance(b, PostFragment) or isinstance(a, PostFragment):
+        return True
+    if a.header_visibility.bounds[3] + shift <= after.content_viewport[1]:
+        return True
+    header = b.covered_header_visibility
+    if header is None or header.bounds[::2] != a.header_visibility.bounds[::2]:
+        return False
+    if any(
+        abs(y - x - shift) > 2
+        for x, y in zip(a.header_visibility.bounds[1::2], header.bounds[1::2])
+    ):
+        return False
+    x1, y1, x2, y2 = a.author_visibility.bounds
+    projected = (x1, y1 + shift, x2, y2 + shift)
+    return any(
+        cover in after.overlaps and _intersection(projected, cover) == projected
+        for cover in header.overlaps
     )
 
 
 def _quote_preview_revealed(a, b, after):
     if (
-        a.body is None
-        or (
+        (
             not isinstance(b, PostFragment)
             and (isinstance(a, PostFragment) or a.author != b.author)
         )
@@ -671,7 +704,22 @@ def _quote_preview_revealed(a, b, after):
         and b.body_visibility is not None
         and a.body_visibility.bounds[::2] == b.body_visibility.bounds[::2]
     )
-    if not retained_body and not _preview_body_scrolled_out(a, b, shift, after):
+    previously_lost_body = (
+        isinstance(a, PostFragment)
+        and isinstance(b, PostFragment)
+        and a.body is None
+        and b.body is None
+        and a.body_visibility is None
+        and b.body_visibility is None
+        and _same_body(a, b)
+        and a.translation == b.translation
+        and _quoted_video_motion(a, b, shift)
+    )
+    if not (
+        retained_body
+        or previously_lost_body
+        or _preview_body_scrolled_out(a, b, shift, after)
+    ):
         return False
     # An incomplete quote can prevent observation even when the outer body
     # survives. Its retained header and video prove motion, while the new card
@@ -693,11 +741,7 @@ def _quote_preview_revealed(a, b, after):
         and old.body_visibility.bounds[::2] == new.body_visibility.bounds[::2]
         and old.header_visibility.bounds[::2] == new.header_visibility.bounds[::2]
         and shift < -2
-        and (
-            not isinstance(b, PostFragment)
-            or isinstance(a, PostFragment)
-            or a.header_visibility.bounds[3] + shift <= after.content_viewport[1]
-        )
+        and _header_loss_explained(a, b, shift, after)
         and old.visibility.visible_bounds is not None
         and old.visibility.bounds[3] > old.visibility.visible_bounds[3]
         and preview.kind == "preview"
@@ -891,7 +935,7 @@ def _bodyless_quote_preview_revealed(a, b, after):
         return False
     if not isinstance(a, PostFragment):
         if isinstance(b, PostFragment):
-            if a.header_visibility.bounds[3] + shift > after.content_viewport[1]:
+            if not _header_loss_explained(a, b, shift, after):
                 return False
         elif a.author != b.author:
             return False

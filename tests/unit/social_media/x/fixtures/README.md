@@ -66,3 +66,9 @@ unique matching, refresh, and continued scrolling. No author is inferred.
 `quoted-article-body-tail-before.xml` and `quoted-article-body-tail-after.xml` preserve quoted body and article content after the outer video and quote header leave the viewport. Author/body/preview text is synthetic. Tests cover exact content, independent geometry, projected disappearance, stationary rereads, and a synthetic subsequent body-loss step.
 
 `header-controls-gap-before.xml` and `header-controls-gap-after.xml` preserve a headerless post with native Grok/options controls ending at a body that begins three pixels below the viewport. Captured geometry remains intact; post text is synthetic. The controls explain the header gap without reconstructing an author.
+
+`preview-header-gap-before.xml` and `preview-header-gap-after.xml` preserve a gap between the clipped card top and article preview after the quote header disappears. Width/bottom edges remain equal; text is synthetic and movement/loss remain independently checked.
+
+`covered-quote-reveal-*.xml` retain the known New posts cover over an outer handle while article text enters its quote. `gif-tail-*.xml` retain native GIF geometry after the outer body/header leave. `quote-header-body-edge-*.xml` and `video-and-quote-entry-*.xml` preserve previously verified transitions that newly recognized offscreen quote headers must not obstruct. All use synthetic post/author text at the captured 1080 × 2340 geometry.
+
+`header-control-padding-*.xml` preserve shared native control padding above the container. `retained-quoted-summary-*.xml` preserve quoted-summary revelation after the outer body has already left. Content is synthetic; retained text, movement, and projected revelation are required.

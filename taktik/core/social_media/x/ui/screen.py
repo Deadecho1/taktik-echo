@@ -195,6 +195,7 @@ class PostFragment:
     preview_texts: tuple[TextSpan, ...] = ()
     media_labels: tuple[str, ...] = ()
     quoted_body: TextSpan | None = None
+    covered_header_visibility: Visibility | None = None
 
 
 @dataclass(frozen=True)
@@ -1573,6 +1574,9 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
             advertising_view,
             community_note,
             media_labels=media_labels,
+            covered_header_visibility=_visibility(header, viewport, overlaps)
+            if header_cover is not None
+            else None,
         )
     identity = [
         handle.get("text").lower(),
@@ -1714,7 +1718,9 @@ def _clipped_preview_texts(container, actions, viewport, overlays):
         )
         or not (_rect(preview)[1] < viewport[1] < _rect(preview)[3] < viewport[3])
         or _rect(wrapper) != _rect(card)
-        or _rect(card) != _rect(preview)
+        or _rect(card)[::2] != _rect(preview)[::2]
+        or _rect(card)[3] != _rect(preview)[3]
+        or _rect(card)[1] > _rect(preview)[1]
         or wrapper.get("clickable") == "true"
         or card.get("clickable") != "true"
         or preview.get("clickable") != "true"
@@ -1801,7 +1807,7 @@ def _header_controls_clipped(container, body, viewport):
             and n.get("enabled") == "true"
             for n in prefix
         )
-        and _rect(grok)[1] == _rect(options)[1] == _rect(container)[1]
+        and _rect(grok)[1] == _rect(options)[1] <= _rect(container)[1]
         and _rect(grok)[1] < viewport[1] < _rect(grok)[3] == _rect(body)[1]
         and _rect(grok)[2] == _rect(options)[0]
         and _rect(options)[2] == _rect(container)[2]
@@ -1938,7 +1944,7 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
         (not quote and len(media) != 1 and not (body is not None and not media))
         or len(media) > 1
         or any(
-            m.kind != "video"
+            m.kind not in {"video", "gif"}
             and not (
                 m.kind == "image"
                 and body is not None
