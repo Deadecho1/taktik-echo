@@ -223,7 +223,7 @@ class FeedScrollMixin(PostReadingMixin):
                     self.device.back()
                 except Exception:
                     pass
-            time.sleep(random.uniform(0.6, 1.0))
+            self._interaction_sleep(self._interaction_rng.uniform(0.6, 1.0))
             anchors = self._read_feed_anchors()
             dumps += 1
         return anchors, dumps
@@ -323,13 +323,12 @@ class FeedScrollMixin(PostReadingMixin):
             "target_ratio": _LAND_TARGET if needed else None,
         }
 
-    @staticmethod
-    def _advance_settle_s(mode: str, settle_scale: float = 1.0) -> float:
+    def _advance_settle_s(self, mode: str, settle_scale: float = 1.0) -> float:
         """The beat left after an advance before the list is read: a flick's coast (0.45-0.70 s), or
         a drag's stop with the finger (0.15-0.30 s), scaled by the session's motor style. The feed
         and the profile's post list wait the same way."""
         low, high = (0.15, 0.30) if mode == "drag" else (0.45, 0.70)
-        return random.uniform(low, high) * settle_scale
+        return self._interaction_rng.uniform(low, high) * settle_scale
 
     def _header_below_list_ratio(self, anchors: Dict[str, Any]) -> Optional[float]:
         """How far below the top of the post list the first post header sits, as a share of the
@@ -367,7 +366,7 @@ class FeedScrollMixin(PostReadingMixin):
         land_ratio, framing_decision}, also kept as `_last_landing` for the Lab."""
         corrected = False
         if advance_mode is not None:
-            time.sleep(self._advance_settle_s(advance_mode, settle_scale))
+            self._interaction_sleep(self._advance_settle_s(advance_mode, settle_scale))
         anchors = self._read_feed_anchors()
         land = self._header_below_list_ratio(anchors)
         framing_decision = self._framing_decision(anchors, land, "profile_post_header")
@@ -381,7 +380,7 @@ class FeedScrollMixin(PostReadingMixin):
                      else {"velocity_scale": 1.0, "settle_scale": 1.0})
             reaction = float(framing_decision.get("reaction_delay_s") or 0.0)
             if reaction > 0:
-                time.sleep(reaction)
+                self._interaction_sleep(reaction)
             target_ratio = float(framing_decision.get("target_ratio") or _LAND_TARGET)
             lift_px = (land - target_ratio) * self.screen_height
             if lift_px < _MIN_SMOOTH_CORRECTION_H * self.screen_height:
@@ -396,7 +395,7 @@ class FeedScrollMixin(PostReadingMixin):
                 velocity_scale=motor["velocity_scale"],
             )
             corrected = True
-            time.sleep(random.uniform(0.30, 0.50) * motor["settle_scale"])
+            self._interaction_sleep(self._interaction_rng.uniform(0.30, 0.50) * motor["settle_scale"])
             anchors = self._read_feed_anchors()
             land = self._header_below_list_ratio(anchors)
             if (attempt + 1 < correction_limit
@@ -431,13 +430,13 @@ class FeedScrollMixin(PostReadingMixin):
                     or self._metadata_visible(a)[0]):
                 break
             self._strong_flick(
-                "up", distance_px=(random.uniform(0.18, 0.26) * self.screen_height
+                "up", distance_px=(self._interaction_rng.uniform(0.18, 0.26) * self.screen_height
                                    * motor["distance_scale"]),
                 vel_range=_FLICK_VEL_PXS, guard_start=True,
                 velocity_scale=motor["velocity_scale"],
             )
             done += 1
-            time.sleep(random.uniform(0.45, 0.65) * motor["settle_scale"])
+            self._interaction_sleep(self._interaction_rng.uniform(0.45, 0.65) * motor["settle_scale"])
         return done
 
     def scroll_feed_to_next_post(self, max_gestures: int = 3, skip_ads: bool = True,
@@ -494,7 +493,7 @@ class FeedScrollMixin(PostReadingMixin):
             else:
                 modes = [name for name, _weight in _MODE_WEIGHTS]
                 weights = [weight for _name, weight in _MODE_WEIGHTS]
-                mode = random.choices(modes, weights=weights)[0]
+                mode = self._interaction_rng.choices(modes, weights=weights)[0]
                 advance_decision = {
                     "context": "feed_post",
                     "mode": mode,
@@ -508,7 +507,7 @@ class FeedScrollMixin(PostReadingMixin):
             gestures = 0
             if mode == "drag":
                 self._long_drag(
-                    "up", distance_px=(random.uniform(*_DRAG_FINGER_H) * h
+                    "up", distance_px=(self._interaction_rng.uniform(*_DRAG_FINGER_H) * h
                                        * distance_scale),
                     vel_range=_DRAG_VEL_PXS, guard_start=True,
                     velocity_scale=velocity_scale,
@@ -516,14 +515,14 @@ class FeedScrollMixin(PostReadingMixin):
                 gestures = 1
             else:  # flick (default)
                 self._strong_flick(
-                    "up", distance_px=(random.uniform(*_FLICK_FINGER_H) * h
+                    "up", distance_px=(self._interaction_rng.uniform(*_FLICK_FINGER_H) * h
                                        * distance_scale),
                     vel_range=_FLICK_VEL_PXS, guard_start=True,
                     velocity_scale=velocity_scale,
                 )
                 gestures = 1
             # let the fling coast settle before measuring (natural glance beat)
-            time.sleep(self._advance_settle_s(mode, settle_scale))
+            self._interaction_sleep(self._advance_settle_s(mode, settle_scale))
 
             anchors = self._read_feed_anchors()      # single dump: surface check + landing
             dumps += 1
@@ -568,12 +567,12 @@ class FeedScrollMixin(PostReadingMixin):
                         break
                     stuck += 1
                 self._strong_flick(
-                    "up", distance_px=(random.uniform(*_FLICK_FINGER_H) * h
+                    "up", distance_px=(self._interaction_rng.uniform(*_FLICK_FINGER_H) * h
                                        * distance_scale),
                     vel_range=_FLICK_VEL_PXS, guard_start=True,
                     velocity_scale=velocity_scale,
                 )
-                time.sleep(random.uniform(0.45, 0.65) * settle_scale)
+                self._interaction_sleep(self._interaction_rng.uniform(0.45, 0.65) * settle_scale)
                 anchors = self._read_feed_anchors()
                 dumps += 1
                 if not anchors["on_feed"]:
@@ -595,7 +594,7 @@ class FeedScrollMixin(PostReadingMixin):
             if framing_decision and framing_decision.get("correct"):
                 reaction = float(framing_decision.get("reaction_delay_s") or 0.0)
                 if reaction > 0:
-                    time.sleep(reaction)
+                    self._interaction_sleep(reaction)
                 target_ratio = float(framing_decision.get("target_ratio") or _LAND_TARGET)
                 lift_px = (land - target_ratio) * h
                 if lift_px < _MIN_SMOOTH_CORRECTION_H * h:
@@ -610,7 +609,7 @@ class FeedScrollMixin(PostReadingMixin):
                         velocity_scale=velocity_scale,
                     )
                     corrected = True
-                    time.sleep(random.uniform(0.30, 0.50) * settle_scale)
+                    self._interaction_sleep(self._interaction_rng.uniform(0.30, 0.50) * settle_scale)
                     anchors = self._read_feed_anchors()
                     dumps += 1
                     land = self._incoming_header_ratio(anchors)
@@ -630,13 +629,13 @@ class FeedScrollMixin(PostReadingMixin):
             reveal = 0
             while on_feed and not on_reel and not skippable and not meta_vis and reveal < 2:
                 self._strong_flick(
-                    "up", distance_px=(random.uniform(0.20, 0.28) * h
+                    "up", distance_px=(self._interaction_rng.uniform(0.20, 0.28) * h
                                        * distance_scale),
                     vel_range=_FLICK_VEL_PXS, guard_start=True,
                     velocity_scale=velocity_scale,
                 )
                 reveal += 1
-                time.sleep(random.uniform(0.45, 0.65) * settle_scale)
+                self._interaction_sleep(self._interaction_rng.uniform(0.45, 0.65) * settle_scale)
                 anchors = self._read_feed_anchors()
                 dumps += 1
                 on_feed = anchors["on_feed"]
@@ -744,7 +743,7 @@ class FeedScrollMixin(PostReadingMixin):
                     break
                 continue                   # try once more: a real post may sit right behind the block
             filler_runs = 0                # reached a real post → reset the exhaustion counter
-            if random.random() < skip_prob:          # a human occasionally skips ONE post (no reading)
+            if self._interaction_rng.random() < skip_prob:          # a human occasionally skips ONE post (no reading)
                 r2 = self.scroll_feed_to_next_post(skip_ads=skip_ads, skip_suggested=skip_suggested)
                 ads_skipped += r2.get("ads_skipped", 0)
                 sugg_skipped += r2.get("suggested_skipped", 0)

@@ -108,3 +108,20 @@ def test_missing_buttons_row_reported_as_none():
     ctx = _Host().framed_post_context(root)
     assert ctx["buttons_bounds"] is None
     assert ctx["caption_text"] == ""
+
+
+def test_captured_context_does_not_reread_device_text_in_pure_mode(monkeypatch):
+    from unittest.mock import Mock
+    from taktik.core.social_media.instagram.actions.atomic.scroll import post_reading
+
+    root = _screen("ig410_fr_feed_previous_caption_above_header.xml")
+    host = _Host()
+    host._reread_caption_without_xml = Mock(return_value="recovered text")
+    monkeypatch.setattr(post_reading, "text_lost_emoji", lambda text: True)
+
+    captured = host.framed_post_context(root, recover_text=False)
+    assert captured["caption_text"] == _captions(root)[-1][1]
+    host._reread_caption_without_xml.assert_not_called()
+
+    assert host.framed_post_context(root)["caption_text"] == "recovered text"
+    host._reread_caption_without_xml.assert_called_once()

@@ -78,6 +78,17 @@ class PostReadingMixin:
     content-aware dwell). Host must expose `self.device`, `self.screen_height`, `self.logger`
     and `_long_drag`."""
 
+    _interaction_rng = random
+
+    def _interaction_sleep(self, seconds):
+        time.sleep(seconds)
+
+    def _viewing_sleep(self, seconds):
+        self._interaction_sleep(seconds)
+
+    def _reading_clock(self):
+        return time.monotonic()
+
     # What the host provides, declared as an interface would be (no value: nothing is shadowed).
     device: "BaseDeviceFacade"
     logger: "Logger"
@@ -162,15 +173,14 @@ class PostReadingMixin:
             "header": window["header_desc"] if window is not None else "",
             "header_top": window["header_bounds"][1] if window is not None else None,
         } if prefix else None
-        x = random.randint(min(l + 1, r), max(l + 1, r - 1))
-        y = random.randint(min(t + 1, b), max(t + 1, b - 1))
-        self.device.click_coordinates(x, y)
-        self.logger.debug(f"📖 expanded truncated caption at ({x},{y})")
+        if not self.device.human_tap((l, t, r, b)):
+            return False
+        self.logger.debug("📖 expanded truncated caption")
         # The expanded text usually runs below the fold (the expander sat low). Scroll a little to
         # read it, like a human reading on (gentle, smooth), instead of "opening" a caption nobody
         # can see. No-op if the whole caption already fits. The scrolled distance is remembered so
         # the reading pause can REFRAME the post afterwards (scroll back up to image + buttons).
-        time.sleep(random.uniform(0.4, 0.8))   # let it expand + a beat before reading
+        self._interaction_sleep(self._interaction_rng.uniform(0.4, 0.8))   # let it expand + a beat before reading
         self._last_reveal_scroll_px = self._reveal_expanded_caption()
         return True
 
@@ -204,14 +214,14 @@ class PostReadingMixin:
                     below = b - t
             if below is None:
                 break
-            dist = (random.uniform(0.20, 0.30) * self.screen_height
+            dist = (self._interaction_rng.uniform(0.20, 0.30) * self.screen_height
                     * motor["distance_scale"])
             self._long_drag(
                 "up", distance_px=dist, vel_range=_READ_DRAG_VEL_PXS, guard_start=True,
                 velocity_scale=motor["velocity_scale"],
             )
             scrolled_px += int(dist)
-            time.sleep(random.uniform(0.7, 1.4) * motor["dwell_scale"])
+            self._viewing_sleep(self._interaction_rng.uniform(0.7, 1.4) * motor["dwell_scale"])
         if scrolled_px:
             self.logger.debug(f"📖 scrolled {scrolled_px}px to read the expanded caption")
         return scrolled_px
@@ -261,7 +271,7 @@ class PostReadingMixin:
             self._human_swipe(direction="down", distance_px=per,
                               start_band=(0.18 * h, 0.32 * h), controlled=True,
                               guard_start=True)
-            time.sleep(random.uniform(0.25, 0.55))
+            self._interaction_sleep(self._interaction_rng.uniform(0.25, 0.55))
 
     def _reframe_post_after_reading(self, scrolled_px: int) -> bool:
         """Scroll BACK UP after reading a caption so the post is framed again (image +
@@ -286,7 +296,7 @@ class PostReadingMixin:
         anchor = getattr(self, "_reading_anchor", None)
         try:
             if not anchor:
-                self._swipe_content_down(scrolled_px * random.uniform(*_REFRAME_FIRST_MOVE))
+                self._swipe_content_down(scrolled_px * self._interaction_rng.uniform(*_REFRAME_FIRST_MOVE))
                 self.logger.warning("Post brought back after reading, unchecked: no caption to check")
                 return False
             offset = None
@@ -301,13 +311,13 @@ class PostReadingMixin:
                     if attempt:
                         break   # lost from sight after a gesture: no guess about where it went
                     # The whole post scrolled away while reading: back by what the reveal asked.
-                    self._swipe_content_down(scrolled_px * random.uniform(*_REFRAME_FIRST_MOVE))
+                    self._swipe_content_down(scrolled_px * self._interaction_rng.uniform(*_REFRAME_FIRST_MOVE))
                 elif offset > 0:
                     self._long_drag("up", distance_px=offset, vel_range=_READ_DRAG_VEL_PXS,
                                     guard_start=True)
-                    time.sleep(random.uniform(0.25, 0.55))
+                    self._interaction_sleep(self._interaction_rng.uniform(0.25, 0.55))
                 else:
-                    share = random.uniform(*_REFRAME_FIRST_MOVE) if attempt == 0 else 1.0
+                    share = self._interaction_rng.uniform(*_REFRAME_FIRST_MOVE) if attempt == 0 else 1.0
                     self._swipe_content_down(-offset * share)
             where = "not on screen" if offset is None else f"{offset:+d}px from where it was"
             self.logger.warning(f"Post not brought back after reading: {where}")
@@ -352,7 +362,7 @@ class PostReadingMixin:
                 break
             self._last_carousel_behavior = dict(decision)
             swiped += 1
-            time.sleep(random.uniform(0.6, 1.2) * decision["dwell_scale"])
+            self._viewing_sleep(self._interaction_rng.uniform(0.6, 1.2) * decision["dwell_scale"])
             if cur + 1 >= total:
                 break
         if swiped:
@@ -497,7 +507,7 @@ class PostReadingMixin:
         image with no real caption. Drives the reading dwell."""
         return caption_prose_chars(self.current_caption_text(root))
 
-    def framed_post_context(self, root=None) -> Optional[dict]:
+    def framed_post_context(self, root=None, *, recover_text=True) -> Optional[dict]:
         """Everything the AI needs to know about the CURRENTLY FRAMED post, from ONE dump.
 
         Anchors on the framed post's full header row (`row_feed_profile_header`), whose
@@ -508,6 +518,7 @@ class PostReadingMixin:
         belong to the post below (measured: 11% of stored AI comments carried a neighbour's
         caption). The button row inside the window gives the screenshot crop its bottom edge.
 
+        Set recover_text=False for pure interpretation of an already captured hierarchy.
         A caption whose emoji were eaten by the XML dump (see `text_lost_emoji`) is re-read
         through JSON-RPC, the same channel that already rescues mangled bios.
 
@@ -528,7 +539,7 @@ class PostReadingMixin:
             caption_bounds, caption_text = max(
                 window["captions"], key=lambda c: c[0][3] - c[0][1]
             )
-            if text_lost_emoji(caption_text):
+            if recover_text and text_lost_emoji(caption_text):
                 recovered = self._reread_caption_without_xml(caption_bounds)
                 if recovered:
                     caption_text = recovered
@@ -541,6 +552,7 @@ class PostReadingMixin:
             "buttons_bounds": window["buttons_bounds"],
             "caption_text": caption_text,
             "caption_bounds": caption_bounds,
+            "captions": window["captions"],
             "window_bottom": window["window_bottom"],
         }
 
@@ -766,10 +778,10 @@ class PostReadingMixin:
         if floor_px > room_px:
             report["reason"] = "header_at_top"
             return report
-        lift_px = header_top - list_top - random.uniform(*_SHOW_BUTTONS_HEADER_MARGIN_H) * h
+        lift_px = header_top - list_top - self._interaction_rng.uniform(*_SHOW_BUTTONS_HEADER_MARGIN_H) * h
         # Under the floor the drag travels at least the floor: a travel drawn between the floor and
         # the room, never the floor itself every time.
-        travel_px = lift_px if lift_px >= floor_px else random.uniform(floor_px, room_px)
+        travel_px = lift_px if lift_px >= floor_px else self._interaction_rng.uniform(floor_px, room_px)
         motor_provider = getattr(self, "_motor_modulation", None)
         motor = (cast(Dict[str, float], motor_provider("framed_post_buttons")) if callable(motor_provider)
                  else {"velocity_scale": 1.0, "settle_scale": 1.0})
@@ -777,7 +789,7 @@ class PostReadingMixin:
             "up", distance_px=travel_px, vel_range=_READ_DRAG_VEL_PXS, guard_start=True,
             velocity_scale=motor["velocity_scale"],
         )
-        time.sleep(random.uniform(0.30, 0.50) * motor["settle_scale"])
+        self._interaction_sleep(self._interaction_rng.uniform(0.30, 0.50) * motor["settle_scale"])
         after = self.framed_post_like_target()
         header_after = (after or {}).get("header")
         report.update(target=after, reason="lifted", lifted_px=int(travel_px),
@@ -850,7 +862,7 @@ class PostReadingMixin:
         `browse_carousels`/`read_captions` toggle the two intelligent-reading behaviours (a bot
         user may disable them); when off, the post is only dwelled on. Returns the total time spent
         on the post (seconds)."""
-        start = time.monotonic()
+        start = self._reading_clock()
         self._last_reveal_scroll_px = 0
         self._reading_anchor = None
         # None: the reading did not move the post; True: moved and verified back; False: not back.
@@ -862,7 +874,7 @@ class PostReadingMixin:
                 self.logger.debug(f"carousel browse skipped: {e}")
         if read_captions:
             try:
-                if random.random() < _EXPAND_CAPTION_PROB:
+                if self._interaction_rng.random() < _EXPAND_CAPTION_PROB:
                     self.expand_caption_if_truncated()
             except Exception as e:
                 self.logger.debug(f"caption expand skipped: {e}")
@@ -875,16 +887,16 @@ class PostReadingMixin:
             target = content_dwell(prose) * dwell_scale
         else:
             target = dwell_s
-        spent = time.monotonic() - start                     # carousel/caption already took time
+        spent = self._reading_clock() - start                # carousel/caption already took time
         remain = max(MIN_DWELL_S, target - spent)
-        time.sleep(remain)
+        self._viewing_sleep(remain)
         # Done reading: scroll back up so the post (image + button row) is framed again
         # before anything acts on it (like / comment / AI screenshot).
         reveal_px = getattr(self, "_last_reveal_scroll_px", 0)
         if reveal_px >= _REFRAME_MIN_PX:
             self.last_reading_reframed = self._reframe_post_after_reading(reveal_px)
         self._last_reveal_scroll_px = 0
-        total = time.monotonic() - start
+        total = self._reading_clock() - start
         self.logger.debug(f"⏲️ reading: prose={prose}ch target={target:.1f}s "
                           f"scale={dwell_scale:.3f} active={spent:.1f}s "
                           f"dwell={remain:.1f}s total={total:.1f}s")
