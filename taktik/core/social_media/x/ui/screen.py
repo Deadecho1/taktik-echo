@@ -725,7 +725,7 @@ def _plain_annotation(node, *, allowed_children=()):
     )
 
 
-def _quoted_translation(card, texts):
+def _quoted_translation(card, texts, viewport, overlaps):
     if (
         len(texts) == 4
         and texts[-1].get("text", "").startswith("Translated from ")
@@ -736,16 +736,25 @@ def _quoted_translation(card, texts):
         return None
     name, handle, age, label, body = texts
     rect, body_rect = _rect(label), _rect(body)
+    preceding = label.getnext()
+    if preceding is not body:
+        _, preview_nodes = _quote_preview(card, body, viewport, overlaps)
+        compact_nodes = _compact_quote_video(card, body)
+        if (
+            preceding not in preview_nodes | compact_nodes
+            or preceding.getnext() is not body
+        ):
+            raise _Unsupported("Unrecognized quoted translation annotation.")
+    content_left = min(body_rect[0], _rect(preceding)[0])
     if (
         not re.fullmatch(
             r"Translated from [A-Za-z]+(?:[ ()-][A-Za-z]+)*", label.get("text")
         )
         or not _plain_annotation(label)
         or label.getprevious() is not age
-        or label.getnext() is not body
         or rect[1] < max(_rect(n)[3] for n in (name, handle, age))
         or rect[3] > body_rect[1]
-        or rect[0] <= body_rect[0]
+        or rect[0] <= content_left
         or rect[2] > body_rect[2]
     ):
         raise _Unsupported("Unrecognized quoted translation annotation.")
@@ -762,7 +771,7 @@ def _quote(card, viewport, overlaps):
         or not texts[2].get("text").startswith("· ")
     ):
         raise _Unsupported("Unrecognized quote text arrangement.")
-    translation = _quoted_translation(card, texts)
+    translation = _quoted_translation(card, texts, viewport, overlaps)
     if translation is not None:
         texts.remove(translation)
     name, _, age, *bodies = texts
@@ -1148,12 +1157,15 @@ def _link_preview(container, viewport, overlaps):
 
 
 def _media_without_body(header, media, quote):
-    if (
-        not media
-        or quote is not None
-        or any(m.kind not in {"image", "video", "gif"} for m in media)
-    ):
+    if not media or any(m.kind not in {"image", "video", "gif"} for m in media):
         raise _Unsupported("Missing body without supported media.")
+    if quote is not None and not (
+        len(media) == 1
+        and media[0].kind == "video"
+        and quote.visibility.bounds[1] >= media[0].visibility.bounds[3]
+        and quote.visibility.bounds[::2] == media[0].visibility.bounds[::2]
+    ):
+        raise _Unsupported("Bodyless quote does not follow its outer video.")
     container = header.getparent()
     controls = [
         n

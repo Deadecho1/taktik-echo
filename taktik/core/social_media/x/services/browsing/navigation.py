@@ -1043,12 +1043,35 @@ def _quote_below_video(a, b):
         or not a.observable
         or len(a.media) != 1
         or len(b.media) != 1
-        or a.body_visibility is None
     ):
         return False
     old, new = a.media[0], b.media[0]
     old_rect, new_rect = old.visibility.bounds, new.visibility.bounds
     shift = new_rect[1] - old_rect[1]
+    if a.body_visibility is None:
+        retained_text = (
+            not isinstance(b, PostFragment)
+            and a.body is None
+            and b.body is None
+            and b.body_visibility is None
+            and a.author == b.author
+            and a.header_visibility.unobscured
+            and b.header_visibility.unobscured
+            and a.author_visibility.unobscured
+            and b.author_visibility.unobscured
+            and a.header_visibility.bounds[::2] == b.header_visibility.bounds[::2]
+            and all(
+                v - u == shift
+                for u, v in zip(
+                    a.header_visibility.bounds[1::2], b.header_visibility.bounds[1::2]
+                )
+            )
+        )
+    else:
+        retained_text = (
+            b.body_visibility is not None
+            and b.body_visibility.bounds[3] - a.body_visibility.bounds[3] == shift
+        )
     return (
         (isinstance(b, PostFragment) or a.author == b.author)
         and _same_body(a, b)
@@ -1058,8 +1081,7 @@ def _quote_below_video(a, b):
         and old.source_prefix == new.source_prefix
         and old_rect[::2] == new_rect[::2]
         and shift < -2
-        and b.body_visibility is not None
-        and b.body_visibility.bounds[3] - a.body_visibility.bounds[3] == shift
+        and retained_text
         and old.visibility.visible_bounds is not None
         and old_rect[3] > old.visibility.visible_bounds[3]
         and new_rect[3] - shift >= old_rect[3]
