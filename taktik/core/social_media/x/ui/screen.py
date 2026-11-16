@@ -661,7 +661,9 @@ def _compact_quote_video(card, body, viewport):
         or preview.get("scrollable") == "true"
         or [n.get("content-desc", "") for n in preview]
         != ["Video", "", *(["play"] if play is not None else [])]
-        or (play is None and not (rect[1] >= viewport[3] and rect[3] == _rect(card)[3]))
+        # X can expose the native video/picture pair before its central Play
+        # glyph enters the clipped card, even when the video's top is visible.
+        or (play is None and not (rect[3] == _rect(card)[3] >= viewport[3]))
         or any(
             len(n)
             or n.get("text")

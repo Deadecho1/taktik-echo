@@ -30,23 +30,18 @@ def test_offscreen_video_does_not_invent_play_control_or_quoted_body():
 @pytest.mark.parametrize(
     "mutation",
     [
-        "visible_media",
         "unclipped_media",
         "unknown",
         "interactive_child",
         "wrong_bounds",
     ],
 )
-def test_missing_play_requires_a_wholly_offscreen_native_video(mutation):
+def test_missing_play_requires_a_bottom_clipped_native_video(mutation):
     root = etree.fromstring(document("offscreen-quote-video-after").encode())
     card = root.xpath('//*[@content-desc="Quote"]')[0].getparent()
     preview = card[-1]
-    if mutation in {"visible_media", "unclipped_media"}:
-        rect = (
-            "[198,2225][1025,2340]"
-            if mutation == "visible_media"
-            else "[198,2235][1025,2339]"
-        )
+    if mutation == "unclipped_media":
+        rect = "[198,2235][1025,2339]"
         for n in preview.iter():
             n.set("bounds", rect)
     elif mutation == "unknown":
