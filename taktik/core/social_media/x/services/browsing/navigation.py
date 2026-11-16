@@ -16,6 +16,7 @@ from taktik.core.social_media.x.ui.screen import (
     PostFragment,
     Screen,
     TextSpan,
+    _parallel_video_row,
     read_screen,
 )
 
@@ -250,6 +251,28 @@ def _anchor_pairs(a, b, before, after):
     if isinstance(b, PostFragment) and b.body is None and b.quoted_post is None:
         a = _video_tail_source(a)
     if isinstance(a, PostFragment) or isinstance(b, PostFragment):
+        if not (a.quoted_post or b.quoted_post) and (
+            len(a.media) > 1 or len(b.media) > 1
+        ):
+            if (
+                len(a.media) != len(b.media)
+                or not _parallel_video_row(a.media)
+                or not _parallel_video_row(b.media)
+            ):
+                return ()
+            views = [(x.visibility, y.visibility) for x, y in zip(a.media, b.media)]
+            views.extend(
+                (x.visibility, y.visibility) for x, y in zip(a.actions, b.actions)
+            )
+            if a.body_visibility is not None and b.body_visibility is not None:
+                views.append((a.body_visibility, b.body_visibility))
+            return [
+                (x, y)
+                for old, new in views
+                for x, y in zip(old.bounds[1::2], new.bounds[1::2])
+                if before.content_viewport[1] < x < before.content_viewport[3]
+                and after.content_viewport[1] < y < after.content_viewport[3]
+            ]
         if not (a.quoted_post or b.quoted_post) and any(
             m.kind == "image" for m in (*a.media, *b.media)
         ):
@@ -348,6 +371,25 @@ def _tail_match(
         or b.quoted_body is not None
     ):
         return False
+    if len(a.media) > 1 or len(b.media) > 1:
+        return (
+            a.quoted_post is None
+            and b.quoted_post is None
+            and len(a.media) == len(b.media)
+            and _parallel_video_row(a.media)
+            and _parallel_video_row(b.media)
+            and all(
+                _tail_match(
+                    replace(a, media=(old,)),
+                    replace(b, media=(new,)),
+                    before,
+                    after,
+                    require_overlap=require_overlap,
+                    allow_hidden_source=allow_hidden_source,
+                )
+                for old, new in zip(a.media, b.media)
+            )
+        )
     outer = a
     outer_quote = a.quoted_post
     a = _video_tail_source(a)

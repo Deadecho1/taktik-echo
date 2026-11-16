@@ -2729,6 +2729,19 @@ def _clipped_avatar_decoration(node, body, viewport):
     )
 
 
+def _parallel_video_row(media):
+    """Recognized native videos in one ordered, nonoverlapping horizontal row."""
+    return (
+        len(media) > 1
+        and all(m.kind == "video" for m in media)
+        and len({m.visibility.bounds[1::2] for m in media}) == 1
+        and all(
+            left.visibility.bounds[2] <= right.visibility.bounds[0]
+            for left, right in pairwise(media)
+        )
+    )
+
+
 def _clipped_media_before_footer(container, body, media, media_nodes, viewport):
     """Retain native body/video when the footer has not entered the viewport."""
     if body is None or len(media) != 1 or media[0].kind != "video":
@@ -2910,9 +2923,15 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
             _visibility(container, viewport, overlays),
             _visibility(body, viewport, overlays),
         )
+    video_row = quote is None and _parallel_video_row(media)
     if (
-        (not quote and len(media) != 1 and not (body is not None and not media))
-        or len(media) > 1
+        (
+            not quote
+            and len(media) != 1
+            and not (body is not None and not media)
+            and not video_row
+        )
+        or (len(media) > 1 and not video_row)
         or any(
             m.kind not in {"video", "gif"}
             and not (
