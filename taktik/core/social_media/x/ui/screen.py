@@ -1791,7 +1791,7 @@ def _covered_author(header, cover, viewport):
     )
 
 
-def _missing_handle_header(header, viewport, overlaps):
+def _missing_handle_header(header, viewport, overlaps, *, header_cover=None):
     """Recognize the captured name/badge/age row without inferring its author."""
     if len(header) == 1:
         name = header[0]
@@ -1812,7 +1812,9 @@ def _missing_handle_header(header, viewport, overlaps):
         )
     if (
         len(header) not in (2, 3)
-        or not _visibility(header, viewport, overlaps).unobscured
+        or not _visibility(
+            header, viewport, tuple(r for r in overlaps if r != header_cover)
+        ).unobscured
     ):
         return False
     if len(header) == 2:
@@ -1965,7 +1967,12 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
     handle = (
         None
         if _covered_author(header, header_cover, viewport)
-        or (allow_missing_handle and _missing_handle_header(header, viewport, overlaps))
+        or (
+            allow_missing_handle
+            and _missing_handle_header(
+                header, viewport, overlaps, header_cover=header_cover
+            )
+        )
         else _handle(header.iter(), "outer author")
     )
     header_text = [n.get("text") for n in header if n.get("text")]
