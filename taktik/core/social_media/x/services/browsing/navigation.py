@@ -1298,13 +1298,25 @@ def _captionless_credit_faded(a, b, before, after):
 
 
 def _quote_below_video(a, b):
-    if isinstance(a, PostFragment):
+    fragment_body = (
+        isinstance(a, PostFragment)
+        and isinstance(b, PostFragment)
+        and a.body is not None
+        and a.translation == b.translation
+        and a.body_visibility is not None
+        and b.body_visibility is not None
+        and a.body_visibility.unobscured
+        and b.body_visibility.unobscured
+        and a.body_visibility.bounds[::2] == b.body_visibility.bounds[::2]
+    )
+    if isinstance(a, PostFragment) and not fragment_body:
         return False
     if (
         a.quoted_post is not None
         or b.quoted_post is None
         or not (
-            a.observable
+            fragment_body
+            or a.observable
             or (
                 a.header_visibility.accessible
                 and a.header_visibility.visible_bounds == a.header_visibility.bounds

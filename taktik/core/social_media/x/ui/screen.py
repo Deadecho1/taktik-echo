@@ -909,7 +909,9 @@ def _compact_quote_image(card, body, viewport):
     return nodes
 
 
-def _quoted_translation(card, texts, viewport, overlaps, *, has_handle=True):
+def _quoted_translation(
+    card, texts, viewport, overlaps, *, has_handle=True, reply=None
+):
     header_count = 3 if has_handle else 2
     language_pattern = r"Translated from [A-Za-z]+(?:[ ()-][A-Za-z]+)*"
     if (
@@ -952,7 +954,7 @@ def _quoted_translation(card, texts, viewport, overlaps, *, has_handle=True):
     if (
         not re.fullmatch(language_pattern, label.get("text"))
         or not _plain_annotation(label)
-        or label.getprevious() is not age
+        or label.getprevious() is not (reply if reply is not None else age)
         or rect[1] < max(_rect(n)[3] for n in header)
         or rect[3] > body_rect[1]
         or rect[0] <= content_left
@@ -972,12 +974,29 @@ def _reply_recipients(text):
 
 
 def _quoted_reply(card, texts, viewport):
-    if len(texts) != 5 or not texts[3].get("text", "").startswith("Replying to "):
+    if len(texts) not in (5, 6) or not texts[3].get("text", "").startswith(
+        "Replying to "
+    ):
         return None
-    name, handle, age, label, body = texts
+    name, handle, age, label, *content = texts
+    body = content[-1]
+    translated = len(content) == 2
     rect = _rect(label)
     preceding = body.getprevious()
     compact = _compact_quote_image(card, body, viewport)
+    content_layout = (
+        preceding is content[0]
+        and preceding.get("text", "").startswith("Translated from ")
+        and _plain_annotation(preceding)
+        and rect[0] == _rect(body)[0]
+        and rect[1] < _rect(preceding)[1] < rect[3] <= _rect(body)[1]
+        if translated
+        else (
+            preceding in compact
+            and rect[0] == _rect(preceding)[0]
+            and rect[1] < _rect(body)[1] < rect[3] <= _rect(body)[3]
+        )
+    )
     if (
         label.get("class") != "android.widget.TextView"
         or len(label)
@@ -989,11 +1008,9 @@ def _quoted_reply(card, texts, viewport):
         or any(label.get(flag) == "true" for flag in ("scrollable", "long-clickable"))
         or label.getprevious() is not age
         or label.getnext() is not preceding
-        or preceding not in compact
-        or rect[0] != _rect(preceding)[0]
+        or not content_layout
         or rect[2] > _rect(body)[2]
         or rect[1] != _rect(name)[3]
-        or not (rect[1] < _rect(body)[1] < rect[3] <= _rect(body)[3])
         or _intersect(rect, _rect(card)) != rect
         or not HANDLE.fullmatch(handle.get("text", ""))
     ):
@@ -1016,7 +1033,7 @@ def _quote(card, viewport, overlaps):
             or not texts[2].get("text").startswith("· ")
         ):
             raise _Unsupported("Unrecognized quote text arrangement.")
-        translation = _quoted_translation(card, texts, viewport, overlaps)
+        translation = _quoted_translation(card, texts, viewport, overlaps, reply=reply)
         if translation is not None:
             texts.remove(translation)
         name, _, age, *bodies = texts
