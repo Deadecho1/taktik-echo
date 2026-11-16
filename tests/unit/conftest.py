@@ -127,12 +127,18 @@ class _RealDatabaseGuard:
 
 _OPERATOR_FOLDERS, _OPERATOR_FILES = _operator_data(os.environ)
 _THROWAWAY_APPDATA = tempfile.mkdtemp(prefix="taktik-tests-appdata-")
-# Python derives the user site-packages from APPDATA on Windows: subprocesses keep the real one.
+# Python derives the user site-packages from APPDATA on Windows, and from the home folder
+# elsewhere: subprocesses keep the real one.
 os.environ.setdefault("PYTHONUSERBASE", site.getuserbase())
-os.environ["APPDATA"] = _THROWAWAY_APPDATA
+# The bot's default data folder is under APPDATA on Windows and under the home folder on Linux
+# and macOS (`platform_data_dir`); `~` is HOME there, USERPROFILE on Windows. All of them point
+# into the throwaway folder, so the default is a throwaway one on every platform.
+for _name in ("APPDATA", "HOME", "USERPROFILE"):
+    os.environ[_name] = _THROWAWAY_APPDATA
 for _name in ("TAKTIK_DB_PATH", "TAKTIK_DATA_DIR"):
     os.environ.pop(_name, None)
-_DEFAULT_FOLDER = os.path.join(_THROWAWAY_APPDATA, _DATA_FOLDER)
+from taktik.core.shared.app_paths import platform_data_dir  # noqa: E402 - after the redirect
+_DEFAULT_FOLDER = platform_data_dir()
 os.makedirs(_DEFAULT_FOLDER)
 # A decoy base: code that opens the default base only when it exists is caught too.
 open(os.path.join(_DEFAULT_FOLDER, "taktik-data.db"), "wb").close()
@@ -186,6 +192,16 @@ def real_database_guard():
     return _GUARD
 
 
+@pytest.fixture
+def engine_runs_installed(monkeypatch):
+    """For a test whose base exists at an older version and whose subject is not the consent to
+    raise it: the engine behaves as the installer's build, which raises it without asking. A test
+    run from source would otherwise be refused (`versions/runner.py`, `upgrade_needs_consent`)."""
+    from taktik.core.database.local.versions import runner
+
+    monkeypatch.setattr(runner, "running_from_source", lambda: False)
+
+
 @pytest.fixture(autouse=True)
 def _database_singletons_start_empty():
     """A singleton left by an earlier test would serve its base here and hide an unguarded path."""
@@ -209,14 +225,16 @@ register_selector_platforms()
 
 
 @pytest.fixture(autouse=True)
-def _run_halt_starts_clear():
-    """Each test starts with the run's stop latch lowered and no witness: a halt left by an
-    earlier test stopped the loops of the next one before their first gesture."""
-    from taktik.core.shared.diagnostics import run_halt
+def _each_test_is_a_run():
+    """Each test begins as a run (`run_start.begin_run`, as every host begins one) and ends as one:
+    no stop latch nor witness, no network watch, no failure captures, screens or foreground clock of
+    an earlier test. A halt left by an earlier test stopped the loops of the next one before their
+    first gesture; a capture cap it filled skipped the captures of the next one."""
+    from taktik.core.shared.diagnostics.run_start import begin_run
 
-    run_halt.reinitialiser()
+    begin_run()
     yield
-    run_halt.reinitialiser()
+    begin_run()
 
 
 @pytest.fixture(autouse=True)
@@ -237,6 +255,26 @@ def _network_door_never_reaches_adb(monkeypatch):
     from taktik.core.shared.device import network_door
 
     monkeypatch.setattr(network_door, "measure_network_baseline", lambda device_id: None)
+
+
+@pytest.fixture(autouse=True)
+def _screen_lock_never_reaches_adb(monkeypatch):
+    """The door of a run and the watch read the lock of the screen with the real adb: in a test, its
+    state is unreadable, which never blocks a run. A test of the lock puts its own reading in place."""
+    from taktik.core.shared.device import screen
+
+    monkeypatch.setattr(screen, "_dumpsys_window", lambda serial: None)
+
+
+@pytest.fixture(autouse=True)
+def _network_watch_never_starts(monkeypatch):
+    """The door starts the run's network watch (`network_watch.start_network_watch`), a thread that
+    pings the phone with the real adb every few seconds: in a test, the door starts none, even on a
+    readable measure, and no watch outlives its test (`_each_test_is_a_run` stops it). A test of the
+    watch starts its own."""
+    from taktik.core.shared.device import network_door
+
+    monkeypatch.setattr(network_door, "start_network_watch", lambda device_id, baseline: None)
 
 
 @pytest.fixture(autouse=True)

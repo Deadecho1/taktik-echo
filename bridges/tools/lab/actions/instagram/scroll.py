@@ -159,11 +159,20 @@ def scroll_reveal_post(a, p):
     A gesture that only met ads and suggested posts (`filler_run`) is followed by another, as the
     production reading does (`browse_feed`): a real post may sit right behind the block. After
     `_TAIL_FILLER_RUNS` of them in a row the production calls the followed feed exhausted, and so
-    does this action: not applicable, no real post to frame."""
+    does this action: not applicable, no real post to frame.
+
+    The production's humanized framing may leave the bar of the post it landed on under the screen
+    (`framing_decision` « deferred »): the bar is then brought up as on arrival, by the same
+    production reveal of the current post."""
     fs = a.scroll
-    fs._reveal_current_metadata()
-    anchors = fs._read_feed_anchors()
-    if anchors.get("on_feed") and fs._metadata_visible(anchors)[0] and not fs._dominant_is_ad(anchors):
+
+    def current_bar_shown():
+        fs._reveal_current_metadata()
+        anchors = fs._read_feed_anchors()
+        return bool(anchors.get("on_feed") and fs._metadata_visible(anchors)[0]
+                    and not fs._dominant_is_ad(anchors))
+
+    if current_bar_shown():
         return {"success": True, "message": "barre d'engagement du post visible (post courant)",
                 "details": {"advanced": False}}
     filler_runs = 0
@@ -180,6 +189,8 @@ def scroll_reveal_post(a, p):
             "(the production calls it exhausted)",
             **res)
     ok = bool(res.get("metadata_visible") or res.get("full_post"))
+    if not ok and res.get("on_feed") and not res.get("is_ad"):
+        ok = current_bar_shown()
     return {"success": ok,
             "message": ("barre d'engagement du post visible" if ok else "barre d'engagement non atteinte (pub/suggestion ?)"),
             "details": res}
@@ -222,6 +233,11 @@ def scroll_feed_drag(a, p):
     Requests the production drag from the live Share bounds. The production start-zone guard must
     move the actual touch-down to a neutral gap, and the low-level touch path must not open the
     Direct share sheet. Run with a post action row visible (``scroll.reveal_post`` can prepare it).
+
+    Only a whole Share button is a target: the dump gives the visible part of a button cut by the
+    edge of its list, whose centre is not the button's, and a one-pixel sliver at the bottom lies
+    below the band where a gesture may start, so the drag never starts on it. With no whole Share
+    on screen the probe has nothing to test: not applicable.
     """
     modal_before = a.popup._detect_blocking_modal()
     if modal_before:
@@ -231,6 +247,9 @@ def scroll_feed_drag(a, p):
             "details": {"blocked": "modal_already_open", "modal": modal_before},
         }
 
+    root = a.scroll.device.snapshot().root
+    # The guard of the drag below reads this same dump, as it does after a feed perception.
+    a.scroll._remember_post_action_geometry(root)
     share_bounds = a.scroll._post_action_bounds("share")
     if not share_bounds:
         return {
@@ -240,8 +259,13 @@ def scroll_feed_drag(a, p):
         }
 
     h = int(a.scroll.screen_height)
+    screen = (int(a.scroll.screen_width), h)
+    whole = [box for box in share_bounds if not _cut_or_unknown(root, box, screen)]
+    if not whole:
+        return not_applicable("scroll.feed_drag", "no whole share button on screen, only one cut by an edge",
+                              share_bounds=share_bounds)
     target = min(
-        share_bounds,
+        whole,
         key=lambda box: abs(((box[1] + box[3]) / 2.0) - (0.815 * h)),
     )
     requested = ((target[0] + target[2]) // 2, (target[1] + target[3]) // 2)
@@ -293,6 +317,13 @@ def _cut_by_an_edge(node, bounds, screen) -> bool:
     if not edges:
         return True
     return any(bounds[1] <= top or bounds[3] >= bottom for _left, top, _right, bottom in edges)
+
+
+def _cut_or_unknown(root, bounds, screen) -> bool:
+    """`_cut_by_an_edge` for a box read from the dump `root`; a box no node of it carries is not
+    proven whole either."""
+    node = next((node for node in root.iter() if parse_bounds(node.get("bounds") or "") == tuple(bounds)), None)
+    return node is None or _cut_by_an_edge(node, tuple(bounds), screen)
 
 
 def _label_centres(tree, xpath: str) -> dict:

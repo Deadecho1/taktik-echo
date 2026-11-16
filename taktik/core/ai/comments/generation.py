@@ -19,13 +19,36 @@ from .. import agreement as _agreement
 from .. import glossary as _glossary
 from ..prompting import cacheable_system, platform_label as _platform_label
 from ..spend import AI_SPEND_COMMENT
+from ..written_language import language_outside
 from .anchor import anchor_material, verify_anchor
+
+
+def _refuse_another_language(text: str, language: str, what: str) -> Tuple[str, Optional[str]]:
+    """`text` as it goes out, or emptied when it is written in another language than `language`.
+
+    Returns the text and, when it was refused, what it was written in (`language_outside`, the rule
+    every text written by an AI goes through); None when it is kept. `language="auto"` asks for the
+    language of what is answered: there is nothing to hold the text to. A refusal is logged with
+    the text, so a model that disobeys stays visible in the run's log.
+    """
+    if not text or not language or language == "auto":
+        return text, None
+    written = language_outside(text, (language,), what)
+    if written is None:
+        return text, None
+    logger.warning(f"[comment] {what}: written in {written}, {language} was asked, not published: {text!r}")
+    return "", written
 
 
 _LANGUAGE_NAMES = {
     'fr': 'French', 'en': 'English', 'es': 'Spanish', 'pt': 'Portuguese',
     'it': 'Italian', 'de': 'German', 'nl': 'Dutch', 'ar': 'Arabic',
 }
+
+# What a writer may answer, for both generators. The smart comment answers four JSON fields
+# (anchor, reasoning, comment, safe_comment): Sonnet 5.5 writes them in 200 to 250 tokens and was
+# cut at 220 one answer in two (model benchmark, 2026-10-25). Only the tokens written are billed.
+_WRITER_MAX_TOKENS = 600
 
 # The writing rules validated during the model benchmark. Shared by the two
 # generators (a comment on a post, a reply to a comment) so a rule proven on one is never
@@ -341,7 +364,7 @@ Respond with ONLY a JSON object, on a single line, nothing else:
             parts.append(f'They were reacting to this post: "{post_caption[:600]}"')
         user_prompt = "\n\n".join(parts) + "\n\nWrite the reply."
 
-        result = self.text_completion(system_prompt, user_prompt, temperature=0.9, max_tokens=220,
+        result = self.text_completion(system_prompt, user_prompt, temperature=0.9, max_tokens=_WRITER_MAX_TOKENS,
                                       model=self.model_generation,
                                       label=f"generate_comment_reply @{username or '?'}",
                                       kind=AI_SPEND_COMMENT)
@@ -370,6 +393,10 @@ Respond with ONLY a JSON object, on a single line, nothing else:
         if agreement_fixes:
             logger.info(f"[agreement] reply @{username or '?'}: {', '.join(agreement_fixes)}")
 
+        reply, wrong_language = _refuse_another_language(reply, language, f"reply @{username or '?'}")
+        if wrong_language is not None:
+            should_reply = False
+
         if not should_reply:
             reply = ""
 
@@ -387,6 +414,7 @@ Respond with ONLY a JSON object, on a single line, nothing else:
             "reasoning": reasoning,
             "should_reply": should_reply,
             "agreement_fixes": agreement_fixes,
+            "wrong_language": wrong_language,
             "model": result.get("model"),
             "provider": result.get("provider"),
             "cost_usd": result.get("cost_usd"),
@@ -560,7 +588,7 @@ Respond with ONLY a JSON object, on a single line, nothing else:
             parts.append(thread_block)
         user_prompt = "\n\n".join(parts) + "\n\nGenerate a natural, engaging comment."
 
-        result = self.text_completion(system_prompt, user_prompt, temperature=0.9, max_tokens=220,
+        result = self.text_completion(system_prompt, user_prompt, temperature=0.9, max_tokens=_WRITER_MAX_TOKENS,
                                       model=self.model_generation,
                                       label=f"generate_smart_comment @{username or '?'}",
                                       kind=AI_SPEND_COMMENT)
@@ -571,14 +599,18 @@ Respond with ONLY a JSON object, on a single line, nothing else:
                 self.ipc.ai_error(result.get("error", "Comment generation failed"), username)
             return result
 
-        # Parse the {reasoning, comment} JSON. Robust fallback: if the model didn't return valid
-        # JSON, treat the whole text as the comment (prior behaviour) with no reasoning.
+        # Parse the {reasoning, comment} JSON. A bare sentence is a model that ignored the format:
+        # it is published as the comment (prior behaviour), with no reasoning. A JSON that does
+        # not parse, or parses without a comment, is an answer cut short or broken: publishing the
+        # text would put `{"anchor": ...` under somebody's post, so it fails closed.
         raw = result["text"].strip()
         reasoning = ""
         anchor = ""
         safe_comment = ""
-        comment = raw if not require_relevance_decision else ""
-        should_comment = not require_relevance_decision
+        answered_json = raw.startswith("{") or '"comment"' in raw
+        publish_raw = not (require_relevance_decision or answered_json)
+        comment = raw if publish_raw else ""
+        should_comment = publish_raw
         try:
             start, end = raw.find("{"), raw.rfind("}")
             if start != -1 and end != -1 and end > start:
@@ -593,10 +625,15 @@ Respond with ONLY a JSON object, on a single line, nothing else:
                     )
                     comment = parsed_comment if should_comment else ""
                 else:
-                    comment = parsed_comment or raw
-        except Exception:
-            if not require_relevance_decision:
-                comment = raw
+                    should_comment = bool(parsed_comment)
+                    comment = parsed_comment
+        except Exception as exc:
+            logger.warning(f"[comment] unparseable JSON answer for @{username or '?'}: {exc}")
+        if answered_json and not comment:
+            logger.warning(
+                f"[comment] @{username or '?'}: the answer is a JSON without a readable comment "
+                f"(finish={result.get('finish_reason')}), nothing published: {raw[:120]!r}"
+            )
         comment = comment.strip().strip('"').strip("'")
 
         # THE ANCHOR CHECK — a backstop on a claim the model makes about its own answer.
@@ -633,6 +670,13 @@ Respond with ONLY a JSON object, on a single line, nothing else:
         if agreement_fixes:
             logger.info(f"[agreement] @{username or '?'}: {', '.join(agreement_fixes)}")
 
+        # Then its language, on that same string. "Write in English" at the end of the prompt
+        # did not hold against a persona and style samples written in French: five comments out
+        # of five asked in English came back French in October 2026, and went out.
+        comment, wrong_language = _refuse_another_language(comment, language, f"comment @{username or '?'}")
+        if wrong_language is not None:
+            should_comment = False
+
         if self.ipc and should_comment:
             # Attach the DECISION CONTEXT to the card: WHY (reasoning), what the post was about
             # (vision description + author caption) and the exact image sent to the model.
@@ -665,6 +709,9 @@ Respond with ONLY a JSON object, on a single line, nothing else:
             # What the determiner check changed, if anything. Empty is the normal answer; a
             # non-empty list is the only trace that a mistake was caught before publication.
             "agreement_fixes": agreement_fixes,
+            # What the comment was written in when it was not the language asked (`language_outside`):
+            # the comment is then empty, and a caller skips the post rather than write another text.
+            "wrong_language": wrong_language,
             # The prompt this comment came out of, persona block and anti-tic window included, AS
             # THEY WERE at this moment. A persona edited later would otherwise silently rewrite
             # the explanation of every comment already published under the old one.

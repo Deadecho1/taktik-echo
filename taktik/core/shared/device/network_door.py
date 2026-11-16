@@ -5,7 +5,8 @@ measures (Pixel 3, 2026-09-28). The door measures the phone's network once its h
 the phone (the connection, the desktop's IP rotation) and before the app starts, and refuses the run
 when ping answers « Network is unreachable ».
 
-The door is opened by the core, not by a host: the Instagram launchers (automation, cold DM, scraping,
+The launchers open it through the door of the run (`diagnostics/run_door.py`), which reads the lock
+of the screen first. The door is opened by the core, not by a host: the Instagram launchers (automation, cold DM, scraping,
 a DM read or reply, notifications, the Taktik Agent) open it once their host hands them the phone, the TikTok
 session start (`start_tiktok_session`) and the TikTok DM outreach launcher before TikTok is touched. The desktop bridges and the CLI cross the same call, so
 both refuse a phone without network, with the same motive. Each host only says it its way: the
@@ -13,6 +14,10 @@ bridges as an `error` line (`NETWORK_UNREACHABLE`), the CLI on its console.
 
 In Symfony terms: a voter the core consults before the run, not a listener of one host. The measure
 itself is the probe's (`network_probe.measure_network_baseline`); this module decides.
+
+The door also hands the run to the network watch (`network_watch.py`), which measures the phone again
+during the run and stops it when the network goes: the session's baseline starts the watch, the
+measure before an IP rotation never does (the rotation cuts the network on purpose).
 """
 
 from __future__ import annotations
@@ -22,6 +27,8 @@ from typing import Optional
 from loguru import logger
 
 from taktik.core.shared.device.network_probe import measure_network_baseline
+from taktik.core.shared.device.network_watch import start_network_watch
+from taktik.core.shared.diagnostics.run_halt import RunRefused
 
 #: The moment of a run the measure is the baseline of: the network the run starts on.
 SESSION_BASELINE = "session_baseline"
@@ -29,7 +36,7 @@ SESSION_BASELINE = "session_baseline"
 BEFORE_IP_ROTATION = "before_ip_rotation"
 
 
-class NetworkUnreachableError(RuntimeError):
+class NetworkUnreachableError(RunRefused):
     """The phone has no route to the Internet: the run did not start.
 
     `error_code` is the motive the desktop translates (`contract/error_codes.py`); the message names
@@ -39,10 +46,7 @@ class NetworkUnreachableError(RuntimeError):
     error_code = "NETWORK_UNREACHABLE"
 
     def __init__(self, device_id: str):
-        self.device_id = device_id
-        super().__init__(
-            f"{self.error_code}: the phone {device_id} has no network (ping: network is unreachable)"
-        )
+        super().__init__(device_id, f"the phone {device_id} has no network (ping: network is unreachable)")
 
 
 def open_network_door(device_id: Optional[str], *, moment: str = SESSION_BASELINE) -> Optional[dict]:
@@ -53,7 +57,8 @@ def open_network_door(device_id: Optional[str], *, moment: str = SESSION_BASELIN
     `NetworkUnreachableError` when ping says the phone has no route.
 
     A readable measure travels as the step `network_probe` (`action` is `moment`) and in the run's
-    log: the question « was the network slow? » has a measured answer, kept with the run.
+    log: the question « was the network slow? » has a measured answer, kept with the run. At the
+    session's baseline, it also starts the network watch of the run.
     """
     if not device_id:
         logger.warning("Network door: no device serial, the phone's network was not measured")
@@ -84,6 +89,8 @@ def open_network_door(device_id: Optional[str], *, moment: str = SESSION_BASELIN
         packet_loss_pct=baseline["packet_loss_pct"],
         replies=baseline["received"],
     )
+    if moment == SESSION_BASELINE:
+        start_network_watch(device_id, baseline)
     return baseline
 
 

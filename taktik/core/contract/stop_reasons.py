@@ -14,7 +14,10 @@ from .schema import OneOf
 #: The run's stop latch (`taktik/core/shared/diagnostics/run_halt.py`): what a run can no longer do,
 #: read by every loop that decides to go on. A run stopped by it says so with this code.
 RUN_HALT_CODE = OneOf(
-    ("device_disconnected", "target_app_crashed", "action_blocked", "desktop_gone", "account_challenge"),
+    (
+        "device_disconnected", "target_app_crashed", "action_blocked", "desktop_gone", "account_challenge",
+        "network_lost", "phone_locked", "like_unconfirmed",
+    ),
     name="RunHaltCode",
     doc="Why the stop latch stopped the run (`run_halt`).",
 )
@@ -37,7 +40,8 @@ INSTAGRAM_STOP_REASON_CODE = OneOf(
         "fans_list_unproven", "no_account",
         "stuck_at_top", "navigation_lost",
         "list_unavailable", "empty_plan", "no_targets", "daily_budget_unreadable", "crashed",
-        "device_disconnected", "target_app_crashed", "desktop_gone", "account_challenge",
+        "device_disconnected", "target_app_crashed", "desktop_gone", "account_challenge", "network_lost",
+        "phone_locked", "like_unconfirmed",
         # manual
         "manual_stop",
     ),
@@ -74,9 +78,9 @@ TIKTOK_COMPLETION_REASON_OR_NONE = replace(TIKTOK_COMPLETION_REASON, empty=True)
 #: `scraping_result.completionReason` of an Instagram scraping: the verdict of
 #: `social_media/instagram/workflows/scraping/outcome.py`.
 INSTAGRAM_SCRAPING_COMPLETION_REASON = OneOf(
-    ("completed", "nothing_to_scrape", "target_never_reached"),
+    ("completed", "nothing_to_scrape", "target_never_reached", *RUN_HALT_CODE.values),
     name="InstagramScrapingCompletionReason",
-    doc="How an Instagram scraping ended: its surface reached or not, profiles or none.",
+    doc="How an Instagram scraping ended: its surface reached or not, profiles or none, or the stop latch.",
 )
 
 #: `result.suggestions.stop_reason` of an Instagram notifications scan: how the visit of the

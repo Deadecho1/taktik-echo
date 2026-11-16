@@ -228,8 +228,14 @@ STRINGS: Dict[str, List[str]] = {
     "detection.home_screen_indicators": [
         "//*[@resource-id=\"com.instagram.android:id/tab_bar\"]//*[contains(@content-desc, \"Home\") and @selected=\"true\" and @package=\"com.instagram.android\"]",
     ],
-    "detection.liked_button_indicators": [
-        "//*[contains(@content-desc, \"Ne plus aimer\")]",
+    # The whole content-desc of a post's like button when the post is liked, with both apostrophes,
+    # compared WHOLE: « J’aime » lies inside « J’aime déjà », and « Nombre de J'aime » exists. The
+    # one list of these labels (`DETECTION_SELECTORS.liked_heart_labels`). « J’aime déjà » with its
+    # `selected` false: Instagram 447.0.0.55.81, Pixel 6a and Nokia 4.2, 2026-10-31.
+    "detection.liked_heart_labels": [
+        "J'aime déjà",
+        "J’aime déjà",
+        "Ne plus aimer",
     ],
     "detection.likes_count_selectors": [
         "//*[(contains(@content-desc, \"Nombre de J'aime\") or contains(@content-desc, \"Nombre de J’aime\"))]",
@@ -372,10 +378,6 @@ STRINGS: Dict[str, List[str]] = {
         "Decouvrir des personnes",
     ],
     # --- feed ---
-    "feed.already_liked_indicators": [
-        "//*[@resource-id=\"com.instagram.android:id/row_feed_button_like\" and contains(@content-desc, \"Ne plus aimer\")]",
-        "//*[contains(@content-desc, \"Ne plus aimer\")]",
-    ],
     "feed.comment_button": [
         "//*[contains(@content-desc, \"Commenter\")]",
     ],
@@ -653,6 +655,17 @@ STRINGS: Dict[str, List[str]] = {
         "accéder à vos contacts",
         "acceder a vos contacts",
         "synchroniser vos contacts",
+    ],
+    # Raw LABELS: the questions of Android's permission prompt that the check of pages grants,
+    # what the bot works with (any other, contacts or location, is refused by Back). Android
+    # writes them in the phone's language, read in every locale (`L_all`). Captured on Android 12:
+    # the camera and the microphone; the gallery and notifications are Android's wording, not
+    # captured yet.
+    "popup.permission_prompt_granted_questions": [
+        "prendre des photos",
+        "enregistrer de l'audio",
+        "accéder aux photos",
+        "envoyer des notifications",
     ],
     # Raw LABELS: the headline of Instagram's account check (its challenge screen), read on a
     # real one (410, Pixel 6 Pro, 2026-10-24: « Confirmez que vous êtes une personne réelle afin

@@ -7,7 +7,13 @@ with their answers.
 
 import pytest
 
+from taktik.core.compat.selectors.setup import apply_version_overrides
+from taktik.core.social_media.tiktok.services.navigation import reset
+from taktik.core.social_media.tiktok.services.publish.navigation import POST_SCREEN_NOT_REACHED
+from taktik.core.social_media.tiktok.ui import language
+from taktik.core.social_media.tiktok.ui.selectors.locales import set_active_locale
 from taktik.core.social_media.tiktok.workflows.publish import upload_workflow as module
+from screen_phone import EXIT_BACKS as BACKS, EXIT_SCREENS as SCREENS, ScreenPhone
 
 PUSHED = "/sdcard/DCIM/Camera/VID_20260928_010000.mp4"
 SAVED_IN_JUNE = {"path": "/storage/emulated/0/DCIM/Camera/2026-06-11-010830653.mp4", "size": 8172575}
@@ -31,7 +37,8 @@ def publish(monkeypatch, tmp_path):
     video = tmp_path / "video.mp4"
     video.write_bytes(b"video")
     seen = {"post_taps": 0, "listed": [], "recorded": [], "deleted": []}
-    answers = {"advance": module.POST_SCREEN_REACHED, "saved_before": [SAVED_IN_JUNE], "saved_copies": [COPY]}
+    answers = {"advance": module.POST_SCREEN_REACHED, "saved_before": [SAVED_IN_JUNE], "saved_copies": [COPY],
+               "caption_filled": True, "post_tapped": True, "refused": False, "committed": True}
 
     ok = lambda *a, **k: True  # noqa: E731
     for name in ("trigger_media_scan", "restart_tiktok_package", "wait_for_tiktok_home",
@@ -65,20 +72,24 @@ def publish(monkeypatch, tmp_path):
     monkeypatch.setattr(module, "force_stop_app_package", lambda *a, **k: None)
     monkeypatch.setattr(module.time, "sleep", lambda s: None)
     monkeypatch.setattr(module.TikTokUploadWorkflow, "_recover_from_video_edit_screen", lambda self: False)
-    monkeypatch.setattr(module.TikTokUploadWorkflow, "_refused", lambda self: False)
-    monkeypatch.setattr(module.TikTokUploadWorkflow, "_wait_for_publish_commit", lambda self, timeout=120.0: True)
+    monkeypatch.setattr(module.TikTokUploadWorkflow, "_refused", lambda self: answers["refused"])
+    monkeypatch.setattr(module.TikTokUploadWorkflow, "_wait_for_publish_commit",
+                        lambda self, timeout=120.0: answers["committed"])
+    monkeypatch.setattr(module.TikTokUploadWorkflow, "_fill_caption",
+                        lambda self, caption, hashtags: answers["caption_filled"])
+    monkeypatch.setattr(language, "detect_and_optimize", lambda device: "fr")
 
     def _tap(device, selectors, timeout=0):
         seen["post_taps"] += 1
-        return True
+        return answers["post_tapped"]
 
     monkeypatch.setattr(module, "tap_element", _tap)
 
     notes = _Notes()
 
-    def _run():
-        workflow = module.TikTokUploadWorkflow(device=object(), device_id="device-1", notifier=notes)
-        return workflow.execute(local_path=str(video), caption="")
+    def _run(device=None, caption="", local_path=str(video)):
+        workflow = module.TikTokUploadWorkflow(device=device or object(), device_id="device-1", notifier=notes)
+        return workflow.execute(local_path=local_path, caption=caption)
 
     _run.notes = notes
 
@@ -111,6 +122,168 @@ def test_a_post_screen_never_reached_publishes_nothing(publish):
 
     assert result["error_type"] == "post_screen_not_reached"
     assert publish.seen["post_taps"] == 0
+
+
+# --- a failure after the medium was chosen backs out to the feed ---------------------------------
+
+
+@pytest.fixture
+def phone_on_the_publication(monkeypatch):
+    """A TikTok 47.0.3 in French on real screens (`test_tiktok_publish_exit`), each back as the
+    phone answered it."""
+    monkeypatch.setattr(reset.time, "sleep", lambda _seconds: None)
+    apply_version_overrides("tiktok", "47.0.3")
+    set_active_locale("fr")
+    yield lambda screen: ScreenPhone(screen, SCREENS, BACKS)
+    set_active_locale(None)
+    apply_version_overrides("tiktok", "43.1.4")
+
+
+#: Each failure after the medium was chosen: what makes it, the screen it leaves, the backs to the feed.
+FAILURES = {
+    "sound_not_removed": ({"advance": module.SOUND_NOT_REMOVED}, "editor", 3),
+    "post_screen_not_reached": ({"advance": POST_SCREEN_NOT_REACHED}, "editor", 3),
+    "caption_fill_failed": ({"caption_filled": False}, "post_screen", 4),
+    "post_btn_not_found": ({"post_tapped": False}, "post_screen", 4),
+    "publish_not_committed": ({"committed": False}, "post_screen", 4),
+    "action_blocked": ({"refused": True}, "post_screen", 4),
+}
+
+
+@pytest.mark.parametrize("error_type", list(FAILURES))
+def test_a_failure_after_the_medium_was_chosen_leaves_the_publication_for_the_feed(
+        publish, phone_on_the_publication, error_type):
+    answers, screen, backs = FAILURES[error_type]
+    publish.answers.update(answers)
+    phone = phone_on_the_publication(screen)
+
+    result = publish(device=phone, caption="a caption")
+
+    assert result["success"] is False
+    assert result["error_type"] == error_type, "the way out replaced the motive of the failure"
+    assert result["left_publish_flow"] is True
+    assert phone.screen == "feed"
+    assert phone.keys == ["back"] * backs
+    assert ("info", "[exit] back on the feed: the publication is left") in publish.notes.logs
+
+
+def test_a_failure_whose_way_out_cannot_read_the_feed_says_so(publish, phone_on_the_publication):
+    publish.answers["committed"] = False
+    phone = ScreenPhone("post_screen", SCREENS, BACKS, unreadable=("feed",))
+
+    result = publish(device=phone)
+
+    assert result["error_type"] == "publish_not_committed"
+    assert result["left_publish_flow"] is False
+    assert any(level == "error" and "TikTok may still be on the publication" in message
+               for level, message in publish.notes.logs)
+
+
+def test_a_published_video_presses_no_back(publish, phone_on_the_publication):
+    phone = phone_on_the_publication("post_screen")
+
+    result = publish(device=phone)
+
+    assert result["success"] is True
+    assert "left_publish_flow" not in result
+    assert phone.keys == []
+
+
+# --- a failure before the medium was chosen backs out to the feed too ----------------------------
+
+
+#: Each failure once TikTok's creation is open, before a medium is ticked: the step that answers
+#: no, the screen it leaves, the backs to the feed. No draft exists yet, but the camera stays open:
+#: on a phone the adb link falls again and again while it is in front.
+EARLY_FAILURES = {
+    "create_btn_not_found": ("tap_create_button", "feed", 0),
+    "upload_btn_not_found": ("tap_upload_button", "camera", 1),
+    "gallery_not_opened": ("ensure_gallery_picker_open", "camera", 1),
+    "gallery_item_not_found": ("select_first_gallery_item", "gallery", 2),
+}
+
+
+@pytest.mark.parametrize("error_type", list(EARLY_FAILURES))
+def test_a_failure_before_the_medium_was_chosen_leaves_the_creation_for_the_feed(
+        publish, phone_on_the_publication, monkeypatch, error_type):
+    step, screen, backs = EARLY_FAILURES[error_type]
+    monkeypatch.setattr(module, step, lambda *a, **k: False)
+    phone = phone_on_the_publication(screen)
+
+    result = publish(device=phone)
+
+    assert result["success"] is False
+    assert result["error_type"] == error_type, "the way out replaced the motive of the failure"
+    assert result["left_publish_flow"] is True
+    assert phone.screen == "feed"
+    assert phone.keys == ["back"] * backs
+
+
+def test_a_missing_file_stops_before_tiktok_and_presses_no_back(publish, phone_on_the_publication, tmp_path):
+    phone = phone_on_the_publication("camera")
+
+    result = publish(device=phone, local_path=str(tmp_path / "absent.mp4"))
+
+    assert result["error_type"] == "file_not_found"
+    assert "left_publish_flow" not in result
+    assert phone.keys == []
+
+
+def test_a_push_that_fails_stops_before_tiktok_and_presses_no_back(publish, phone_on_the_publication, monkeypatch):
+    monkeypatch.setattr(module, "push_media", lambda *a, **k: None)
+    phone = phone_on_the_publication("camera")
+
+    result = publish(device=phone)
+
+    assert result["error_type"] == "push_failed"
+    assert "left_publish_flow" not in result
+    assert phone.keys == []
+
+
+# --- an exception in the middle of the publication -----------------------------------------------
+
+
+@pytest.mark.parametrize("step, screen, backs", [
+    ("select_first_gallery_item", "gallery", 2),
+    ("advance_to_post_screen", "editor", 3),
+])
+def test_an_exception_mid_publication_backs_out_then_rises_unchanged(
+        publish, phone_on_the_publication, monkeypatch, step, screen, backs):
+    crash = RuntimeError("uiautomator server gone")
+
+    def _crash(*a, **k):
+        raise crash
+
+    monkeypatch.setattr(module, step, _crash)
+    phone = phone_on_the_publication(screen)
+
+    with pytest.raises(RuntimeError) as raised:
+        publish(device=phone)
+
+    assert raised.value is crash, "the exception was swallowed or replaced"
+    assert phone.screen == "feed"
+    assert phone.keys == ["back"] * backs
+
+
+def test_a_way_out_that_raises_does_not_hide_the_exception_of_the_publication(
+        publish, phone_on_the_publication, monkeypatch):
+    crash = RuntimeError("uiautomator server gone")
+
+    def _crash(*a, **k):
+        raise crash
+
+    def _exit_breaks(*a, **k):
+        raise ConnectionError("adb: device offline")
+
+    monkeypatch.setattr(module, "advance_to_post_screen", _crash)
+    monkeypatch.setattr(module, "leave_publish_flow", _exit_breaks)
+
+    with pytest.raises(RuntimeError) as raised:
+        publish(device=phone_on_the_publication("editor"))
+
+    assert raised.value is crash
+    assert ("error", "[exit] the way out of the publication raised (adb: device offline) after: "
+                     "uiautomator server gone") in publish.notes.logs
 
 
 # --- what the publication leaves in the camera folder --------------------------------------------

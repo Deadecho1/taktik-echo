@@ -25,7 +25,7 @@ exit code 1 and nothing connected, as from the desktop bridges. A key the workfl
 not have (`maxProfiles` at the root, where the feed reads `limits.maxProfiles`) is refused before
 that, dry run included, with exit code 2: the key, and where the declaration has it
 (`taktik/core/contract/settings_keys.py`, the declaration the app's tools are checked against). So does a phone without network:
-the launcher's network door refuses it (`NETWORK_UNREACHABLE` in the message) before the app starts.
+the launcher's door refuses it (`NETWORK_UNREACHABLE` or `PHONE_LOCKED` in the message) before the app starts.
 """
 from __future__ import annotations
 
@@ -49,6 +49,7 @@ from taktik.cli.hosts.registry import build_registry, handler_on_phone
 from taktik.core.contract.ai_request import asks_for_ai
 from taktik.core.contract.registry import contracts_by_id
 from taktik.core.contract.settings_keys import undeclared_settings
+from taktik.core.shared.diagnostics.run_start import run_scope
 
 console = Console()
 
@@ -258,16 +259,17 @@ def run_workflow(workflow_id: str, device_id: str | None, params: tuple[str, ...
     payload = {**{key: device_id for key in HOST_PAYLOAD_KEYS}, **dict(resolved_params)}
 
     console.print(f"[blue]Running[/blue] [bold]{workflow_id}[/bold] on [cyan]{device_id}[/cyan]")
-    try:
-        # A launcher that takes the connected device, not a `connect`, gets it now and reads after.
-        handler = handler_on_phone(build, workflow_id, phone)
-        result = handler(invocation, payload)
-    except PhoneNotConnectedError as exc:
-        console.print(f"[red]{exc}[/red]")
-        raise SystemExit(1)
-    except Exception as exc:  # noqa: BLE001 - a failed run must report, not traceback at the user
-        console.print(f"[red]Workflow failed:[/red] {type(exc).__name__}: {exc}")
-        raise SystemExit(1)
+    with run_scope():
+        try:
+            # A launcher that takes the connected device, not a `connect`, gets it now and reads after.
+            handler = handler_on_phone(build, workflow_id, phone)
+            result = handler(invocation, payload)
+        except PhoneNotConnectedError as exc:
+            console.print(f"[red]{exc}[/red]")
+            raise SystemExit(1)
+        except Exception as exc:  # noqa: BLE001 - a failed run must report, not traceback at the user
+            console.print(f"[red]Workflow failed:[/red] {type(exc).__name__}: {exc}")
+            raise SystemExit(1)
 
     _print_result(result)
 

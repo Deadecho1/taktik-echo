@@ -58,13 +58,18 @@ class WorkflowHelpers:
         return found
 
     def finalize_session(self, status='COMPLETED', reason='Limits reached'):
-        # A failure named by the caller gives way to what the stop latch saw: the account check
-        # Instagram put on screen ended runs as `navigation_lost`.
+        # The motive named by the caller gives way to what the stop latch saw: the account check
+        # Instagram put on screen ended runs as `navigation_lost`, a lost network as `completed`.
         settled = stop_reasons.settled_by_halt(reason, run_halt.arret_demande())
         if settled is not reason:
             self.logger.warning(f"Run ended on '{getattr(reason, 'code', reason)}', "
                                 f"explained by the stop latch: {settled.code}")
             reason = settled
+        # The status follows the motive the run ends on. A caller's COMPLETED is a guess made before
+        # the latch was read (the profile-list loop passed it whatever happened); ERROR, INTERRUPTED
+        # and STOPPED are what the caller knows, and stay.
+        if status == stop_reasons.STATUS_COMPLETED:
+            status = stop_reasons.terminal_status(reason)
         self.logger.info(f"🏁 Finalizing session: {reason}")
         
         # Mark session as finalized to prevent further iterations
@@ -322,6 +327,10 @@ class WorkflowHelpers:
             # action type -> (target_type, key holding the target, or None when there is none)
             _ACTION_TARGETS = {
                 'interact_with_followers': ("USER", 'target_username'),
+                # The hand-picked accounts are the profiles visited, not a source whose lists
+                # are walked: never USER, which the app reads as a source. The first one names
+                # the session, as the first hashtag names a run on several.
+                'interact_with_profiles': ("PROFILES", 'target_username'),
                 'hashtag': ("HASHTAG", 'hashtag'),
                 'post_url': ("POST_URL", 'post_url'),
                 # No target: the run works on our own feed / our own following list.
@@ -350,6 +359,10 @@ class WorkflowHelpers:
                     for action in steps_or_actions:
                         mapping = _ACTION_TARGETS.get(action.get('type'))
                         if not mapping:
+                            self.logger.warning(
+                                f"Unmapped action type '{action.get('type')}' for the session label — "
+                                f"skipped. Add it to _ACTION_TARGETS."
+                            )
                             continue
                         target_type, target_key = mapping
                         target = action.get(target_key, 'unknown') if target_key else target_type.lower()

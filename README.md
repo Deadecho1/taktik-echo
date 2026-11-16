@@ -15,16 +15,17 @@ Keep platform interaction inside this repository and expose structured observati
 
 | Branch | Contents |
 | --- | --- |
-| `main` | Upstream baseline with this fork overview. |
-| `workspace-platforms` | Maintained shared Phone implementation and verified Instagram and TikTok browsing used by Persona Engine's `main`. |
+| `main` | Maintained shared Phone implementation and verified Instagram and TikTok browsing used by Persona Engine and EchoSeek. |
 | `feature/x-platform` | Shared platform implementation plus the ongoing X extension, paired with Persona Engine's branch of the same name. |
 
 Persona Engine's `taktik-install.json` selects the exact tested commit and local dependency directory.
 A branch name alone is not a reproducible dependency pin.
+Upstream updates are merged from `masterFuf/taktik-bot` into this fork's `main`, then into active feature branches.
+Completed feature branches are retired after their changes and consumer references have been merged.
 
 ## Browsing interface
 
-On the maintained extension branches:
+On `main` and the maintained extension branches:
 
 - `taktik.core.shared.phone_interaction.Phone` owns the device session, execution constraints, cancellation, diagnostics, and keyboard lifecycle. It reuses Taktik's existing device and input helpers.
 - `taktik.core.shared.browsing` defines `PostObservation`, action results, and supported capabilities.
@@ -33,14 +34,15 @@ On the maintained extension branches:
 
 Use the same Phone object throughout a session. Preserve device reservations, persona and device locks, deadlines, uncertainty handling, and cleanup.
 The workspace's `phone_interaction.Phone` import is a compatibility reexport of this implementation.
-See the [browsing guide](https://github.com/Deadecho1/taktik-echo/blob/workspace-platforms/docs/verified-browsing.md) and [X extension guide](https://github.com/Deadecho1/taktik-echo/blob/feature/x-platform/docs/verified-browsing.md).
+See the [browsing guide](https://github.com/Deadecho1/taktik-echo/blob/main/docs/verified-browsing.md) and [X extension guide](https://github.com/Deadecho1/taktik-echo/blob/feature/x-platform/docs/verified-browsing.md).
 
 ## X extension status
 
 The X branch supports account-verified For you and Following browsing, text-only post observations, and separate quote, media, and account metadata.
 Watch and skip are enabled. Unsupported or ambiguous layouts stop browsing.
 
-X search, engagement, native ad recognition, the recorded two-body layout, physical long-text traversal, human visual review, and real-model validation remain incomplete.
+The X branch recognizes native Paid partnership disclosures separately from authored text.
+X search, engagement, promoted-placement recognition, physical long-text traversal, human visual review, and real-model validation remain incomplete.
 The maintained branch does not imply that every installed X layout is supported.
 
 ## Installation
@@ -51,7 +53,7 @@ The checkout lives at `vendor/taktik-echo`.
 For standalone development of the shared platform implementation:
 
 ```bash
-git clone --branch workspace-platforms https://github.com/Deadecho1/taktik-echo.git
+git clone --branch main https://github.com/Deadecho1/taktik-echo.git
 cd taktik-echo
 python3 -m venv .venv
 .venv/bin/python -m pip install --constraint requirements.lock --editable .
