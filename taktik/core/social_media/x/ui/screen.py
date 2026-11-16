@@ -24,6 +24,9 @@ PRIMARY = {
     "scaffold_home_tabbed": "home",
 }
 ACTION_LABELS = ("Reply", "Repost", "Like", "Impressions", "Bookmark", "Share")
+VERIFICATION_LABELS = frozenset(
+    {"Verified", "Verified Business", "Verified Governmental Account"}
+)
 Rect = tuple[int, int, int, int]
 
 
@@ -483,12 +486,7 @@ def _video_credit(video):
             len(account) == 3
             and (
                 account[2].get("class") != "android.view.View"
-                or account[2].get("content-desc")
-                not in {
-                    "Verified",
-                    "Verified Business",
-                    "Verified Governmental Account",
-                }
+                or account[2].get("content-desc") not in VERIFICATION_LABELS
                 or account[2].get("text")
             )
         )
@@ -896,8 +894,7 @@ def _quote(card, viewport, overlaps):
             or "@" in name.get("text")
             or not age.get("text").startswith("· ")
             or badge.get("class") != "android.view.View"
-            or badge.get("content-desc")
-            not in {"Verified", "Verified Business", "Verified Governmental Account"}
+            or badge.get("content-desc") not in VERIFICATION_LABELS
             or badge.get("text")
             or len(badge)
             or not all(
@@ -1729,8 +1726,7 @@ def _covered_author(header, cover, viewport):
         badge = header[1]
         if (
             badge.get("class") != "android.view.View"
-            or badge.get("content-desc")
-            not in {"Verified", "Verified Business", "Verified Governmental Account"}
+            or badge.get("content-desc") not in VERIFICATION_LABELS
             or badge.get("text")
             or len(badge)
             or any(
@@ -1842,7 +1838,7 @@ def _missing_handle_header(header, viewport, overlaps):
         or any("@" in n.get("text", "") for n in header)
         or not age.get("text").startswith("· ")
         or badge.get("class") != "android.view.View"
-        or badge.get("content-desc") != "Verified"
+        or badge.get("content-desc") not in VERIFICATION_LABELS
         or badge.get("text")
         or len(badge)
         or any(
