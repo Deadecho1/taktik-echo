@@ -2409,7 +2409,13 @@ class X:
                 # Passing an unobservable successor is verified search progress.
                 # Losing only the selected post or moving within it is not.
                 passed_successor = moved is True and offset > max(index + 1, 0)
-                attempts = 0 if passed_successor else attempts + 1
+                if moved is None and not pending:
+                    # The preceding approach must not consume the clipped-text
+                    # verification allowance. Entry uses its first attempt;
+                    # identical clipped frames still cannot prove progress.
+                    attempts = 1
+                else:
+                    attempts = 0 if passed_successor else attempts + 1
                 pending = moved is None
                 index -= offset
                 screen = after
