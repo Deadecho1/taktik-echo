@@ -124,6 +124,7 @@ class MarketCard:
     price: str
     change: str
     visibility: Visibility
+    adjacent_assets: tuple["TextSpan", ...] = ()
 
 
 @dataclass(frozen=True)
@@ -1299,11 +1300,63 @@ def _media_without_body(header, media, quote):
         raise _Unsupported("Missing body between the header and media.")
 
 
+def _market_adjacent_assets(wrapper, card, viewport, overlays):
+    if len(wrapper) != 2 or wrapper.get("scrollable") != "true":
+        raise _Unsupported("Unrecognized market carousel.")
+    neighbor = wrapper[1]
+    if len(neighbor) != 1 or len(neighbor[0]) != 1:
+        raise _Unsupported("Unrecognized clipped market asset.")
+    picture, icon = neighbor[0], neighbor[0][0]
+    rect, primary = _rect(neighbor), _rect(card)
+    if (
+        any(
+            n.get("class") != "android.view.View"
+            or n.get("text")
+            or n.get("enabled") != "true"
+            or n.get("visible-to-user") != "true"
+            or n.get("long-clickable") == "true"
+            or n.get("scrollable") == "true"
+            for n in (neighbor, picture, icon)
+        )
+        or neighbor.get("clickable") != "true"
+        or neighbor.get("focusable") != "true"
+        or neighbor.get("content-desc")
+        or picture.get("content-desc")
+        or len(icon)
+        or not icon.get("content-desc")
+        or any(
+            n.get(flag) == "true"
+            for n in (picture, icon)
+            for flag in ("clickable", "focusable")
+        )
+        or _rect(wrapper)[::2] != viewport[::2]
+        or rect[1::2] != primary[1::2]
+        or rect[1::2] != _rect(wrapper)[1::2]
+        or rect[0] <= primary[2]
+        or rect[2] != viewport[2]
+        or _rect(picture)[2] != viewport[2]
+        or _rect(icon)[2] != viewport[2]
+        or not (rect[0] < _rect(picture)[0] < _rect(icon)[0] < rect[2])
+        or _rect(picture)[1::2] != _rect(card[0])[1::2]
+        or _rect(icon)[1::2] != _rect(card[0][0])[1::2]
+        or _intersect(_rect(picture), rect) != _rect(picture)
+        or _intersect(_rect(icon), _rect(picture)) != _rect(icon)
+        or _rect(icon)[2] - _rect(icon)[0] >= _rect(icon)[3] - _rect(icon)[1]
+    ):
+        raise _Unsupported("Unrecognized clipped market asset.")
+    return (
+        TextSpan(
+            icon.get("content-desc"),
+            replace(_visibility(icon, viewport, overlays), clipped=True),
+        ),
+    )
+
+
 def _market_card(container, media, actions, viewport, overlays):
     candidates = [
         wrapper
         for wrapper in container
-        if len(wrapper) == 1
+        if len(wrapper) in (1, 2)
         and len(wrapper[0]) == 5
         and len(wrapper[0][0]) == 1
         and not wrapper[0][0].get("content-desc")
@@ -1315,6 +1368,11 @@ def _market_card(container, media, actions, viewport, overlays):
     card = wrapper[0]
     picture, name, symbol, price, change = card
     rect = _rect(card)
+    adjacent_assets = (
+        _market_adjacent_assets(wrapper, card, viewport, overlays)
+        if len(wrapper) == 2 or wrapper.get("scrollable") == "true"
+        else ()
+    )
     if (
         len(media) != 1
         or media[0].kind not in {"video", "gif"}
@@ -1323,7 +1381,10 @@ def _market_card(container, media, actions, viewport, overlays):
             n.get("class") != "android.view.View"
             or n.get("text")
             or n.get("content-desc")
-            or n.get("scrollable") == "true"
+            or (
+                n.get("scrollable") == "true"
+                and (n is not wrapper or not adjacent_assets)
+            )
             or n.get("long-clickable") == "true"
             or n.get("enabled") != "true"
             for n in (wrapper, card, picture)
@@ -1337,12 +1398,16 @@ def _market_card(container, media, actions, viewport, overlays):
         or not re.fullmatch(r"[A-Z][A-Z0-9.\-]{0,19}", symbol.get("text"))
         or not re.fullmatch(r"\$[0-9]+(?:,[0-9]{3})*(?:\.[0-9]+)?", price.get("text"))
         or not re.fullmatch(r"[+−-]?[0-9]+(?:\.[0-9]+)?%", change.get("text"))
-        or _rect(wrapper) != rect
-        or rect[::2] != media[0].visibility.bounds[::2]
+        or (not adjacent_assets and _rect(wrapper) != rect)
+        or (
+            rect[0] != media[0].visibility.bounds[0]
+            or rect[2] > media[0].visibility.bounds[2]
+            or (not adjacent_assets and rect[2] != media[0].visibility.bounds[2])
+        )
         or wrapper.getprevious() is None
         or _rect(wrapper.getprevious()) != media[0].visibility.bounds
         or rect[1] < media[0].visibility.bounds[3]
-        or not actions
+        or (not actions and not (adjacent_assets and rect[3] >= viewport[3]))
         or any(a.visibility.bounds[1] != rect[3] for a in actions)
         or any(_intersect(_rect(n), rect) != _rect(n) for n in card)
         or _rect(picture)[2] > _rect(name)[0]
@@ -1374,7 +1439,8 @@ def _market_card(container, media, actions, viewport, overlays):
         raise _Unsupported("Unrecognized market card icon.")
     return MarketCard(
         *(n.get("text") for n in (name, symbol, price, change)),
-        _visibility(card, viewport, overlays),
+        _visibility(wrapper if adjacent_assets else card, viewport, overlays),
+        adjacent_assets=adjacent_assets,
     ), set(wrapper.iter())
 
 

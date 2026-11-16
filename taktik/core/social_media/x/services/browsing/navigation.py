@@ -1511,6 +1511,18 @@ def _market_card_continuity(a, b, shift, before, after):
     if old and new:
         return (
             (old.name, old.symbol) == (new.name, new.symbol)
+            and len(old.adjacent_assets) == len(new.adjacent_assets)
+            and all(
+                x.text == y.text
+                and x.visibility.bounds[::2] == y.visibility.bounds[::2]
+                and all(
+                    abs(v - u - shift) <= 2 or (v == 0 and u + shift <= 0)
+                    for u, v in zip(
+                        x.visibility.bounds[1::2], y.visibility.bounds[1::2]
+                    )
+                )
+                for x, y in zip(old.adjacent_assets, new.adjacent_assets)
+            )
             and old.visibility.bounds[::2] == new.visibility.bounds[::2]
             and all(
                 abs(v - u - shift) <= 2 or (v == 0 and u + shift <= 0)

@@ -92,6 +92,14 @@ def post_context(post):
             "change": card.change,
             "in_viewport": card.visibility.visible_bounds is not None,
         }
+        if card.adjacent_assets:
+            context["market_card"]["adjacent_assets"] = [
+                {
+                    "label": a.text,
+                    "in_viewport": a.visibility.visible_bounds is not None,
+                }
+                for a in card.adjacent_assets
+            ]
     return context
 
 
