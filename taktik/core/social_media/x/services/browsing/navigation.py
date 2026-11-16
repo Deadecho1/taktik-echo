@@ -627,8 +627,8 @@ def _media_revelation_anchored(a, b):
             all(m.kind == "image" for m in b.media)
             or (
                 len(b.media) == 1
-                and b.media[0].kind == "video"
-                and b.media[0].description == "Video"
+                and (b.media[0].kind, b.media[0].description)
+                in {("video", "Video"), ("gif", "GIF")}
             )
         )
         or a.body_visibility is None
@@ -643,7 +643,11 @@ def _media_revelation_anchored(a, b):
         or a.body_visibility.bounds[::2] != b.body_visibility.bounds[::2]
         or a.visibility.visible_bounds is None
         or a.visibility.bounds[3] <= a.visibility.visible_bounds[3]
-        or a.body_visibility.bounds[3] != a.visibility.bounds[3]
+        or not (
+            a.visibility.visible_bounds[3]
+            <= a.body_visibility.bounds[3]
+            <= a.visibility.bounds[3]
+        )
     ):
         return False
     shifts = [b.body_visibility.bounds[1] - a.body_visibility.bounds[1]]
