@@ -914,9 +914,30 @@ def _quoted_video_motion(a, b, shift):
         a.quoted_post.header_visibility,
         b.quoted_post.header_visibility,
     )
-    # The retained quote header measures motion independently of the video tail.
+    # A clear retained outer-body edge can independently verify motion when
+    # the old quoted header was partly covered. The header must still agree.
+    body_edge = (
+        a.body is not None
+        and _same_body(a, b)
+        and a.body_visibility is not None
+        and b.body_visibility is not None
+        and a.body_visibility.bounds[::2] == b.body_visibility.bounds[::2]
+        and abs(b.body_visibility.bounds[3] - a.body_visibility.bounds[3] - shift) <= 2
+        and all(
+            v.accessible
+            and v.visible_bounds is not None
+            and v.visible_bounds[3] == v.bounds[3]
+            and not any(
+                cover[1] < v.bounds[3] <= cover[3]
+                and cover[0] < v.bounds[2]
+                and cover[2] > v.bounds[0]
+                for cover in v.overlaps
+            )
+            for v in (a.body_visibility, b.body_visibility)
+        )
+    )
     return (
-        old_header.unobscured
+        (old_header.unobscured or body_edge)
         and new_header.unobscured
         and old.kind == new.kind == "video"
         and old.description == new.description
