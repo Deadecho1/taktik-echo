@@ -2578,7 +2578,29 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
         avatar = container[0]
         rect, video = _rect(avatar), media[0].visibility.bounds
         prefix = [avatar]
-        options = container[1]
+        grok = container[1]
+        if (
+            len(container) > 2
+            and grok.get("class") == "android.widget.ImageView"
+            and grok.get("content-desc") == "Explain this post with Grok"
+            and not grok.get("text")
+            and not len(grok)
+            and all(
+                grok.get(flag) == "true"
+                for flag in ("clickable", "focusable", "enabled", "visible-to-user")
+            )
+            and all(
+                grok.get(flag) != "true" for flag in ("long-clickable", "scrollable")
+            )
+            and _rect(grok)[1] <= _rect(container)[1] < viewport[1]
+            and viewport[1] < _rect(grok)[3] == video[1] <= rect[3]
+            and video[0] < _rect(grok)[0] < _rect(grok)[2]
+            and _rect(grok)[2] == _rect(container[2])[0]
+            and _rect(grok)[1] == _rect(container[2])[1]
+            and container[2].get("content-desc") == "Post options"
+        ):
+            prefix.append(grok)
+        options = container[len(prefix)]
         if (
             options.get("class") == "android.widget.Button"
             and options.get("content-desc") == "Post options"

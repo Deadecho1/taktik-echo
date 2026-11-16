@@ -1000,7 +1000,7 @@ def _inset_quote_consistent(a, b, after):
     if a.body is not None:
         return _preview_body_scrolled_out(a, b, shift, after)
     return (
-        isinstance(a, PostFragment)
+        (isinstance(a, PostFragment) or _header_loss_explained(a, b, shift, after))
         and a.body_visibility is None
         and b.body_visibility is None
         and a.body_annotations == b.body_annotations
