@@ -1134,6 +1134,69 @@ def _link_preview_revealed(a, b):
     )
 
 
+def _video_source_entered(old, new, shift):
+    return (
+        old.source_label is None
+        and old.source_prefix is None
+        and new.source_label is not None
+        and new.source_visibility is not None
+        and (
+            new.source_visibility.bounds[1] - shift >= old.visibility.bounds[3]
+            or (
+                bool(new.source_content)
+                and all(
+                    v.accessible
+                    and _intersection(v.bounds, new.source_visibility.bounds)
+                    == v.bounds
+                    and v.bounds[1] - shift >= old.visibility.bounds[3]
+                    for v in new.source_content
+                )
+            )
+        )
+    )
+
+
+def _captionless_credit_revealed(a, b):
+    if (
+        isinstance(a, PostFragment)
+        or isinstance(b, PostFragment)
+        or a.author != b.author
+        or any(p.body is not None or p.quoted_post is not None for p in (a, b))
+        or a.translation != b.translation
+        or a.body_annotations != b.body_annotations
+        or a.actions
+        or len(a.media) != 1
+        or len(b.media) != 1
+    ):
+        return False
+    old, new = a.media[0], b.media[0]
+    x, y = old.visibility.bounds, new.visibility.bounds
+    shift = y[1] - x[1]
+    return (
+        shift < -2
+        and old.kind == new.kind == "video"
+        and old.description == new.description
+        and old.preview_text == new.preview_text
+        and x[::2] == y[::2]
+        and old.visibility.visible_bounds is not None
+        and x[3] > old.visibility.visible_bounds[3]
+        and y[3] - shift >= x[3]
+        and _video_source_entered(old, new, shift)
+        and all(
+            u.unobscured
+            and v.unobscured
+            and u.bounds[::2] == v.bounds[::2]
+            and all(
+                abs(n - m - shift) <= 2 for m, n in zip(u.bounds[1::2], v.bounds[1::2])
+            )
+            for u, v in (
+                (a.header_visibility, b.header_visibility),
+                (a.author_visibility, b.author_visibility),
+            )
+        )
+    )
+
+
 def _quote_below_video(a, b):
     if isinstance(a, PostFragment):
         return False
@@ -1180,25 +1243,7 @@ def _quote_below_video(a, b):
         and (
             (old.source_label, old.source_prefix)
             == (new.source_label, new.source_prefix)
-            or (
-                old.source_label is None
-                and old.source_prefix is None
-                and new.source_label is not None
-                and new.source_visibility is not None
-                and (
-                    new.source_visibility.bounds[1] - shift >= old_rect[3]
-                    or (
-                        bool(new.source_content)
-                        and all(
-                            v.accessible
-                            and _intersection(v.bounds, new.source_visibility.bounds)
-                            == v.bounds
-                            and v.bounds[1] - shift >= old_rect[3]
-                            for v in new.source_content
-                        )
-                    )
-                )
-            )
+            or _video_source_entered(old, new, shift)
         )
         and old_rect[::2] == new_rect[::2]
         and shift < -2
@@ -1690,6 +1735,7 @@ def _alignment(before, after, *, scrolling=False):
             or _quote_preview_revealed(a, b, after)
             or _bodyless_quote_preview_revealed(a, b, after)
             or _quote_below_video(a, b)
+            or _captionless_credit_revealed(a, b)
             or _revealed_content(a, b)
             or _link_preview_revealed(a, b)
             or _quote_header_completed(a, b, before, after)
@@ -1730,6 +1776,7 @@ def _alignment(before, after, *, scrolling=False):
             or _quote_preview_revealed(a, b, after)
             or _bodyless_quote_preview_revealed(a, b, after)
             or _quote_below_video(a, b)
+            or _captionless_credit_revealed(a, b)
             or _quoted_body_lost(a, b, after)
             or _tail_match(a, b, before, after, require_overlap=True)
             or _preview_tail_match(a, b, before, after)
