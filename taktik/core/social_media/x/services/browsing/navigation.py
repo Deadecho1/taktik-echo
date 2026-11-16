@@ -1247,6 +1247,56 @@ def _captionless_credit_revealed(a, b):
     )
 
 
+def _captionless_credit_faded(a, b, before, after):
+    """Reuse video-tail proof for a fading credit under a retained author row."""
+    if (
+        isinstance(a, PostFragment)
+        or isinstance(b, PostFragment)
+        or (a.author, a.display_name) != (b.author, b.display_name)
+        or any(p.body is not None or p.quoted_post is not None for p in (a, b))
+        or a.translation != b.translation
+        or a.body_annotations != b.body_annotations
+        or len(a.media) != 1
+        or len(b.media) != 1
+    ):
+        return False
+    old, new = a.media[0], b.media[0]
+    shift = new.visibility.bounds[3] - old.visibility.bounds[3]
+    if (
+        shift >= -2
+        or old.kind != "video"
+        or old.source_label is None
+        or old.source_visibility is None
+        or new.source_label is not None
+        or new.source_prefix is not None
+        or new.source_visibility is not None
+        or new.source_content
+        or old.preview_text != new.preview_text
+        or not all(
+            x.unobscured
+            and y.accessible
+            and y.visible_bounds is not None
+            and x.bounds[::2] == y.bounds[::2]
+            and all(
+                abs(v - u - shift) <= 2 for u, v in zip(x.bounds[1::2], y.bounds[1::2])
+            )
+            for x, y in (
+                (a.header_visibility, b.header_visibility),
+                (a.author_visibility, b.author_visibility),
+            )
+        )
+    ):
+        return False
+    return _tail_match(
+        PostFragment(None, a.media, a.visibility, None, a.actions),
+        PostFragment(None, b.media, b.visibility, None, b.actions),
+        before,
+        after,
+        require_overlap=True,
+        allow_hidden_source=True,
+    )
+
+
 def _quote_below_video(a, b):
     if isinstance(a, PostFragment):
         return False
@@ -1854,6 +1904,7 @@ def _alignment(before, after, *, scrolling=False):
             or _bodyless_quote_preview_revealed(a, b, after)
             or _quote_below_video(a, b)
             or _captionless_credit_revealed(a, b)
+            or _captionless_credit_faded(a, b, before, after)
             or _revealed_content(a, b)
             or _link_preview_revealed(a, b)
             or _quote_header_completed(a, b, before, after)
@@ -1895,6 +1946,7 @@ def _alignment(before, after, *, scrolling=False):
             or _bodyless_quote_preview_revealed(a, b, after)
             or _quote_below_video(a, b)
             or _captionless_credit_revealed(a, b)
+            or _captionless_credit_faded(a, b, before, after)
             or _quoted_body_lost(a, b, after)
             or _tail_match(a, b, before, after, require_overlap=True)
             or _preview_tail_match(a, b, before, after)
