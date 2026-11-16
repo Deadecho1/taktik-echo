@@ -196,6 +196,7 @@ class PostFragment:
     media_labels: tuple[str, ...] = ()
     quoted_body: TextSpan | None = None
     covered_header_visibility: Visibility | None = None
+    covered_handle: TextSpan | None = None
 
 
 @dataclass(frozen=True)
@@ -1629,6 +1630,13 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
             media_labels=media_labels,
             covered_header_visibility=_visibility(header, viewport, overlaps)
             if header_cover is not None
+            else None,
+            covered_handle=TextSpan(
+                header[-1].get("text"), _visibility(header[-1], viewport, overlaps)
+            )
+            if header_cover is not None
+            and len(header) == 3
+            and HANDLE.fullmatch(header[-1].get("text", ""))
             else None,
         )
     identity = [

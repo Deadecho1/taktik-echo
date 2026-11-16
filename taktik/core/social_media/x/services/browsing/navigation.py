@@ -682,6 +682,25 @@ def _header_loss_explained(a, b, shift, after):
         return False
     x1, y1, x2, y2 = a.author_visibility.bounds
     projected = (x1, y1 + shift, x2, y2 + shift)
+    partial = b.covered_handle
+    if partial is not None:
+        rect = partial.visibility.bounds
+        # The retained left slice and the known cover must together account
+        # for the entire prior handle. This is continuity evidence only.
+        return (
+            partial.text == a.author
+            and partial.visibility.unobscured
+            and rect[0] == projected[0]
+            and rect[1::2] == projected[1::2]
+            and rect[2] < projected[2]
+            and any(
+                cover in after.overlaps
+                and rect[2] == cover[0]
+                and _intersection(projected, cover)
+                == (rect[2], projected[1], projected[2], projected[3])
+                for cover in header.overlaps
+            )
+        )
     return any(
         cover in after.overlaps and _intersection(projected, cover) == projected
         for cover in header.overlaps
