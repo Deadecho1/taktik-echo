@@ -753,16 +753,12 @@ def _plain_annotation(node, *, allowed_children=()):
     )
 
 
-def _compact_quote_image(card, body, viewport):
-    """Validate the image wrapper beside translated compact quote text."""
-    if body is None:
-        return set()
-    wrapper = body.getprevious()
+def _native_quote_image(wrapper, card):
+    """Validate the native image wrapper shared by full and compact quotes."""
     if wrapper is None or len(wrapper) != 1:
         return set()
     image = wrapper[0]
-    rect, body_rect = _rect(wrapper), _rect(body)
-    width, height = rect[2] - rect[0], rect[3] - rect[1]
+    rect = _rect(wrapper)
     if (
         wrapper.get("class") != "android.view.View"
         or wrapper.get("text")
@@ -785,9 +781,24 @@ def _compact_quote_image(card, body, viewport):
             for n in (wrapper, image)
         )
         or _rect(image) != rect
-        or rect[1] != body_rect[1]
-        or rect[2] > body_rect[0]
         or _intersect(rect, _rect(card)) != rect
+    ):
+        return set()
+    return {wrapper, image}
+
+
+def _compact_quote_image(card, body, viewport):
+    if body is None:
+        return set()
+    wrapper = body.getprevious()
+    nodes = _native_quote_image(wrapper, card)
+    if not nodes:
+        return set()
+    rect, body_rect = _rect(wrapper), _rect(body)
+    width, height = rect[2] - rect[0], rect[3] - rect[1]
+    if (
+        rect[1] != body_rect[1]
+        or rect[2] > body_rect[0]
         or _intersect(body_rect, _rect(card)) != body_rect
         or not (
             height == width
@@ -795,7 +806,7 @@ def _compact_quote_image(card, body, viewport):
         )
     ):
         return set()
-    return {wrapper, image}
+    return nodes
 
 
 def _quoted_translation(card, texts, viewport, overlaps):
@@ -869,7 +880,15 @@ def _quote(card, viewport, overlaps):
             for n in (name, handle, age)
         )
     )
-    if body is None and not articles and not header_only:
+    image_only = (
+        body is None
+        and len(media) == 1
+        and media[0].kind == "image"
+        and age.getnext() is card[-1]
+        and bool(_native_quote_image(card[-1], card))
+        and _rect(card[-1])[1] > max(_rect(n)[3] for n in list(card)[:-1])
+    )
+    if body is None and not articles and not header_only and not image_only:
         raise _Unsupported("Bodyless quote has no recognized preview.")
     if articles and (previews or media):
         raise _Unsupported("Mixed article and quote media.")
