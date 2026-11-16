@@ -467,7 +467,11 @@ def _video_credit(video):
             and (
                 account[2].get("class") != "android.view.View"
                 or account[2].get("content-desc")
-                not in {"Verified", "Verified Business"}
+                not in {
+                    "Verified",
+                    "Verified Business",
+                    "Verified Governmental Account",
+                }
                 or account[2].get("text")
             )
         )
