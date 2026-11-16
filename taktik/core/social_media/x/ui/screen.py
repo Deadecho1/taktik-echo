@@ -993,11 +993,31 @@ def _covered_bookmark_row(container, actions, viewport, overlaps):
     )
 
 
-def _translation(container, header=None):
+def _translation(container, header=None, *, clipped_viewport=None):
     labels = [n for n in container if n.get("text", "").startswith("Translated from ")]
     controls = [n for n in container if n.get("text") == "Show original"]
     if not labels and not controls:
         return None, set()
+    if not labels and header is None and clipped_viewport is not None:
+        control = _one(controls, "clipped Show original control")
+        body = control.getnext()
+        rect = _rect(control)
+        if (
+            body is not None
+            and _plain_annotation(body)
+            and body.get("text")
+            and control.get("class") == "android.widget.TextView"
+            and not len(control)
+            and not control.get("content-desc")
+            and control.get("clickable") == "true"
+            and control.get("enabled") == "true"
+            and control.get("visible-to-user") != "false"
+            and control.get("scrollable") != "true"
+            and control.get("long-clickable") != "true"
+            and rect[1] < clipped_viewport[1] < rect[3] == _rect(body)[1]
+            and _rect(body)[0] < rect[0] < rect[2] <= _rect(body)[2]
+        ):
+            return None, {control}
     label = _one(labels, "translation label")
     control = _one(controls, "Show original control")
     if (
@@ -2006,7 +2026,9 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
     advertising, advertising_view, advertising_nodes = _paid_partnership(
         container, media, actions, viewport, overlays
     )
-    translation, translation_nodes = _translation(container)
+    translation, translation_nodes = _translation(
+        container, clipped_viewport=viewport if collapsed else None
+    )
     bodies = [
         n
         for n in container.xpath('./node[@class="android.widget.TextView"]')
