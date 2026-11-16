@@ -1,0 +1,133 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<hierarchy>
+  <node text="" resource-id="" class="android.widget.FrameLayout" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,0][1080,2340]">
+    <node text="" resource-id="" class="android.widget.LinearLayout" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,0][1080,2340]">
+      <node text="" resource-id="" class="android.widget.FrameLayout" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,0][1080,2340]">
+        <node text="" resource-id="com.instagram.android:id/action_bar_root" class="android.widget.LinearLayout" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,0][1080,2340]">
+          <node text="" resource-id="android:id/content" class="android.widget.FrameLayout" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,0][1080,2340]">
+            <node text="" resource-id="" class="android.widget.FrameLayout" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,0][1080,2340]">
+              <node text="" resource-id="com.instagram.android:id/swipe_navigation_container" class="android.widget.FrameLayout" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,0][1080,2340]">
+                <node text="" resource-id="com.instagram.android:id/layout_container_center_right_coordinator_layout" class="android.view.ViewGroup" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,0][1080,2274]">
+                  <node text="" resource-id="com.instagram.android:id/layout_container_main_panel" class="android.view.ViewGroup" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,136][1080,2274]">
+                    <node text="" resource-id="com.instagram.android:id/layout_container_main_wrapper" class="android.widget.FrameLayout" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,136][1080,2274]">
+                      <node text="" resource-id="com.instagram.android:id/swipeable_tab_view_pager" class="androidx.viewpager.widget.ViewPager" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,136][1080,2142]">
+                        <node text="" resource-id="com.instagram.android:id/swipeable_nav_view_pager_inner_recycler_view" class="androidx.recyclerview.widget.RecyclerView" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,136][1080,2142]">
+                          <node text="" resource-id="" class="android.widget.FrameLayout" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,136][1080,2142]">
+                            <node text="" resource-id="com.instagram.android:id/layout_container_swipeable" class="android.widget.FrameLayout" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,136][1080,2142]">
+                              <node text="" resource-id="" class="android.widget.FrameLayout" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,136][1080,2142]">
+                                <node text="" resource-id="com.instagram.android:id/sticky_header_list" class="android.widget.FrameLayout" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,136][1080,2142]">
+                                  <node text="" resource-id="com.instagram.android:id/refreshable_container" class="android.widget.FrameLayout" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,136][1080,2142]">
+                                    <node text="" resource-id="android:id/list" class="androidx.recyclerview.widget.RecyclerView" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,136][1080,2142]">
+                                      <node text="" resource-id="" class="android.view.ViewGroup" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,136][1080,362]">
+                                        <node text="" resource-id="com.instagram.android:id/video_container" class="android.view.ViewGroup" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,136][1080,362]">
+                                          <node text="" resource-id="com.instagram.android:id/video_container" class="android.widget.FrameLayout" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,136][1080,362]">
+                                            <node text="" resource-id="com.instagram.android:id/media_group" class="android.widget.FrameLayout" package="com.instagram.android" content-desc="" clickable="true" enabled="true" selected="false" bounds="[0,136][1080,362]">
+                                              <node text="" resource-id="com.instagram.android:id/row_feed_photo_imageview" class="android.widget.FrameLayout" package="com.instagram.android" content-desc="Example caption" clickable="false" enabled="true" selected="false" bounds="[0,136][1080,362]">
+                                                </node>
+                                            </node>
+                                          </node>
+                                        </node>
+                                      </node>
+                                      <node text="" resource-id="" class="android.view.ViewGroup" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,362][1080,637]">
+                                        <node text="" resource-id="com.instagram.android:id/row_feed_view_group_buttons" class="android.view.ViewGroup" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,362][1080,489]">
+                                          <node text="" resource-id="" class="android.view.ViewGroup" package="com.instagram.android" content-desc="" clickable="true" enabled="true" selected="false" bounds="[33,362][110,489]">
+                                            <node text="" resource-id="com.instagram.android:id/row_feed_button_like" class="android.widget.Button" package="com.instagram.android" content-desc="Like" clickable="false" enabled="true" selected="false" bounds="[33,392][99,458]"/>
+                                          </node>
+                                          <node text="" resource-id="" class="android.view.ViewGroup" package="com.instagram.android" content-desc="" clickable="true" enabled="true" selected="false" bounds="[110,362][220,489]">
+                                            <node text="" resource-id="com.instagram.android:id/row_feed_button_comment" class="android.widget.Button" package="com.instagram.android" content-desc="Comment" clickable="false" enabled="true" selected="false" bounds="[143,362][209,489]"/>
+                                          </node>
+                                          <node text="24" resource-id="" class="android.widget.Button" package="com.instagram.android" content-desc="" clickable="true" enabled="true" selected="false" bounds="[220,362][267,489]"/>
+                                          <node text="" resource-id="com.instagram.android:id/reposts_ufi_icon" class="android.widget.Button" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[267,362][453,489]">
+                                            <node text="415" resource-id="" class="android.widget.Button" package="com.instagram.android" content-desc="" clickable="true" enabled="true" selected="false" bounds="[388,362][453,489]"/>
+                                          </node>
+                                          <node text="2,696" resource-id="" class="android.widget.Button" package="com.instagram.android" content-desc="" clickable="true" enabled="true" selected="false" bounds="[564,362][667,489]"/>
+                                          <node text="" resource-id="com.instagram.android:id/row_feed_button_save" class="android.widget.Button" package="com.instagram.android" content-desc="Add to Saved" clickable="true" enabled="true" selected="false" bounds="[953,362][1074,478]"/>
+                                        </node>
+                                        <node text="Example caption" resource-id="" class="com.instagram.ui.widget.textview.IgTextLayoutView" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[33,489][1080,541]">
+                                          <node text="" resource-id="" class="android.widget.Button" package="com.instagram.android" content-desc="Example caption" clickable="true" enabled="true" selected="false" bounds="[33,489][164,535]"/>
+                                          <node text="" resource-id="" class="android.widget.Button" package="com.instagram.android" content-desc="Example caption" clickable="true" enabled="true" selected="false" bounds="[173,489][840,535]"/>
+                                          <node text="" resource-id="" class="android.widget.Button" package="com.instagram.android" content-desc="Example caption" clickable="true" enabled="true" selected="false" bounds="[173,489][840,535]"/>
+                                          <node text="" resource-id="" class="android.widget.Button" package="com.instagram.android" content-desc="more" clickable="true" enabled="true" selected="false" bounds="[874,489][965,535]"/>
+                                        </node>
+                                        </node>
+                                      <node text="" resource-id="" class="android.view.ViewGroup" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,637][1080,780]">
+                                        <node text="" resource-id="com.instagram.android:id/row_feed_profile_header" class="android.view.ViewGroup" package="com.instagram.android" content-desc="example_author a publié une photo le 1 novembre 2026" clickable="false" enabled="true" selected="false" bounds="[0,637][1080,780]">
+                                          <node text="" resource-id="" class="android.widget.Button" package="com.instagram.android" content-desc="" clickable="true" enabled="true" selected="false" bounds="[0,637][134,780]">
+                                            </node>
+                                          <node text="Example caption" resource-id="com.instagram.android:id/row_feed_photo_profile_name" class="android.widget.Button" package="com.instagram.android" content-desc="Example caption" clickable="true" enabled="true" selected="false" bounds="[134,637][750,707]"/>
+                                          <node text="Example caption" resource-id="com.instagram.android:id/secondary_label" class="android.widget.Button" package="com.instagram.android" content-desc="Example caption" clickable="false" enabled="true" selected="false" bounds="[134,706][750,780]"/>
+                                          </node>
+                                      </node>
+                                      <node text="" resource-id="" class="android.view.ViewGroup" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,780][1080,2121]">
+                                        <node text="" resource-id="com.instagram.android:id/row_feed_photo_imageview" class="android.view.ViewGroup" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,780][1080,2121]">
+                                          <node text="" resource-id="com.instagram.android:id/row_feed_photo_imageview" class="android.widget.FrameLayout" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,780][1080,2121]">
+                                            <node text="" resource-id="com.instagram.android:id/media_group" class="android.widget.FrameLayout" package="com.instagram.android" content-desc="" clickable="true" enabled="true" selected="false" bounds="[0,780][1080,2120]">
+                                              <node text="" resource-id="com.instagram.android:id/row_feed_photo_imageview" class="android.widget.FrameLayout" package="com.instagram.android" content-desc="Example caption" clickable="false" enabled="true" selected="false" bounds="[0,780][1080,2120]">
+                                                </node>
+                                            </node>
+                                          </node>
+                                          <node text="" resource-id="com.instagram.android:id/row_feed_photo_imageview" class="android.view.ViewGroup" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,780][1080,2121]">
+                                            </node>
+                                        </node>
+                                      </node>
+                                      <node text="" resource-id="" class="android.view.ViewGroup" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,2121][1080,2142]">
+                                        <node text="" resource-id="com.instagram.android:id/row_feed_view_group_buttons" class="android.view.ViewGroup" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,2121][1080,2142]">
+                                          <node text="6,263" resource-id="" class="android.widget.Button" package="com.instagram.android" content-desc="" clickable="true" enabled="true" selected="false" bounds="[110,2121][213,2142]"/>
+                                          <node text="" resource-id="" class="android.view.ViewGroup" package="com.instagram.android" content-desc="" clickable="true" enabled="true" selected="false" bounds="[213,2121][323,2142]">
+                                            <node text="" resource-id="com.instagram.android:id/row_feed_button_comment" class="android.widget.Button" package="com.instagram.android" content-desc="Comment" clickable="false" enabled="true" selected="false" bounds="[246,2121][312,2142]"/>
+                                          </node>
+                                          <node text="17" resource-id="" class="android.widget.Button" package="com.instagram.android" content-desc="" clickable="true" enabled="true" selected="false" bounds="[323,2121][360,2142]"/>
+                                          <node text="" resource-id="com.instagram.android:id/reposts_ufi_icon" class="android.widget.Button" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[360,2121][544,2142]">
+                                            <node text="341" resource-id="" class="android.widget.Button" package="com.instagram.android" content-desc="" clickable="true" enabled="true" selected="false" bounds="[481,2121][544,2142]"/>
+                                          </node>
+                                          <node text="989" resource-id="" class="android.widget.Button" package="com.instagram.android" content-desc="" clickable="true" enabled="true" selected="false" bounds="[655,2121][724,2142]"/>
+                                          <node text="" resource-id="com.instagram.android:id/row_feed_button_save" class="android.widget.Button" package="com.instagram.android" content-desc="Add to Saved" clickable="true" enabled="true" selected="false" bounds="[953,2121][1074,2142]"/>
+                                        </node>
+                                      </node>
+                                    </node>
+                                  </node>
+                                </node>
+                                <node text="" resource-id="com.instagram.android:id/action_bar_LinearLayout" class="android.widget.LinearLayout" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,136][1080,637]">
+                                  <node text="" resource-id="com.instagram.android:id/main_feed_action_bar" class="android.widget.FrameLayout" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,136][1080,290]">
+                                    </node>
+                                  <node text="" resource-id="com.instagram.android:id/overlay_stories_tray_container" class="android.widget.FrameLayout" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,290][1080,637]">
+                                    <node text="" resource-id="" class="androidx.recyclerview.widget.RecyclerView" package="com.instagram.android" content-desc="Example caption" clickable="false" enabled="true" selected="false" bounds="[0,290][1080,637]">
+                                      <node text="" resource-id="com.instagram.android:id/outer_container" class="android.widget.LinearLayout" package="com.instagram.android" content-desc="" clickable="true" enabled="true" selected="false" bounds="[0,290][294,637]">
+                                        <node text="" resource-id="com.instagram.android:id/avatar_view" class="android.widget.FrameLayout" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,290][294,573]">
+                                          <node text="" resource-id="" class="android.widget.Button" package="com.instagram.android" content-desc="Example caption" clickable="true" enabled="true" selected="false" bounds="[0,290][294,573]">
+                                            </node>
+                                        </node>
+                                        </node>
+                                      <node text="" resource-id="com.instagram.android:id/outer_container" class="android.widget.LinearLayout" package="com.instagram.android" content-desc="" clickable="true" enabled="true" selected="false" bounds="[294,290][588,637]">
+                                        <node text="" resource-id="com.instagram.android:id/avatar_view" class="android.widget.FrameLayout" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[294,290][588,573]">
+                                          <node text="" resource-id="" class="android.widget.Button" package="com.instagram.android" content-desc="Example caption" clickable="true" enabled="true" selected="false" bounds="[294,290][588,573]">
+                                            </node>
+                                        </node>
+                                        </node>
+                                      <node text="" resource-id="com.instagram.android:id/outer_container" class="android.widget.LinearLayout" package="com.instagram.android" content-desc="" clickable="true" enabled="true" selected="false" bounds="[588,290][882,637]">
+                                        <node text="" resource-id="com.instagram.android:id/avatar_view" class="android.widget.FrameLayout" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[588,290][882,573]">
+                                          <node text="" resource-id="" class="android.widget.Button" package="com.instagram.android" content-desc="Example caption" clickable="true" enabled="true" selected="false" bounds="[588,290][882,573]">
+                                            </node>
+                                        </node>
+                                        </node>
+                                    </node>
+                                  </node>
+                                </node>
+                              </node>
+                            </node>
+                          </node>
+                        </node>
+                      </node>
+                      <node text="" resource-id="com.instagram.android:id/tab_bar" class="android.widget.LinearLayout" package="com.instagram.android" content-desc="" clickable="false" enabled="true" selected="false" bounds="[0,2142][1080,2274]">
+                        </node>
+                    </node>
+                  </node>
+                </node>
+                </node>
+              </node>
+          </node>
+        </node>
+      </node>
+    </node>
+    </node>
+</hierarchy>
