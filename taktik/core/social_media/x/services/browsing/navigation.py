@@ -494,8 +494,8 @@ def _quote_header_completed(a, b, before, after):
         or new is None
         or old.body is not None
         or old.media
-        or new.body is None
-        or new.body_visibility is None
+        or (new.body is None and not new.media)
+        or (new.body is not None and new.body_visibility is None)
         or old.header_visibility.bounds[1] < before.content_viewport[3]
         or old.header_visibility.bounds[3] != old.visibility.bounds[3]
         or old.author != new.author
@@ -524,13 +524,27 @@ def _quote_header_completed(a, b, before, after):
     shift = max(shifts)
     return (
         shift < -2
+        and _header_loss_explained(a, b, shift, after)
         and old.header_visibility.bounds[::2] == new.header_visibility.bounds[::2]
         and new.header_visibility.bounds[1] - old.header_visibility.bounds[1] == shift
         and new.header_visibility.bounds[3] - shift >= old.header_visibility.bounds[3]
-        and new.body_visibility.bounds[1] - shift >= old.visibility.bounds[3]
+        and (
+            new.body_visibility is None
+            or new.body_visibility.bounds[1] - shift >= old.visibility.bounds[3]
+        )
         and all(
             m.visibility.bounds[1] - shift >= old.visibility.bounds[3]
             for m in new.media
+        )
+        and all(
+            x.visibility.bounds[::2] == y.visibility.bounds[::2]
+            and all(
+                abs(v - u - shift) <= 2
+                or (v == 0 and u + shift <= 0)
+                or (u >= before.content_viewport[3] and v >= after.content_viewport[3])
+                for u, v in zip(x.visibility.bounds[1::2], y.visibility.bounds[1::2])
+            )
+            for x, y in zip(a.media, b.media)
         )
     )
 
