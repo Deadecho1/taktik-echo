@@ -1128,7 +1128,19 @@ def _quote_below_video(a, b):
                 and old.source_prefix is None
                 and new.source_label is not None
                 and new.source_visibility is not None
-                and new.source_visibility.bounds[1] - shift >= old_rect[3]
+                and (
+                    new.source_visibility.bounds[1] - shift >= old_rect[3]
+                    or (
+                        bool(new.source_content)
+                        and all(
+                            v.accessible
+                            and _intersection(v.bounds, new.source_visibility.bounds)
+                            == v.bounds
+                            and v.bounds[1] - shift >= old_rect[3]
+                            for v in new.source_content
+                        )
+                    )
+                )
             )
         )
         and old_rect[::2] == new_rect[::2]

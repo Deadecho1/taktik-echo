@@ -64,6 +64,7 @@ class Media:
     description_visibility: Visibility | None = None
     source_prefix: str | None = None
     source_visibility: Visibility | None = None
+    source_content: tuple[Visibility, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -561,6 +562,11 @@ def _media(root, viewport, overlaps, excluded=()):
                         if credit is not None
                         else None
                     ),
+                    source_content=tuple(
+                        _visibility(child, viewport, overlaps) for child in credit
+                    )
+                    if credit is not None
+                    else (),
                 )
             )
             covered.add(node)
@@ -633,7 +639,7 @@ def _compact_quote_video(card, body, viewport):
     if not candidates:
         return set()
     preview = _one(candidates, "compact quoted video")
-    if body is None or len(preview) != 3:
+    if len(preview) != 3:
         raise _Unsupported("Unrecognized compact quoted video.")
     video, picture, play = preview
     rect = _rect(preview)
@@ -666,11 +672,24 @@ def _compact_quote_video(card, body, viewport):
                 and rect[3] == _rect(card)[3] >= viewport[3]
             )
         )
-        or rect[1] != _rect(body)[1]
-        or rect[2] > _rect(body)[0]
         or _intersect(rect, _rect(card)) != rect
-        or _intersect(_rect(body), _rect(card)) != _rect(body)
-        or preview.getnext() is not body
+        or (
+            body is not None
+            and (
+                rect[1] != _rect(body)[1]
+                or rect[2] > _rect(body)[0]
+                or _intersect(_rect(body), _rect(card)) != _rect(body)
+                or preview.getnext() is not body
+            )
+        )
+        or (
+            body is None
+            and (
+                preview is not card[-1]
+                or rect[1] <= max(_rect(n)[3] for n in list(card)[:-1])
+                or not (0 < rect[0] - _rect(card)[0] == _rect(card)[2] - rect[2])
+            )
+        )
     ):
         raise _Unsupported("Unrecognized compact quoted video.")
     return set(preview.iter())
@@ -889,7 +908,16 @@ def _quote(card, viewport, overlaps):
         and bool(_native_quote_image(card[-1], card))
         and _rect(card[-1])[1] > max(_rect(n)[3] for n in list(card)[:-1])
     )
-    if body is None and not articles and not header_only and not image_only:
+    video_only = (
+        body is None and len(media) == 1 and media[0].kind == "video" and compact_nodes
+    )
+    if (
+        body is None
+        and not articles
+        and not header_only
+        and not image_only
+        and not video_only
+    ):
         raise _Unsupported("Bodyless quote has no recognized preview.")
     if articles and (previews or media):
         raise _Unsupported("Mixed article and quote media.")
