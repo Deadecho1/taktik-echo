@@ -1859,6 +1859,24 @@ class X:
             if remaining <= 1:
                 raise XError("No remaining X content anchor for verified scrolling.")
             distance = min(distance, remaining * 0.75)
+            # A covered or partially entering footer cannot yet identify a
+            # bodyless video tail. Keep its body even if a later post would
+            # otherwise permit a longer gesture; the next read can reveal the
+            # complete footer before that body leaves.
+            protected = [
+                p.body_visibility.bounds[3] - screen.content_viewport[1]
+                for p in anchors
+                if p.body_visibility is not None
+                and p.body_visibility.bounds[3] > screen.content_viewport[1]
+                and p.quoted_post is None
+                and p.community_note is None
+                and len(p.media) == 1
+                and p.media[0].kind in {"video", "gif"}
+                and p.actions
+                and not _tail_anchors_available(p, screen.content_viewport)
+            ]
+            if protected:
+                distance = min(distance, min(protected) * 0.75)
         self.phone.gesture(
             "scroll", direction, region, distance=distance, exclude=exclusions
         ).require()
