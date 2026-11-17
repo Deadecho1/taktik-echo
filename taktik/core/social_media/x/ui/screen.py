@@ -2149,7 +2149,8 @@ def _missing_handle_header(header, viewport, overlaps, *, header_cover=None):
             )
             and rect[1] < viewport[1] < rect[3]
             and first[1::2] == rect[1::2]
-            and rect[0] == first[0] < first[2] < rect[2]
+            and abs(first[0] - rect[0]) <= 4
+            and first[0] < first[2] < rect[2]
         )
     if (
         len(header) not in (2, 3)
