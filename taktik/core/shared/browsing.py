@@ -8,7 +8,7 @@ WORKFLOWS = ["home", "reels", "explore", "search", "profile"]
 PLATFORM_WORKFLOWS = {
     "instagram": WORKFLOWS,
     "tiktok": ["for_you", "search", "profile"],
-    "x": ["for_you", "following"],
+    "x": ["for_you", "following", "search"],
 }
 
 ACTIONS = [

@@ -187,7 +187,7 @@ class Phone:
         return self._run("drag", lambda: self._backend.drag(start, end, region))
 
     def enter_text(self, field, text, *, submit=None):
-        """Focus a resource-id field, clear, type, verify exactly, then optionally Enter.
+        """Focus a resource ID or scoped TextField, type and verify exactly.
 
         A callable submission resolves the current platform control after verification.
         No submission takes place after partial input, failed verification or cancellation.

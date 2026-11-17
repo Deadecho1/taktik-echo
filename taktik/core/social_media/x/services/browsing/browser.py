@@ -125,7 +125,7 @@ def post_context(post):
 def _workflows(enabled_workflows):
     enabled = set(enabled_workflows)
     if not enabled or not enabled <= set(PLATFORM_WORKFLOWS["x"]):
-        raise ValueError("X supports only for_you and following timeline browsing.")
+        raise ValueError("X supports for_you, following, and search browsing.")
     return enabled
 
 
@@ -137,6 +137,7 @@ class XBrowser:
         self.phone = phone
         self.browser = X(phone)
         self.workflow = None
+        self.target = ""
         self._username = None
         self._occurrence = 0
         self._valid = False
@@ -152,20 +153,25 @@ class XBrowser:
 
     def start(self, username, workflow, target=""):
         self._valid = False
-        if workflow not in self.enabled or target:
-            raise ValueError("X requires an enabled timeline and no target.")
-        self.browser.start(username, workflow)
-        self.workflow, self._username = workflow, username
+        if workflow not in self.enabled or (workflow != "search" and target):
+            raise ValueError(
+                "X requires an enabled workflow; only search accepts a target."
+            )
+        if workflow == "search":
+            self.browser.start(username, workflow, query=target)
+        else:
+            self.browser.start(username, workflow)
+        self.workflow, self.target, self._username = workflow, target, username
         self._occurrence += 1
         self._valid = True
 
     def transition(self, workflow, target=""):
         if not self.browsing_valid:
             raise XError("X browsing context was lost; restart account verification.")
-        if workflow not in self.enabled or target:
+        if workflow not in self.enabled or (workflow != "search" and target):
             raise XError("Unavailable X workflow.", result=Result(Status.UNSUPPORTED))
-        if workflow != self.workflow:
-            self.start(self._username, workflow)
+        if (workflow, target) != (self.workflow, self.target):
+            self.start(self._username, workflow, target)
 
     def observe(self, frame_count=1, interval=1.0, previous=None):
         if not self.browsing_valid:
@@ -184,6 +190,9 @@ class XBrowser:
             else None
         )
         context = post_context(post)
+        if self.workflow == "search":
+            context["search_query"] = self.browser.query
+            context["search_tab"] = self.browser.result_tab
         if self.browser.navigation_gaps:
             context["navigation_gaps"] = list(self.browser.navigation_gaps)
         return PostObservation(

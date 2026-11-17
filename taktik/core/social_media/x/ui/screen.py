@@ -12,6 +12,7 @@ from itertools import pairwise
 
 from lxml import etree
 
+from taktik.core.shared.phone_interaction import TextField
 from taktik.core.shared.ui.geometry import bounds
 
 PACKAGE = "com.twitter.android"
@@ -256,6 +257,7 @@ class Screen:
     # Native timeline text is movement evidence, never attributed post content.
     scroll_anchors: tuple[TextSpan, ...] = ()
     navigation_areas: tuple[ScrollArea, ...] = ()
+    query_field: TextField | None = None
 
     @property
     def observable_posts(self):
@@ -3397,6 +3399,42 @@ def _collapsed_home(scope, landing, area, system_bars):
     return top, bottom
 
 
+def _search_empty(scope, query, viewport, overlays):
+    panels = scope.xpath(
+        './node/node[@scrollable="true"]/node[@class="android.widget.ScrollView"]'
+    )
+    if query is None or len(panels) != 1:
+        return False
+    panel = panels[0]
+    if (
+        len(panel) != 2
+        or len(panel.getparent()) != 1
+        or any(
+            panel.get(flag) != "false"
+            for flag in ("clickable", "long-clickable", "scrollable")
+        )
+    ):
+        return False
+    title, hint = panel
+    return (
+        title.get("text") == f"No results for “{query}”"
+        and hint.get("text")
+        == (
+            "Try searching for something else, or check your Search settings "
+            "to see if they’re protecting you from potentially sensitive content."
+        )
+        and _rect(title)[3] <= _rect(hint)[1]
+        and all(
+            node.get("class") == "android.widget.TextView"
+            and not len(node)
+            and node.get("clickable") == "false"
+            and node.get("long-clickable") == "false"
+            and _visibility(node, viewport, overlays).unobscured
+            for node in panel
+        )
+    )
+
+
 def _read(root, area):
     windows = [n for n in root if n.get("package") == PACKAGE]
     window = _one(windows, "X window")
@@ -3406,7 +3444,10 @@ def _read(root, area):
     for other in root:
         if other is window:
             continue
-        if other.get("package") == "com.google.android.inputmethod.latin":
+        if other.get("package") in {
+            "com.google.android.inputmethod.latin",
+            "com.alexal1.adbkeyboard",
+        }:
             keyboard.append(_rect(other))
         elif other.get("package") != "com.android.systemui":
             raise _Unsupported("Unrecognized external window.")
@@ -3419,16 +3460,29 @@ def _read(root, area):
         if _desc(window, "Close navigation menu"):
             raise _Unsupported("Conflicting X overlays.")
         return _post_options(window, area, external)
-    landing = _one(window.xpath('.//*[@resource-id="MainLanding"]'), "MainLanding")
+    landings = window.xpath('.//*[@resource-id="MainLanding"]')
+    standalone = not landings
+    if standalone and window.xpath(
+        './/*[@resource-id="SearchQuery" or @resource-id="Search"]'
+    ):
+        landing = window
+    else:
+        landing = _one(landings, "MainLanding")
     if _desc(landing, "Close navigation menu"):
         return _drawer(landing, area, external)
+    explore_settings = [
+        node
+        for label in ("Explore Settings", "Explore Settings. New feature available")
+        for node in _desc(landing, label)
+    ]
     markers = [n for n in landing.iter() if n.get("resource-id") in PRIMARY]
     if markers:
-        if _desc(landing, "Explore Settings"):
+        if explore_settings:
             raise _Unsupported("Conflicting Explore and primary screen markers.")
         scope = _one(markers, "primary screen marker")
         kind = PRIMARY[scope.get("resource-id")]
-    elif _desc(landing, "Explore Settings"):
+    elif explore_settings:
+        _one(explore_settings, "Explore Settings control")
         scope, kind = landing, "explore"
     else:
         raise _Unsupported("Unrecognized X screen.")
@@ -3436,41 +3490,73 @@ def _read(root, area):
         raise _Unsupported("Unexpected keyboard over X screen.")
     controls, overlays = [], list(external)
     tab = query = active = profile = None
-    collapsed = kind == "home" and not _desc(landing, "Home")
+    query_field = None
+    collapsed = (kind == "home" and not _desc(landing, "Home")) or (
+        standalone
+        and kind == "search_results"
+        and not _desc(scope, "Back")
+        and not _desc(scope, "Search")
+    )
     if kind == "search_input":
         field = _one(
             scope.xpath('.//*[@class="android.widget.EditText"]'), "query field"
         )
-        if field.get("focused") != "true":
+        if (
+            field.get("focused") != "true"
+            or field.get("enabled") != "true"
+            or field.get("focusable") != "true"
+            or field.get("password") == "true"
+        ):
             raise _Unsupported("Query field is not focused.")
         if not _visibility(field, area, external).unobscured:
             raise _Unsupported("Query field is obscured.")
         query = field.get("text", "")
+        query_field = TextField(PACKAGE, "SearchQuery")
         bar = _header_bar(field, scope)
-        bottom = _one(keyboard, "keyboard window")[1]
+        if len(keyboard) > 1:
+            raise _Unsupported("Multiple keyboard windows.")
+        bottom = keyboard[0][1] if keyboard else area[3]
         clear = _desc(field, "Clear search")
         if len(clear) > 1:
             raise _Unsupported("Multiple Clear search controls.")
         exclusions = (*external, *(_rect(_clickable(n, field)) for n in clear))
         controls.append(_target(field, "Query", scope, area, exclusions))
         top = _rect(bar)[3]
-    elif collapsed:
+    elif kind == "home" and collapsed:
         top, bottom = _collapsed_home(scope, landing, area, system_bars)
         overlays.append((area[0], bottom, area[2], area[3]))
     else:
-        navigation = _navigation(landing)
-        bottom = _rect(navigation)[1]
-        overlays.append(_rect(navigation))
-        for label in ("Home", "Explore"):
-            node = _one(_desc(navigation, label), label)
-            wrapper = node.getparent()
-            controls.append(
-                Target(
-                    label,
-                    _visibility(wrapper, area, external),
-                    selected=wrapper.get("selected") == "true",
+        if standalone:
+            if kind != "search_results":
+                raise _Unsupported("Unsupported standalone X screen.")
+            if not collapsed:
+                back = _one(_desc(scope, "Back"), "search Back")
+                back_target = _target(back, "Back", scope, area, external)
+                if not back_target.visibility.unobscured:
+                    raise _Unsupported("Search Back control is obscured.")
+                controls.append(back_target)
+            composer = _one(_desc(scope, "Post"), "search composer")
+            target = _clickable(composer, scope)
+            if not _visibility(target, area, external).unobscured:
+                raise _Unsupported("Search composer is obscured.")
+            bottom = _rect(target)[3]
+            if not area[1] < bottom < area[3]:
+                raise _Unsupported("Missing standalone search bottom inset.")
+            overlays.append((area[0], bottom, area[2], area[3]))
+        else:
+            navigation = _navigation(landing)
+            bottom = _rect(navigation)[1]
+            overlays.append(_rect(navigation))
+            for label in ("Home", "Explore"):
+                node = _one(_desc(navigation, label), label)
+                wrapper = node.getparent()
+                controls.append(
+                    Target(
+                        label,
+                        _visibility(wrapper, area, external),
+                        selected=wrapper.get("selected") == "true",
+                    )
                 )
-            )
         if kind == "detail":
             field = _one(
                 scope.xpath('.//*[@resource-id="post-detail-reply-text-field"]'),
@@ -3501,6 +3587,15 @@ def _read(root, area):
                 raise _Unsupported("Unsupported Home timeline.")
             if kind == "search_results" and tab not in required:
                 raise _Unsupported("Unsupported search result tab.")
+            if kind == "search_results" and collapsed:
+                bar = _one(system_bars, "collapsed search status bar")
+                if (
+                    bar[:3] != area[:3]
+                    or bar[3] > area[3] * 0.1
+                    or _rect(row)[1] != bar[3]
+                    or scope.xpath('.//*[@class="android.widget.EditText"]')
+                ):
+                    raise _Unsupported("Unrecognized collapsed search header.")
             if not _visibility(evidence, area, external).unobscured:
                 if (
                     kind != "home"
@@ -3518,7 +3613,7 @@ def _read(root, area):
                 top = max(system_bars[0][3], *(_rect(n)[3] for n in row.iter()))
             for wrapper in row:
                 labels = wrapper.xpath('./node[@content-desc!=""]')
-                if len(labels) == 1 and not collapsed:
+                if len(labels) == 1 and (not collapsed or kind == "search_results"):
                     controls.append(
                         Target(
                             labels[0].get("content-desc"),
@@ -3536,7 +3631,7 @@ def _read(root, area):
                     controls.append(
                         _target(node, "Show navigation drawer", scope, area, external)
                     )
-            if kind in ("search_results", "explore"):
+            if kind in ("search_results", "explore") and not collapsed:
                 search = _one(_desc(scope, "Search"), "Search header")
                 target = _clickable(search, scope)
                 query_node = _one(target.xpath('.//*[@text!=""]'), "query header text")
@@ -3545,8 +3640,13 @@ def _read(root, area):
                     scope.xpath('.//*[@class="android.widget.EditText"]')
                     or _rect(target)[3] > top
                     or not _visibility(query_node, area, external).unobscured
+                    or (
+                        standalone
+                        and _header_bar(back, scope) is not _header_bar(search, scope)
+                    )
                 ):
                     raise _Unsupported("Invalid noneditable query header.")
+                controls.append(_target(search, "Search", scope, area, external))
             if kind == "profile":
                 profile, active = _profile_identity(scope, area, top, external)
     for composer in _desc(scope, "Post"):
@@ -3592,14 +3692,15 @@ def _read(root, area):
                     posts.append(post)
             except _Unsupported as exc:
                 rejected.append(RejectedPost(bounds(header.getparent()), str(exc)))
-            if kind == "home":
+            if kind in {"home", "search_results"}:
                 try:
                     scroll_areas.append(_scroll_area(header, viewport, tuple(overlays)))
                 except _Unsupported:
                     pass
-    if kind == "home":
+    if kind in {"home", "search_results"}:
         containers = scope.xpath(
-            './node[@scrollable="true"]/node[@scrollable="true"]/node'
+            ("./" if kind == "home" else "./node/")
+            + 'node[@scrollable="true"]/node[@scrollable="true"]/node'
         )
         containers = [node for node in containers if _intersect(_rect(node), viewport)]
         # The native list owns scrolling even when a child layout cannot be
@@ -3652,8 +3753,11 @@ def _read(root, area):
         kind == "home"
         and tab == "Following"
         and bool(scope.xpath('.//*[@text="Welcome to your timeline!"]'))
+    ) or (
+        kind == "search_results"
+        and _search_empty(scope, query, viewport, tuple(overlays))
     )
-    if empty and (posts or rejected):
+    if empty and (posts or rejected or fragments):
         raise _Unsupported("Empty timeline message conflicts with post candidates.")
     return Screen(
         kind,
@@ -3675,6 +3779,7 @@ def _read(root, area):
         fragments=tuple(fragments),
         scroll_anchors=tuple(scroll_anchors),
         navigation_areas=tuple(navigation_areas),
+        query_field=query_field,
     )
 
 

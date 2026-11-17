@@ -1,0 +1,388 @@
+{
+  "schema_version": 1,
+  "environment": {
+    "package": "com.twitter.android",
+    "app_version": "12.41.0-prod.01",
+    "android_version": "13",
+    "size": [
+      1080,
+      2340
+    ],
+    "language": "en",
+    "verified_on": "2026-11-08"
+  },
+  "scope": "Manually navigated, visually reviewed captures; expectations describe evidence, not implemented adapter behavior.",
+  "sanitization": [
+    "Anonymize the account owner and birth-date text.",
+    "Preserve non-X window root attributes and bounds, clear their text, content description and hint, and remove their descendants.",
+    "Preserve all remaining X nodes, attributes, sibling order and geometry."
+  ],
+  "cases": [
+    {
+      "file": "account-drawer.xml",
+      "sha256": "f9e6cdaa59b16bb34c37032869699b4bf23b3b72cb6106af1a907dafc3f17fd0",
+      "source": {
+        "directory": "20261108T125302.648675Z-account-drawer",
+        "hierarchy": "before.xml",
+        "sha256": "63d251bd174d6acb55ddb403f79086070a7aa177a802dd14475a4c0c6e98c081",
+        "screenshot_sha256": "a8f8c7f49d1800d615473035fadd54495cba2abcf13fbc1a064b9be81be2265f"
+      },
+      "expected": {
+        "screen": "drawer",
+        "markers": [
+          "MainLanding"
+        ],
+        "tab": null,
+        "content_viewport": null,
+        "timeline_header_handles": [],
+        "active_account": "@fixture_owner"
+      }
+    },
+    {
+      "file": "for-you.xml",
+      "sha256": "75219454cdde60a894d1149ffa1fe65da488e6abc50d9f49ea957c25a61994f2",
+      "source": {
+        "directory": "20261108T125822.115185Z-for-you",
+        "hierarchy": "before.xml",
+        "sha256": "d62fccd5774d7b59d28f90ac2bf30c1d34e66174bc184f491d661c3a33ba4ab7",
+        "screenshot_sha256": "5bb84270853aa87365a99178a44f2053ca2cbf19bb9505d7eb8a21cdaa82183c"
+      },
+      "expected": {
+        "screen": "home",
+        "markers": [
+          "MainLanding",
+          "scaffold_home_tabbed"
+        ],
+        "tab": "For you",
+        "content_viewport": [
+          0,
+          433,
+          1080,
+          2120
+        ],
+        "timeline_header_handles": [
+          "@ai_with_jyoti",
+          "@quantumaix8"
+        ]
+      }
+    },
+    {
+      "file": "explore.xml",
+      "sha256": "c08c0be385e35f4881b3b935d641c248e89b3ac268b3ff66e116ff07f281ecf7",
+      "source": {
+        "directory": "20261108T131821.749043Z-explore-landing",
+        "hierarchy": "before.xml",
+        "sha256": "9f46fe1c32d50244849ccdcda2b842357739dd6f35f9113d96ee1a68928104e1",
+        "screenshot_sha256": "8a462e4e8fa512b3609b3d04f3f8e592b6ad1ca99b5aa655b2dd8c0bec514b89"
+      },
+      "expected": {
+        "screen": "explore",
+        "markers": [
+          "MainLanding"
+        ],
+        "tab": "Explore",
+        "content_viewport": [
+          0,
+          444,
+          1080,
+          2120
+        ],
+        "timeline_header_handles": []
+      }
+    },
+    {
+      "file": "search-empty.xml",
+      "sha256": "b64ebd5e2058be4b6bd227e7b510b36a58f37f4d1459dd83859e5ef2e5cb40ec",
+      "source": {
+        "directory": "20261108T131959.650170Z-search-empty-input",
+        "hierarchy": "before.xml",
+        "sha256": "c605ee2b6a16b51bcc02e428befefeac8a73b4a4acc9e551d587fac37c5af1ef",
+        "screenshot_sha256": "9c3a10bacd06b7cf5664af166946b3a21d58e0804c109aa3970f280d3516b1a3"
+      },
+      "expected": {
+        "screen": "search_input",
+        "markers": [
+          "MainLanding",
+          "SearchQuery"
+        ],
+        "tab": null,
+        "content_viewport": [
+          0,
+          312,
+          1080,
+          1364
+        ],
+        "timeline_header_handles": [],
+        "query": "",
+        "keyboard_bounds": [
+          0,
+          1364,
+          1080,
+          2340
+        ]
+      }
+    },
+    {
+      "file": "search-suggestions.xml",
+      "sha256": "86f211b9b8f32d9b200d604dd7cb6e48720d2bf5fc71b8328ad95b321ad2f893",
+      "source": {
+        "directory": "20261108T132229.060233Z-search-astronomy-suggestions",
+        "hierarchy": "before.xml",
+        "sha256": "8ace563d44aa6ea168da19e35ff25102c98181eb490c7a40991f282f764777d4",
+        "screenshot_sha256": "4979aeb63bc0f9ed1ca0991b9d2ae125ef4b8913890c28f15355feb7bfd0996f"
+      },
+      "expected": {
+        "screen": "search_input",
+        "markers": [
+          "MainLanding",
+          "SearchQuery"
+        ],
+        "tab": null,
+        "content_viewport": [
+          0,
+          312,
+          1080,
+          1364
+        ],
+        "timeline_header_handles": [],
+        "query": "astronomy",
+        "keyboard_bounds": [
+          0,
+          1364,
+          1080,
+          2340
+        ]
+      }
+    },
+    {
+      "file": "search-top.xml",
+      "sha256": "f555f97f198075fb6c2da2ecfa0fa4ed74700aaec6409597ea443da07388c4c1",
+      "source": {
+        "directory": "20261108T132407.669364Z-search-astronomy-top",
+        "hierarchy": "before.xml",
+        "sha256": "a8018c1ca09b54a8273c6f9d53b8929b674cb16fddea04f2ed027751f3719571",
+        "screenshot_sha256": "ffb48d8eab95e52f9e0d794108f50c61d8e2845b32425f18adfc098c81727517"
+      },
+      "expected": {
+        "screen": "search_results",
+        "markers": [
+          "MainLanding",
+          "Search"
+        ],
+        "tab": "Top",
+        "content_viewport": [
+          0,
+          444,
+          1080,
+          2120
+        ],
+        "timeline_header_handles": [
+          "@AstronomyVibes",
+          "@astrooalert"
+        ],
+        "query": "astronomy"
+      }
+    },
+    {
+      "file": "search-latest.xml",
+      "sha256": "584e1d65e5bf8cf00b32e973bf11a9c1407e0d0ff3a7970bdf8d8f9eeb0e1cc9",
+      "source": {
+        "directory": "20261108T135058.209178Z-search-astronomy-latest",
+        "hierarchy": "before.xml",
+        "sha256": "6525c30949506f3235e02162079502baee2c5a2f9658717cef26a3caa40ab808",
+        "screenshot_sha256": "c54c9e175d1deccb6593de1061a1aec659a5586eb9ecf646f659e27531ecb85a"
+      },
+      "expected": {
+        "screen": "search_results",
+        "markers": [
+          "MainLanding",
+          "Search"
+        ],
+        "tab": "Latest",
+        "content_viewport": [
+          0,
+          444,
+          1080,
+          2120
+        ],
+        "timeline_header_handles": [
+          "@dragonfiinch",
+          "@SzandraDMLLP",
+          "@Astronomy1world",
+          "@Vlady_Dracule"
+        ],
+        "query": "astronomy",
+        "occluded_header_handles": [
+          "@Vlady_Dracule"
+        ]
+      }
+    },
+    {
+      "file": "explore-new-feature.xml",
+      "sha256": "08fb43eb244cce5aa2b370f57f68a689add54e120fac7b7bc0db610ebdf50595",
+      "source": {
+        "directory": "tests/smoke/x-search-runs/20261117T084343.636064Z",
+        "hierarchy": "failure.xml",
+        "sha256": "9e2470f5b22078c6fde6771d4f5840b12d99a988c98a8b93bf176e554596cc3c",
+        "screenshot_sha256": "06f3b0455a1b9083afc60aba4949b3948e6208c06a8c4b18ff428f3b923b6f39"
+      },
+      "environment": {
+        "app_version": "12.42.0-prod.01",
+        "android_version": "13",
+        "verified_on": "2026-11-17"
+      },
+      "transformations": "Trend-list and external-window contents removed.",
+      "expected": {
+        "screen": "explore",
+        "tab": "Explore",
+        "query": null,
+        "collapsed": false,
+        "content_viewport": [
+          0,
+          444,
+          1080,
+          2120
+        ]
+      }
+    },
+    {
+      "file": "search-standalone.xml",
+      "sha256": "508cf7dfaeec1dd608cbed42f8c29648082a80a03dd44129b18dcb7999029cd6",
+      "source": {
+        "directory": "tests/smoke/x-search-runs/20261117T084620.764097Z",
+        "hierarchy": "failure.xml",
+        "sha256": "8eaaa2e04b209e5ad803fa4bb512a0b094b868c1e3c5283b7bd9d27ef5c3dfe8",
+        "screenshot_sha256": "b3989939220e684fd4e4eaefdc5035808819b933331b96cc468f785ae27e9df4"
+      },
+      "environment": {
+        "app_version": "12.42.0-prod.01",
+        "android_version": "13",
+        "verified_on": "2026-11-17"
+      },
+      "transformations": "Recent-search and external-window contents removed.",
+      "expected": {
+        "screen": "search_input",
+        "tab": null,
+        "query": "",
+        "collapsed": false,
+        "content_viewport": [
+          0,
+          312,
+          1080,
+          1364
+        ]
+      }
+    },
+    {
+      "file": "results-standalone.xml",
+      "sha256": "569dc8461a39de76f634bb6091fec4791a04b01f66172da23217c411ca822b03",
+      "source": {
+        "directory": "tests/smoke/x-search-runs/20261117T084833.406082Z",
+        "hierarchy": "failure.xml",
+        "sha256": "b0928c0327547629071e46f44eaa6ab32364285c9c4d66aed0031509423e72d3",
+        "screenshot_sha256": "937ba214278a0d1eed6cff78b8622372af0434aa0a36084d483b1ccfe969be7b"
+      },
+      "environment": {
+        "app_version": "12.42.0-prod.01",
+        "android_version": "13",
+        "verified_on": "2026-11-17"
+      },
+      "transformations": "External-window contents removed; public results retained.",
+      "expected": {
+        "screen": "search_results",
+        "tab": "Top",
+        "query": "astronomy",
+        "collapsed": false,
+        "content_viewport": [
+          0,
+          444,
+          1080,
+          2230
+        ]
+      }
+    },
+    {
+      "file": "results-expanded-before-scroll.xml",
+      "sha256": "bc7ec082332e6d3aea7c318d9c6e1eafd1766bd44faf36a4b237c007e90cda0a",
+      "source": {
+        "directory": "tests/smoke/x-search-runs/20261117T085143.842001Z",
+        "hierarchy": "snapshot-014.xml",
+        "sha256": "28dc88acf6674a4702dff34de9f8315f975f8c4a9a424e57573570bb22ede90f"
+      },
+      "environment": {
+        "app_version": "12.42.0-prod.01",
+        "android_version": "13",
+        "verified_on": "2026-11-17"
+      },
+      "transformations": "External-window contents removed; public results retained.",
+      "expected": {
+        "screen": "search_results",
+        "tab": "Top",
+        "query": "astronomy",
+        "collapsed": false,
+        "content_viewport": [
+          0,
+          444,
+          1080,
+          2230
+        ]
+      }
+    },
+    {
+      "file": "results-collapsed-after-scroll.xml",
+      "sha256": "ffea75d8a3e45a9b90f4c1cbd41f7aed73d4fd2efd9df9a271550146bc510a88",
+      "source": {
+        "directory": "tests/smoke/x-search-runs/20261117T085143.842001Z",
+        "hierarchy": "failure.xml",
+        "sha256": "51ee01ac2bff019435f5e1ae62c678ea8c09feae20895cb04c6a3d814e6d0c21",
+        "screenshot_sha256": "eb33b89084665bbd50754674e74490cc6f77934632475aa0e4c2402f6f155651"
+      },
+      "environment": {
+        "app_version": "12.42.0-prod.01",
+        "android_version": "13",
+        "verified_on": "2026-11-17"
+      },
+      "transformations": "External-window contents removed; public results retained.",
+      "expected": {
+        "screen": "search_results",
+        "tab": "Top",
+        "query": null,
+        "collapsed": true,
+        "content_viewport": [
+          0,
+          331,
+          1080,
+          2230
+        ]
+      }
+    },
+    {
+      "file": "no-results.xml",
+      "sha256": "be9dea71bd73f679894d8a1a4b3be4f33b37ed1138022b15e8165a1b1a2e5207",
+      "source": {
+        "directory": "tests/smoke/x-search-runs/20261117T090208.981499Z",
+        "hierarchy": "failure.xml",
+        "sha256": "c710992195894f404f19a59ff92d7962090c4b5bb357d2ebc564a4fcdf539b11",
+        "screenshot_sha256": "db8e9fb7304c8261685cf07aa8de1f2047c928864b1a7e97a321f5f26ceed714"
+      },
+      "environment": {
+        "app_version": "12.42.0-prod.01",
+        "android_version": "13",
+        "verified_on": "2026-11-17"
+      },
+      "transformations": "External-window contents removed; native empty-result panel and test query retained.",
+      "expected": {
+        "screen": "search_results",
+        "tab": "Top",
+        "query": "zzqtaktiksearch20261117qxzz",
+        "empty": true,
+        "content_viewport": [
+          0,
+          444,
+          1080,
+          2230
+        ]
+      }
+    }
+  ]
+}

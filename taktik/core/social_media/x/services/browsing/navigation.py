@@ -22,6 +22,7 @@ from taktik.core.social_media.x.ui.screen import (
 )
 
 TIMELINES = {"for_you": "For you", "following": "Following"}
+SEARCH_TABS = {"top": "Top", "latest": "Latest"}
 READ_ATTEMPTS = 8
 SCROLL_ATTEMPTS = 4
 RESTORE_ATTEMPTS = 8
@@ -61,8 +62,8 @@ def _free_regions(area, exclusions, minimum_width):
 
 def scroll_region(screen):
     viewport = screen.content_viewport
-    if screen.kind != "home" or viewport is None:
-        raise XError("X scrolling requires a recognized Home viewport.")
+    if screen.kind not in {"home", "search_results"} or viewport is None:
+        raise XError("X scrolling requires a recognized feed viewport.")
     width, height = viewport[2] - viewport[0], viewport[3] - viewport[1]
     areas = screen.scroll_areas or screen.navigation_areas
     exclusions = (
@@ -96,11 +97,21 @@ def _scroll_motion(before, after):
     This permits navigation past an unsupported post, never its observation.
     """
     if (
-        before.kind != "home"
-        or after.kind != "home"
+        before.kind not in {"home", "search_results"}
+        or after.kind != before.kind
         or (before.collapsed and not after.collapsed)
+        or (
+            before.kind == "search_results"
+            and (
+                before.tab != after.tab
+                or (
+                    before.query != after.query
+                    and not (after.collapsed and after.query is None)
+                )
+            )
+        )
     ):
-        raise XError("Native X movement requires two Home snapshots.")
+        raise XError("Native X movement requires the same feed context.")
 
     def key(anchor):
         return anchor.text, anchor.visibility.bounds[0]
@@ -2204,6 +2215,8 @@ class X:
         self.phone = phone
         self.verified_account = None
         self.timeline = None
+        self.query = None
+        self.result_tab = "top"
         self._expected = None
         self._screen = None
         self._index = None
@@ -2289,6 +2302,18 @@ class X:
                     lambda s: s.kind not in {"post_options", "unsupported"},
                     "post-options dismissal",
                 )
+            elif screen.kind == "search_results" and screen.collapsed:
+                self._gesture(screen, "down")
+                screen = self._wait_for(
+                    lambda s: s.kind == "search_results", "search header expansion"
+                )
+            elif screen.kind == "search_results" and not any(
+                target.label == "Home" for target in screen.controls
+            ):
+                self._tap(screen, "Back")
+                screen = self._wait_for(
+                    lambda s: s.kind != "unsupported", "return from X search"
+                )
             elif screen.kind in {"profile", "detail", "explore", "search_results"}:
                 self._tap(screen, "Home")
                 screen = self._wait_for(lambda s: s.kind == "home", "Home navigation")
@@ -2302,16 +2327,29 @@ class X:
                 )
         raise XError("Cannot reach X Home within the navigation limit.")
 
-    def start(self, username, timeline="for_you"):
-        """Launch, verify the exact drawer account, and select a Home timeline."""
+    def start(self, username, timeline="for_you", *, query=None, result_tab="top"):
+        """Verify the drawer account, then open a Home timeline or exact search."""
         with self._operation():
             self._invalidate()
             handle = "@" + username.removeprefix("@")
-            if not HANDLE.fullmatch(handle) or timeline not in TIMELINES:
+            if not HANDLE.fullmatch(handle) or timeline not in {*TIMELINES, "search"}:
                 raise ValueError(
-                    "A valid X handle and for_you/following timeline are required."
+                    "A valid X handle and for_you/following/search workflow are required."
                 )
+            if timeline == "search":
+                if (
+                    not isinstance(query, str)
+                    or not query.strip()
+                    or any(ord(c) < 32 or ord(c) == 127 for c in query)
+                    or result_tab not in SEARCH_TABS
+                ):
+                    raise ValueError(
+                        "X search requires a single-line query and top/latest tab."
+                    )
+            elif query is not None or result_tab != "top":
+                raise ValueError("Only X search accepts a query or result tab.")
             self._expected, self.timeline = handle.lower(), timeline
+            self.query, self.result_tab = query, result_tab
             self.navigation_gaps = []
             self.phone.command("launch", PACKAGE).require()
             screen = self._wait_for(lambda s: s.kind != "unsupported", "X launch")
@@ -2322,13 +2360,68 @@ class X:
             self._tap(drawer, "Close navigation menu")
             screen = self._wait_for(lambda s: s.kind == "home", "return to X Home")
             screen = self._reach_home(screen)
-            if screen.tab != TIMELINES[timeline]:
-                self._tap(screen, TIMELINES[timeline])
-            screen = self._wait_for(self._on_timeline, "selected X timeline")
+            if timeline == "search":
+                screen = self._search(screen)
+            else:
+                if screen.tab != TIMELINES[timeline]:
+                    self._tap(screen, TIMELINES[timeline])
+                screen = self._wait_for(self._on_timeline, "selected X timeline")
             self.verified_account = account
             return self._first_post(screen)
 
+    def _search(self, home):
+        self._tap(home, "Explore")
+        screen = self._wait_for(
+            lambda s: s.kind in {"explore", "search_results"}, "X Explore"
+        )
+        self._tap(screen, "Search")
+        screen = self._wait_for(lambda s: s.kind == "search_input", "X query field")
+        if screen.query_field is None:
+            raise XError("No verified X query field.")
+        self.phone.enter_text(
+            screen.query_field, self.query, submit=self._submit_search
+        ).require()
+        screen = self._wait_for(
+            lambda s: s.kind == "search_results", "X search results"
+        )
+        screen = self._reveal_search_query(screen)
+        if screen.tab != SEARCH_TABS[self.result_tab]:
+            self._tap(screen, SEARCH_TABS[self.result_tab])
+            screen = self._wait_for(self._on_timeline, "X search result tab")
+        return screen
+
+    def _reveal_search_query(self, screen):
+        for attempt in range(RESTORE_ATTEMPTS + 1):
+            if not screen.collapsed:
+                if screen.query != self.query:
+                    raise XError("X results do not display the requested search query.")
+                return screen
+            if attempt == RESTORE_ATTEMPTS:
+                break
+            self._gesture(screen, "down")
+            screen = self._wait_for(
+                lambda s: s.kind == "search_results", "search query header expansion"
+            )
+        raise XError("Cannot reveal the X search query within the navigation limit.")
+
+    def _submit_search(self):
+        screen = self._snapshot()
+        if screen.kind != "search_input" or screen.query != self.query:
+            raise XError("X query context changed; nothing submitted.")
+        return self.phone.command("enter")
+
+    def search(self, query, *, tab="top"):
+        """Start a new, account-verified search from an active browsing session."""
+        self._require_started()
+        return self.start(self._expected, "search", query=query, result_tab=tab)
+
     def _on_timeline(self, screen):
+        if self.timeline == "search":
+            return (
+                screen.kind == "search_results"
+                and screen.query == self.query
+                and screen.tab == SEARCH_TABS[self.result_tab]
+            )
         return screen.kind == "home" and screen.tab == TIMELINES[self.timeline]
 
     def _require_started(self):
@@ -2336,6 +2429,31 @@ class X:
             raise XError("Start X and verify its account before browsing.")
 
     def _check_timeline(self, screen, before=None, *, scrolling=False):
+        if self.timeline == "search":
+            if (
+                before is not None
+                and before.collapsed != screen.collapsed
+                and not scrolling
+            ):
+                raise XError("X search controls changed outside adapter scrolling.")
+            if (
+                screen.kind == "search_results"
+                and screen.collapsed
+                and before is not None
+            ):
+                if (
+                    self.verified_account is None
+                    or before.kind != "search_results"
+                    or before.tab != SEARCH_TABS[self.result_tab]
+                    or screen.tab != SEARCH_TABS[self.result_tab]
+                    or (not before.collapsed and before.query != self.query)
+                    or screen.query is not None
+                ):
+                    raise XError("Collapsed X search has no verified query continuity.")
+                return
+            if not self._on_timeline(screen):
+                raise XError("X left the verified search query or result tab.")
+            return
         if (
             before is not None
             and before.collapsed != screen.collapsed
@@ -2367,7 +2485,7 @@ class X:
     def _advance_snapshot(self, before, pending):
         for attempt in range(ADVANCE_READ_ATTEMPTS):
             screen = self._snapshot()
-            if screen.waiting_for != "home_composer":
+            if self.timeline == "search" or screen.waiting_for != "home_composer":
                 result = self._advance_alignment(before, screen, pending)
                 if result[2] is not False or attempt == ADVANCE_READ_ATTEMPTS - 1:
                     return result
@@ -2509,6 +2627,19 @@ class X:
     def _frame(self, screen, verified):
         self._gesture(screen, "up")
         after = self._snapshot()
+        if self.timeline == "search":
+            self._check_timeline(after, screen, scrolling=True)
+            if after.collapsed:
+                if verified:
+                    try:
+                        _, moved = _alignment(screen, after, scrolling=True)
+                    except XError:
+                        pass
+                    else:
+                        if screen.collapsed or moved:
+                            return after, True
+                return after, False
+            return after, True
         if after.kind == "home" and after.collapsed:
             if verified:
                 try:
@@ -2527,8 +2658,11 @@ class X:
         for attempt in range(RESTORE_ATTEMPTS + 1):
             if self._on_timeline(screen):
                 return screen
-            if screen.kind != "home" or not screen.collapsed:
+            expected_kind = "search_results" if self.timeline == "search" else "home"
+            if screen.kind != expected_kind or not screen.collapsed:
                 raise XError("Cannot verify the X timeline after initial framing.")
+            if self.timeline == "search" and screen.tab != SEARCH_TABS[self.result_tab]:
+                raise XError("Cannot restore a different X search result tab.")
             if attempt == RESTORE_ATTEMPTS:
                 break
             self._gesture(screen, "down")
@@ -2694,4 +2828,6 @@ class X:
         """Reverify startup after context loss; this establishes a new position."""
         if self._expected is None or self.timeline is None:
             raise XError("No previous X account and timeline to recover.")
-        return self.start(self._expected, self.timeline)
+        return self.start(
+            self._expected, self.timeline, query=self.query, result_tab=self.result_tab
+        )
