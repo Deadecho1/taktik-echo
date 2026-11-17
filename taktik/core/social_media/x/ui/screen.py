@@ -2925,7 +2925,63 @@ def _clipped_media_before_footer(container, body, media, media_nodes, viewport):
         return False
     # Prefix nodes and translation controls are validated by _fragment.
     children = list(container)
-    for node in children[children.index(body) + 1 :]:
+    following = children[children.index(body) + 1 :]
+    if len(following) == 1 + len(ACTION_LABELS):
+        wrapper, *slots = following
+        rect = _rect(wrapper)
+        slot_rects = [_rect(n) for n in slots]
+        if (
+            wrapper.get("class") == "android.view.View"
+            and wrapper.get("clickable") == "true"
+            and rect[:3] == video[:3]
+            and 0 <= video[3] - rect[3] <= 14
+            and any(n in media_nodes for n in wrapper.iter())
+            and all(
+                n.get("class") == "android.view.View"
+                and len(n) <= 2
+                and not n.get("text")
+                and not n.get("content-desc")
+                and all(
+                    n.get(flag) == "true"
+                    for flag in ("clickable", "long-clickable", "focusable", "enabled")
+                )
+                and n.get("scrollable") != "true"
+                and all(
+                    child.get("class") == "android.view.View"
+                    and not len(child)
+                    and not child.get("text")
+                    and not child.get("content-desc")
+                    and child.get("enabled") == "true"
+                    and not any(
+                        child.get(flag) == "true"
+                        for flag in (
+                            "clickable",
+                            "long-clickable",
+                            "focusable",
+                            "scrollable",
+                        )
+                    )
+                    and _rect(child)[1] >= _rect(n)[1]
+                    and _rect(child)[3] == _rect(n)[3]
+                    and _intersect(_rect(child), _rect(container)) == _rect(child)
+                    for child in n
+                )
+                for n in slots
+            )
+            and all(
+                r[1] == rect[3] >= viewport[3]
+                and r[3] == _rect(container)[3]
+                and _intersect(r, _rect(container)) == r
+                for r in slot_rects
+            )
+            and all(left[2] == right[0] for left, right in pairwise(slot_rects))
+            and slot_rects[0][0] < video[0]
+            and slot_rects[-1][2] == _rect(container)[2]
+        ):
+            # The offscreen slots supply no action labels or state. They only
+            # explain the native footer structure beneath the retained media.
+            return True
+    for node in following:
         if _rect(node) == video and any(n in media_nodes for n in node.iter()):
             continue
         rect = _rect(node)
