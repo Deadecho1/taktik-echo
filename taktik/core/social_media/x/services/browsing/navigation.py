@@ -1247,7 +1247,7 @@ def _captionless_credit_revealed(a, b):
     )
 
 
-def _captionless_credit_faded(a, b, before, after):
+def _captionless_credit_faded(a, b, before, after, *, stationary=False):
     """Reuse video-tail proof for a fading credit under a retained author row."""
     if (
         isinstance(a, PostFragment)
@@ -1263,7 +1263,7 @@ def _captionless_credit_faded(a, b, before, after):
     old, new = a.media[0], b.media[0]
     shift = new.visibility.bounds[3] - old.visibility.bounds[3]
     if (
-        shift >= -2
+        (shift != 0 if stationary else shift >= -2)
         or old.kind != "video"
         or old.source_label is None
         or old.source_visibility is None
@@ -1912,7 +1912,7 @@ def _quote_body_annotation_continuity(a, b, shift, before, after):
     return all(v.visibility.bounds[3] + shift <= after.content_viewport[1] for v in old)
 
 
-def _alignment(before, after, *, scrolling=False):
+def _alignment(before, after, *, scrolling=False, refresh_index=None):
     """Align overlapping ordered occurrences; repeated keys must be unambiguous."""
     old, new = (*before.fragments, *before.posts), (*after.fragments, *after.posts)
     if not old or not new:
@@ -1926,6 +1926,16 @@ def _alignment(before, after, *, scrolling=False):
             or _footer_match(a, b, after)
             or _preview_tail_match(a, b, before, after)
             or _quoted_tail_match(a, b, before, after)
+            or (
+                not scrolling
+                and refresh_index is not None
+                and any(
+                    a is post
+                    for index, post in enumerate(before.posts)
+                    if index != refresh_index
+                )
+                and _captionless_credit_faded(a, b, before, after, stationary=True)
+            )
         )
 
     def compatible(a, b):
@@ -2444,7 +2454,7 @@ class X:
 
     def _refresh_alignment(self, screen):
         try:
-            _alignment(self._screen, screen)
+            _alignment(self._screen, screen, refresh_index=self._index)
             return
         except XError:
             if self._index is None:
@@ -2471,7 +2481,7 @@ class X:
         stable = replace(
             screen, posts=tuple(p for p in screen.posts if p not in revealed)
         )
-        _alignment(self._screen, stable)
+        _alignment(self._screen, stable, refresh_index=self._index)
 
     def advance(self):
         """Select the next visible occurrence, scrolling with bounded verification."""
