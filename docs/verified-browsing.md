@@ -73,9 +73,18 @@ Their configuration, model policy, and integration schedules are independent of 
 
 `X.visit_profile()` visits the selected author's verified profile and returns header text and observable profile posts separately from the source post.
 `X.inspect_thread(max_posts=10, max_scrolls=4)` returns bounded, independently attributed thread observations and native detail metadata, retaining the original source content key separately.
-The main detail author/body/media remain inaccessible on the tested version, so `main_post=None` and `main_verified=False`; the result never claims complete thread coverage.
+The detail reader independently extracts the main author, caption, media, and supported quoted content from native accessibility.
+`detail.main_post` remains separate from reply `posts` and from the source content key.
+`main_verified` requires a source match and an observable main-post snapshot; missing or clipped content remains explicit.
+The result never claims complete thread coverage.
+`main_text` contains the observed caption prefix, and `main_text_complete` becomes true only when the complete caption fits visibly or its native character positions have been covered across verified scrolls.
+A long caption can therefore be completely read while `detail.main_post.body_complete` and `main_verified` remain false for its clipped initial snapshot.
+This preserves the snapshot visibility contract without presenting offscreen text as observed.
 `max_scrolls=0` performs an initial detail visit without forward scrolling.
-Milestone 2 remains partial because main-post detail extraction is unavailable.
+The temporary `Phone.read("screen_reader_hierarchy")` operation uses the session-owned UIAutomator service, requests native screen-reader semantics, and restores the service and configuration before returning.
+Ordinary reply nodes are retained only when the paired detail timestamp, controls, and geometry agree.
+This content-reading path does not use OCR.
+The [native detail validation record](validation/2026-11-17-x-detail-evidence.md) documents supported layouts, long-text evidence, packaging, and limits.
 
 `X.read_more()` activates the native inline Show more span and returns the independently parsed expanded post.
 `XBrowser.read_more(observation)` and `act("read_more", observation)` retain the observation identity across the verified text change and mark the next caption expanded.
@@ -94,6 +103,8 @@ The gallery's caption metadata can retain text beyond the visibly shortened capt
 Explicit media inspection supplies frames and `post_context.media_inspection` on the next observation while retaining its identity and caption.
 
 Successful visits verify the prior browsing context and selected occurrence after native Back navigation.
-Missing Back headers are restored within a fixed gesture bound; uncertain actions are not retried, and failed verification requires explicit recovery.
+A retained detail position is first framed until its native main-author header is visible.
+Missing Back headers are restored within a fixed gesture bound using a continuous control-free path long enough to expand the collapsed toolbar.
+Uncertain actions are not retried, and failed verification requires explicit recovery.
 Direct profile/detail/gallery and thread/video round trips passed on X `12.42.0-prod.01`, Android 13, at 1080 × 2340, with keyboard restoration and cleanup.
 The [inspection validation record](validation/2026-11-17-x-inspection.md) documents limits, captured evidence, and pending human visual review.

@@ -61,7 +61,7 @@ def _free_regions(area, exclusions, minimum_width):
                 yield left, top, right, area[3]
 
 
-def scroll_region(screen):
+def scroll_region(screen, *, restore=False):
     viewport = screen.content_viewport
     if screen.kind not in {"home", "search_results", "detail"} or viewport is None:
         raise XError("X scrolling requires a recognized feed viewport.")
@@ -71,6 +71,9 @@ def scroll_region(screen):
         *screen.overlaps,
         *(rect for area in areas for rect in area.exclusions),
     )
+    restoring = restore and screen.kind == "detail"
+    minimum_width = width * (0.02 if restoring else 0.08)
+    minimum_height = height * 0.2 if restoring else width * 0.1
     regions = []
     for candidate in areas:
         area = candidate.visibility.visible_bounds
@@ -78,15 +81,20 @@ def scroll_region(screen):
             continue
         regions.extend(
             rect
-            for rect in _free_regions(area, exclusions, width * 0.08)
-            if rect[3] - rect[1] >= width * 0.1
+            for rect in _free_regions(area, exclusions, minimum_width)
+            if rect[3] - rect[1] >= minimum_height
         )
     if not regions:
         raise XError(
             "No continuous X scroll region excludes nested controls and media."
         )
-    region = max(regions, key=lambda r: (r[3] - r[1], r[2] - r[0]))
-    distance = min(height * 0.3, (region[3] - region[1]) * 0.6)
+    region = max(
+        regions,
+        key=lambda r: (
+            (r[2] - r[0], r[3] - r[1]) if restoring else (r[3] - r[1], r[2] - r[0])
+        ),
+    )
+    distance = min(height * (0.16 if restoring else 0.3), (region[3] - region[1]) * 0.6)
     return region, distance, exclusions
 
 
@@ -2242,7 +2250,23 @@ class X:
         if self.phone.read("app").get("package") != PACKAGE:
             return Screen("unsupported", reason="X is not the foreground app.")
         size = self.phone.read("size")
-        result = read_screen(self.phone.read("hierarchy"), size)
+        xml = self.phone.read("hierarchy")
+        result = read_screen(xml, size)
+        if result.kind == "detail" and result.detail.main_post is None:
+            from ...ui.detail import combine_hierarchies
+            from ...ui.screen import _Unsupported
+
+            native = self.phone.read("screen_reader_hierarchy")
+            try:
+                combined = combine_hierarchies(xml, native)
+            except _Unsupported as error:
+                raise XError(str(error)) from error
+            result = read_screen(combined, size)
+            if result.kind != "detail":
+                return Screen(
+                    "unsupported",
+                    reason="X left the detail while reading native content.",
+                )
         if self.phone.read("app").get("package") != PACKAGE:
             return Screen(
                 "unsupported", reason="Foreground app changed while reading X."
@@ -2557,9 +2581,9 @@ class X:
         self._screen, self._index = screen, index
         return screen.posts[index] if index is not None else None
 
-    def _gesture(self, screen, direction):
-        region, distance, exclusions = scroll_region(screen)
-        if direction == "down":
+    def _gesture(self, screen, direction, *, restore=False):
+        region, distance, exclusions = scroll_region(screen, restore=restore)
+        if direction == "down" and not restore:
             distance = min(
                 distance,
                 (screen.content_viewport[3] - screen.content_viewport[1]) * 0.1,
@@ -2732,10 +2756,16 @@ class X:
             region = max(regions, key=lambda r: (r[2] - r[0]) * (r[3] - r[1]))
             self.phone.tap(region, exclude=target.overlaps).require()
             screen = self._wait_for(lambda s: s.kind == kind, f"X {kind} inspection")
+            if kind == "detail" and screen.detail.main_header_visible is False:
+                screen = self._restore_main_header(screen)
             yield source, screen
             current = self._snapshot()
             if current.kind != kind:
                 raise XError("X left the inspection before returning to the feed.")
+            if kind == "detail":
+                from .inspection import _verify_main_source
+
+                _verify_main_source(source, current.detail.main_post)
             self._inspection_back(current)
             restored = self._wait_for(
                 lambda s: s.kind == self._screen.kind,
@@ -2746,6 +2776,23 @@ class X:
             if self._index is None or not restored.posts[self._index].observable:
                 raise XError("The original X post is not observable after inspection.")
             self._select(restored, self._index)
+
+    def _restore_main_header(self, screen):
+        from .inspection import _detail_context
+
+        for _ in range(RESTORE_ATTEMPTS):
+            before = screen
+            self._gesture(before, "down", restore=True)
+            screen = self._snapshot()
+            _detail_context(before, screen)
+            if screen.detail.main_header_visible is True:
+                return screen
+            if (
+                screen.detail.main_header_visible is None
+                or _scroll_motion(screen, before) >= -2
+            ):
+                raise XError("Cannot verify progress toward the X main-post header.")
+        raise XError("Cannot restore the X main-post header within the limit.")
 
     def _inspection_back(self, screen):
         for attempt in range(RESTORE_ATTEMPTS + 1):
@@ -2761,7 +2808,9 @@ class X:
                 or attempt == RESTORE_ATTEMPTS
             ):
                 break
-            self._gesture(screen, "down")
+            # Short reverse drags are consumed by the collapsed toolbar, which
+            # then snaps closed. Restore it with one continuous longer path.
+            self._gesture(screen, "down", restore=True)
             screen = self._wait_for(
                 lambda s: s.kind == "detail", "detail header restoration"
             )

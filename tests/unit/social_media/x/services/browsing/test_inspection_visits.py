@@ -37,6 +37,8 @@ class InspectionReplay(SearchReplay):
         self.capture_count = 0
 
     def read(self, what):
+        if what == "screen_reader_hierarchy":
+            return self.xml
         if what == "app":
             return {"package": self.package}
         if what == "screenshot":

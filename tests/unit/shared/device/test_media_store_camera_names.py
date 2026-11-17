@@ -178,8 +178,8 @@ def test_a_listing_error_without_an_exit_code_is_not_pushed_into(phone, media, m
     assert pushed_media_registry.load("dev") == []
 
 
-def test_only_media_store_pushes_a_file_to_the_phone():
-    """Every publish goes through `push_media`, so every pushed medium gets a camera name."""
+def test_file_pushes_stay_in_media_store_or_the_scoped_native_reader():
+    """Media uses camera names; the reader owns one private temporary DEX."""
     repo = pathlib.Path(media_store.__file__).resolve().parents[4]
     pushers = sorted(
         str(path.relative_to(repo))
@@ -187,7 +187,10 @@ def test_only_media_store_pushes_a_file_to_the_phone():
         for path in root.rglob("*.py")
         if re.search(r"['\"]push['\"]|\.push\(", path.read_text(encoding="utf-8", errors="ignore"))
     )
-    assert pushers == [str(pathlib.Path("taktik/core/shared/device/media_store.py"))]
+    assert pushers == [
+        str(pathlib.Path("taktik/core/shared/device/media_store.py")),
+        str(pathlib.Path("taktik/core/shared/phone_interaction/_accessibility.py")),
+    ]
 
 
 # --- registry ---------------------------------------------------------------------------------

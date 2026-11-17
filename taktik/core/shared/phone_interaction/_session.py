@@ -160,7 +160,7 @@ class Phone:
         return result
 
     def read(self, what):
-        """Read screenshot (PIL), hierarchy (XML), size, clipboard or app info."""
+        """Read screenshot, hierarchy, screen_reader_hierarchy, size, clipboard or app."""
         return self._run("read_" + what, lambda: self._backend.read(what)).require()
 
     def command(self, name, value=None):

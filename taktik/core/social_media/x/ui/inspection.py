@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 
+from .detail_text import DetailText, read_text
 from .screen import (
     HANDLE,
     Post,
@@ -35,11 +36,12 @@ class Profile:
 
 @dataclass(frozen=True)
 class Detail:
-    # The main native views are empty in the supported accessibility hierarchy.
     main_post: Post | None
-    main_reason: str
+    main_reason: str | None
     timestamp: TextSpan | None
     sort_order: TextSpan | None
+    text: DetailText | None = None
+    main_header_visible: bool | None = None
 
 
 @dataclass(frozen=True)
@@ -175,11 +177,24 @@ def read_detail(scope, viewport, overlays):
                 return TextSpan(node.get("text"), visibility)
         return None
 
+    from .detail import main_header_visible, read_main
+
+    reason = (
+        "Main post unavailable: the inspected detail layout omits its author and body."
+    )
+    try:
+        main = read_main(listing, viewport, overlays, timestamp)
+        if main is not None:
+            reason = None
+    except _Unsupported as error:
+        main, reason = None, str(error)
     detail = Detail(
-        None,
-        "Main post unavailable: the inspected detail layout omits its author and body.",
+        main,
+        reason,
         span(timestamp),
         span(sort_node),
+        read_text(listing, viewport, overlays, timestamp),
+        main_header_visible(listing, viewport, overlays),
     )
     posts, rejected, areas, anchors = [], [], [], []
     for header in listing.xpath('./node/node[@resource-id="timeline_post"]'):
@@ -217,6 +232,8 @@ def read_detail(scope, viewport, overlays):
             visibility = _visibility(n, viewport, overlays)
             if visibility.accessible and visibility.visible_bounds is not None:
                 anchors.append(TextSpan(text, visibility))
+    if detail.text is not None:
+        anchors.extend(detail.text.anchors)
     return detail, tuple(posts), tuple(rejected), tuple(areas), tuple(anchors)
 
 

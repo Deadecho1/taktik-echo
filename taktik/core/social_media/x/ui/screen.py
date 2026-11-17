@@ -595,6 +595,40 @@ def _gif_description_control(node):
     return control
 
 
+def _native_video_overlays(video):
+    root = video.getparent()
+    if (
+        len(root) != 3
+        or root[0] is not video
+        or len(root[2]) != 1
+        or root[2][0].get("content-desc") != "play"
+    ):
+        return set()
+    _, picture, overlay = root
+    glyph = overlay[0]
+    if (
+        _rect(video) != _rect(root)
+        or _rect(picture) != _rect(root)
+        or _intersect(_rect(root), _rect(overlay)) != _rect(overlay)
+        or _intersect(_rect(overlay), _rect(glyph)) != _rect(glyph)
+        or picture.get("content-desc")
+        or overlay.get("content-desc")
+        or len(picture)
+        or len(glyph)
+        or any(
+            n.get("class") != "android.view.View"
+            or n.get("text")
+            or any(
+                n.get(flag) == "true"
+                for flag in ("clickable", "long-clickable", "scrollable")
+            )
+            for n in (video, picture, overlay, glyph)
+        )
+    ):
+        raise _Unsupported("Unrecognized native video play overlay.")
+    return {picture, overlay, glyph}
+
+
 def _media(root, viewport, overlaps, excluded=()):
     result, covered = [], set()
     for node in root.iter():
@@ -609,6 +643,8 @@ def _media(root, viewport, overlaps, excluded=()):
         ):
             if described_gif:
                 covered.add(_gif_description_control(node))
+            if desc == "Video":
+                covered.update(_native_video_overlays(node))
             credit = _video_credit(node) if desc == "Video" else None
             source_label = source_prefix = None
             if credit is not None:
@@ -3804,9 +3840,7 @@ def _read(root, area):
             )
     return Screen(
         kind,
-        reason="Main post unavailable: the inspected detail layout omits its author and body."
-        if kind == "detail"
-        else None,
+        reason=detail.main_reason if detail is not None else None,
         tab=tab,
         query=query,
         active_account=active,

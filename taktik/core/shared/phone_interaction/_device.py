@@ -64,6 +64,10 @@ class TaktikDevice:
             return self._call("window_size")
         if what == "hierarchy":
             return self._call("dump_hierarchy")
+        if what == "screen_reader_hierarchy":
+            from ._accessibility import read_hierarchy
+
+            return read_hierarchy(self)
         if what == "screenshot":
             return self._call("screenshot")
         if what == "app":

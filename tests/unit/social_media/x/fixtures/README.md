@@ -5,6 +5,11 @@ These trimmed XML hierarchies retain the geometry and native English controls of
 text is replaced with fixture values. They are synthetic parser and continuity
 inputs, not full live-feed evidence or proof of pixel visibility.
 
+The `detail/` subdirectory contains sanitized native and ordinary captures, including character geometry needed for long-caption coverage.
+Its manifest records the original and sanitized SHA-256 hashes.
+Those captures preserve public author/body text for independent comparison and replace the test account identity.
+They establish native XML evidence; human visual review remains separate.
+
 `partnership-before.xml` ends at the bottom-clipped video before the disclosure
 enters XML. `partnership-probe-after.xml` retains the author and reveals the native
 Paid partnership icon/text pair between video and actions.

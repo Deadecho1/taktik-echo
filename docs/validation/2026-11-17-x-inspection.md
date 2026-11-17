@@ -2,7 +2,8 @@
 
 Profile visits, bounded thread inspection, image-gallery capture, visible video/GIF capture, and verified return are implemented in the standalone Taktik fork.
 The initial inspection revision left native main-post detail extraction and text expansion unavailable on the tested X version.
-The subsequent [inline expansion continuation](2026-11-17-x-expansion.md) adds verified `read_more`; main-post detail extraction remains unavailable and milestone 2 remains partial.
+The subsequent [inline expansion continuation](2026-11-17-x-expansion.md) added verified `read_more`.
+The [native detail continuation](2026-11-17-x-detail-evidence.md) now adds independent main-post reads, separate quoted content, and bounded long-caption coverage.
 The browser does not fill missing detail content from the source feed or a reply.
 
 ## Interface and evidence
@@ -14,7 +15,8 @@ The profile's first post can have a different author, including a repost.
 `X.inspect_thread(max_posts=10, max_scrolls=4)` opens the selected post through a free region outside text, links, media, and nested controls.
 It returns a source content key, native detail metadata, independently parsed thread posts, a scroll count, and a stop reason.
 The returned posts are observations from the opened thread; no parent/reply relationship or complete thread enumeration is inferred.
-`main_post=None`, `main_verified=False`, and `complete=False` preserve the main-post and coverage limits.
+In this initial revision, `main_post=None`, `main_verified=False`, and `complete=False` preserved the missing-main and coverage limits.
+The native continuation can now verify the main post and complete caption text; `complete=False` still prevents a claim of exhaustive thread coverage.
 `max_scrolls=0` reads only the initial detail surface.
 The hard limits are 50 observed content keys, 8 forward gestures, and 8 gestures to restore a hidden Back header.
 No-progress, insufficient geometry, or unverified movement ends collection without claiming completion.

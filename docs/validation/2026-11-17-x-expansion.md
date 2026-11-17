@@ -5,14 +5,15 @@
 The new observation has the expanded native caption, its new content key, and `caption_expanded=True`.
 An already complete caption is a verified no-op.
 
-Milestone 2 remains partial: the separate native detail screen still omits its main author, body, and media.
-Its `main_post=None` and `main_verified=False` remain unchanged, and bounded thread inspection never claims complete coverage.
+At this revision, ordinary detail XML omitted its main author, body, and media.
+The subsequent [native detail continuation](2026-11-17-x-detail-evidence.md) independently reads those fields and supports bounded long-caption coverage without adding OCR.
+Bounded thread inspection never claims complete conversation coverage.
 
 ## Evidence and implementation
 
 Opening the post and activating its inline Show more span reach different native surfaces on X `12.42.0-prod.01`.
 Show more expands the body inside the existing search results and preserves the independently readable author/header.
-Opening the detail screen still produces empty main-content accessibility views.
+Opening the detail screen with the ordinary hierarchy reader produces empty main-content accessibility views.
 Uncompressed hierarchy depths 50 and 100 and direct author, text-prefix, and author-description queries all failed to expose the main detail content in the OpenAI probe.
 The same direct queries succeeded on the inline expanded source.
 

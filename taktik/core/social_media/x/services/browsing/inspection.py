@@ -7,7 +7,13 @@ from dataclasses import dataclass
 from taktik.core.social_media.x.ui.inspection import Detail, Profile
 from taktik.core.social_media.x.ui.screen import Media, Post, Rect
 
-from .navigation import XError, _free_regions, _scroll_motion, scroll_region
+from .navigation import (
+    XError,
+    _free_regions,
+    _quote_content,
+    _scroll_motion,
+    scroll_region,
+)
 
 
 @dataclass(frozen=True)
@@ -28,6 +34,8 @@ class ThreadInspection:
     # A navigation reference is not independent identification of the main post.
     main_verified: bool = False
     complete: bool = False
+    main_text: str | None = None
+    main_text_complete: bool = False
 
 
 @dataclass(frozen=True)
@@ -81,16 +89,106 @@ def _detail_context(before, after):
                 left, right = left.rsplit(" • ", 1)[0], right.rsplit(" • ", 1)[0]
             if left != right:
                 raise XError("The X thread context changed during inspection.")
+    old, new = before.detail.main_post, after.detail.main_post
+    if (
+        old is not None
+        and new is not None
+        and (
+            old.author != new.author
+            or old.body != new.body
+            or _quote_content(old.quoted_post) != _quote_content(new.quoted_post)
+        )
+    ):
+        raise XError("The native main post changed during thread inspection.")
+
+
+def _verify_main_source(source, main):
+    from .expansion import MORE
+
+    if main is None:
+        return False
+    if (
+        main.author.lower() != source.author.lower()
+        or main.display_name != source.display_name
+    ):
+        raise XError("The native detail author does not match the selected X post.")
+    if source.body is not None:
+        prefix = MORE.sub("", source.body)
+        if main.body is None or (
+            main.body != source.body
+            and (
+                source.body_complete
+                or len(prefix) < 32
+                or not main.body.startswith(prefix)
+            )
+        ):
+            raise XError("The native detail body does not match the selected X post.")
+    elif main.body is not None:
+        raise XError("The native detail added a body to the selected bodyless X post.")
+    if _quote_content(main.quoted_post) != _quote_content(source.quoted_post) and (
+        main.quoted_post is not None or main.body_complete
+    ):
+        raise XError("The native detail quote does not match the selected X post.")
+    observed_media = tuple((m.kind, m.description) for m in main.media)
+    expected_media = tuple((m.kind, m.description) for m in source.media)
+    if observed_media != expected_media and (observed_media or main.body_complete):
+        raise XError("The native detail media does not match the selected X post.")
+    return main.observable
+
+
+class _TextCoverage:
+    def __init__(self, detail):
+        main = detail.main_post
+        self.text = (
+            main.body
+            if main is not None
+            and main.header_visibility.unobscured
+            and main.author_visibility.unobscured
+            else None
+        )
+        self.seen = bytearray(len(self.text or ""))
+        if self.text is not None and main.body_complete:
+            self.seen[:] = b"\1" * len(self.seen)
+
+    def add(self, detail):
+        if self.text is None or detail.text is None:
+            return
+        if detail.text.text != self.text:
+            raise XError("The native main text changed during bounded reading.")
+        for span in detail.text.ranges:
+            if span.visibility.unobscured:
+                self.seen[span.start : span.end] = b"\1" * (span.end - span.start)
+
+    def result(self):
+        from .expansion import MORE
+
+        if self.text is None:
+            return None, False
+        end = next(
+            (
+                i
+                for i, char in enumerate(self.text)
+                if not char.isspace() and not self.seen[i]
+            ),
+            len(self.text),
+        )
+        return self.text[:end], end == len(self.text) and not MORE.search(self.text)
 
 
 def inspect_thread(app, *, max_posts, max_scrolls):
     _limit(max_posts, "max_posts", 1, 50)
     _limit(max_scrolls, "max_scrolls", 0, 8)
     with app._visit("Open post", "detail") as (source, screen):
-        detail = screen.detail
+        current = app._snapshot()
+        _detail_context(screen, current)
+        _verify_main_source(source, screen.detail.main_post)
+        main_verified = _verify_main_source(source, current.detail.main_post)
+        screen, detail = current, current.detail
+        coverage = _TextCoverage(detail)
         posts, seen = [], set()
         scrolls = 0
         while True:
+            coverage.add(screen.detail)
             for post in screen.observable_posts:
                 if post.content_key not in seen and len(posts) < max_posts:
                     posts.append(post)
@@ -103,6 +201,7 @@ def inspect_thread(app, *, max_posts, max_scrolls):
                 break
             current = app._snapshot()
             _detail_context(screen, current)
+            _verify_main_source(source, current.detail.main_post)
             try:
                 stationary = _scroll_motion(screen, current)
                 region, distance, exclusions = scroll_region(current)
@@ -118,6 +217,7 @@ def inspect_thread(app, *, max_posts, max_scrolls):
             scrolls += 1
             after = app._snapshot()
             _detail_context(current, after)
+            _verify_main_source(source, after.detail.main_post)
             try:
                 shift = _scroll_motion(current, after)
             except XError:
@@ -127,8 +227,16 @@ def inspect_thread(app, *, max_posts, max_scrolls):
                 reason = "no_progress"
                 break
             screen = after
+        main_text, text_complete = coverage.result()
         result = ThreadInspection(
-            source.content_key, detail, tuple(posts), scrolls, reason
+            source.content_key,
+            detail,
+            tuple(posts),
+            scrolls,
+            reason,
+            main_verified=main_verified,
+            main_text=main_text,
+            main_text_complete=text_complete,
         )
     return result
 

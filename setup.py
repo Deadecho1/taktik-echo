@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 
 def engine_version() -> str:
@@ -28,7 +28,9 @@ def runtime_requirements() -> list:
         if not line:
             continue
         if line.startswith("-"):
-            raise RuntimeError(f"{path.name}: '{line}' is not a requirement setup.py can read")
+            raise RuntimeError(
+                f"{path.name}: '{line}' is not a requirement setup.py can read"
+            )
         requirements.append(line)
     return requirements
 
@@ -38,6 +40,13 @@ setup(
     version=engine_version(),
     packages=find_packages(),
     include_package_data=True,
+    package_data={
+        "taktik.core.shared.phone_interaction": [
+            "native/*.dex",
+            "native/*.java",
+            "native/*.json",
+        ],
+    },
     # 3.10 for the command line of the public repository, 3.14 for the launcher the installer
     # freezes: requirements.lock resolves for both, and the test suite runs on both.
     python_requires=">=3.10",
@@ -48,14 +57,14 @@ setup(
             # No `taktik-instagram`: it pointed at `taktik.cli.main:instagram`, which does not
             # exist, so the entry point failed at import for anyone who installed the package.
             # Instagram is reached as `taktik automation ...` / `taktik management ...`.
-            "taktik-tiktok=taktik.cli.main:tiktok"
+            "taktik-tiktok=taktik.cli.main:tiktok",
         ],
     },
     author="Taktik",
     author_email="contact@taktik-bot.com",
-    description="Instagram, TikTok, YouTube, Threads and Gmail automation on real Android devices "
-                "(uiautomator2, ADB), from the command line or the TAKTIK desktop app",
-    long_description=open("README.md", encoding='utf-8').read(),
+    description="Instagram, TikTok, X, YouTube, Threads and Gmail automation on real Android devices "
+    "(uiautomator2, ADB), from the command line or the TAKTIK desktop app",
+    long_description=Path("README.md").read_text(encoding="utf-8"),
     long_description_content_type="text/markdown",
     url="https://github.com/masterFuf/taktik-bot",
     classifiers=[
