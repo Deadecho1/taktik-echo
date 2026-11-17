@@ -15,7 +15,14 @@ class Keyboard:
 
     @staticmethod
     def require_installed(serial):
-        available = keyboard.run_adb_shell(serial, ["ime", "list", "-a", "-s"])
+        try:
+            available = keyboard.run_adb_shell(
+                serial, ["ime", "list", "-a", "-s"], strict=True
+            )
+        except Exception as exc:
+            raise InteractionError(
+                f"Could not check Taktik Keyboard on device {serial}: {exc}"
+            ) from exc
         if keyboard.TAKTIK_KEYBOARD_IME not in available.splitlines():
             raise InteractionError(
                 "Taktik Keyboard is required on this phone. "

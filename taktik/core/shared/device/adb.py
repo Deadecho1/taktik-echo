@@ -87,13 +87,14 @@ def run_adb_shell_process(
         METER.record_shell((time.perf_counter() - started_at) * 1000.0, failed, command=line)
 
 
-def run_adb_shell(device_id: str, command: DeviceCommand) -> str:
+def run_adb_shell(device_id: str, command: DeviceCommand, *, strict: bool = False) -> str:
     """
     Execute an ADB shell command using adbutils, with subprocess fallback.
 
     Args:
         device_id: ADB device serial/ID.
         command: words or a line for the phone's shell (the module's rule), without `adb shell`.
+        strict: propagate transport failures instead of returning empty output.
 
     Returns:
         Command output as string, or an empty string on error.
@@ -104,12 +105,12 @@ def run_adb_shell(device_id: str, command: DeviceCommand) -> str:
     line = device_command_line(command)
     started_at = time.perf_counter()
     try:
-        return _run_adb_shell(device_id, line)
+        return _run_adb_shell(device_id, line, strict=strict)
     finally:
         METER.record_shell((time.perf_counter() - started_at) * 1000.0, command=line)
 
 
-def _run_adb_shell(device_id: str, line: str) -> str:
+def _run_adb_shell(device_id: str, line: str, *, strict: bool = False) -> str:
     try:
         from adbutils import adb
 
@@ -124,11 +125,17 @@ def _run_adb_shell(device_id: str, line: str) -> str:
                 text=True,
                 timeout=10,
             )
+            if strict and result.returncode != 0:
+                raise RuntimeError(result.stderr.strip() or f"ADB shell exited {result.returncode}")
             return result.stdout if result.returncode == 0 else ""
         except Exception as exc:
+            if strict:
+                raise
             logger.debug(f"ADB subprocess error: {exc}")
             return ""
     except Exception as exc:
+        if strict:
+            raise
         logger.debug(f"ADB shell error: {exc}")
         return ""
 

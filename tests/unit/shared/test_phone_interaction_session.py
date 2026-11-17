@@ -29,7 +29,7 @@ def keyboard_transport(monkeypatch):
     ACTIVE_CLOCK.clear()
     keyboard._original_ime.clear()
 
-    def shell(serial, command):
+    def shell(serial, command, *, strict=False):
         raw, clock = DEVICES[serial]
         ACTIVE_CLOCK[:] = [clock]
         if isinstance(command, str) and command.startswith("ime=$("):
