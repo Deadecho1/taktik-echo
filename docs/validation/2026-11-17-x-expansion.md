@@ -53,13 +53,23 @@ Tesseract `5.3.4` and its English data were extracted into `/tmp` for these chec
 
 Raw captures, direct-query records, and events remain local under ignored `tests/smoke/x-expansion-probes/` and `tests/smoke/x-expansion-runs/`.
 The [fixture package](../../tests/unit/social_media/x/fixtures/expansion/README.md) contains eight XML captures and the control word boxes, with source hashes.
-Five original screenshots are presented in the local Lavish expansion review: three from the implementation run and two from the Lunar discovery probe.
-Human visual review is pending; browser image-loading and geometry checks do not count as human approval.
+The user reviewed five original screenshots through the requested private Lavish page on their Tailscale-connected phone.
+The submitted OPENAI verdict was `looks_correct`, covering the implementation run's source, expanded, and return captures.
+The submitted LUNAR verdict was `looks_correct`, covering the discovery probe's source and expanded captures.
+Both submitted IDs and all five presented captures are accounted for in the local receipt `.lavish/feedback/expansion-verdicts.json`, with original source paths and hashes.
+These approvals do not cover the separate OpenAI discovery/detail screenshots or earlier inspection/gallery captures, and do not establish visibility of the Lunar post below the screen.
+Browser checks at 360, 390, 768, and 1280 pixel viewport settings verified image loading, control behavior, and absence of horizontal overflow; no screenshot was loaded into the coding conversation.
 
 ## Regression checks
 
-The shared/X/Instagram-service/TikTok-service suite passed **3,068 tests, with 2 skipped**.
+The final shared/X/Instagram-service/TikTok-service suite passed **3,070 tests, with 2 skipped**, after the review fixes.
 The new X expansion checks cover successful expansion and detail return, occurrence identity, stale metadata, caption-state reset, source/context/geometry changes, missing or duplicate controls, final reread drift, cancellation, deadlines, uncertainty, and clipped content.
 Six shared OCR regression cases cover literal opening, closing, and standalone quotation marks.
 Ruff lint/format checks, the tree-layout audit, and Git whitespace checks passed.
-Publication status and review follow-up are recorded in the local `plan.md`.
+Standards and Spec reviews reproduced two exclusion defects: a control moving over the target during OCR, and a native control occupying exactly the body's rectangle.
+Two new failing Phone replays locked down both cases before correction.
+The implementation now rebuilds exclusions from the refreshed post and removes only one body-text rectangle, preserving any coincident control.
+Standards follow-up: both defects are resolved, with no unresolved findings.
+Spec follow-up: all 30 focused expansion/parser checks passed, with no remaining correctness findings within the supported inline-expansion scope.
+Main-detail extraction and longer-than-viewport reading remain explicitly incomplete.
+Publication status is recorded in the local `plan.md`.

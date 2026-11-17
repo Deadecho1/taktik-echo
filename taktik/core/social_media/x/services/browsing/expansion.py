@@ -39,12 +39,19 @@ def _target(source, screenshot):
     ]
     if len(pairs) != 1:
         raise XError("Cannot locate one visible native Show more control.")
-    target = pairs[0][1].bbox
-    opening = next(t.visibility for t in source.targets if t.label == "Open post")
-    exclusions = tuple(r for r in opening.overlaps if r != area)
+    return pairs[0][1].bbox
+
+
+def _exclusions(source, target):
+    openings = [t.visibility for t in source.targets if t.label == "Open post"]
+    if len(openings) != 1:
+        raise XError("Cannot verify the native Show more control exclusions.")
+    exclusions = list(openings[0].overlaps)
+    # Remove only the body text; a control can occupy the exact same rectangle.
+    exclusions.remove(source.body_visibility.bounds)
     if any(_intersect(target, r) for r in exclusions):
         raise XError("The native Show more control is covered by other content.")
-    return target, exclusions
+    return tuple(exclusions)
 
 
 def _verify(source, post):
@@ -91,7 +98,7 @@ def read_more(app):
         screenshot = app.phone.read("screenshot")
         if screenshot.size != tuple(app.phone.read("size")):
             raise XError("X screen dimensions changed during expansion.")
-        target, exclusions = _target(source, screenshot)
+        target = _target(source, screenshot)
         fresh = app.observe()
         if (
             fresh.content_key != source.content_key
@@ -99,6 +106,7 @@ def read_more(app):
         ):
             raise XError("The selected X body changed while locating Show more.")
         before = app._screen
+        exclusions = _exclusions(fresh, target)
         app.phone.tap(target, exclude=exclusions).require()
         app.phone.wait(0.3, purpose="readiness")
         screen = app._wait_for(

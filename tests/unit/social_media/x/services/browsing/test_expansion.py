@@ -288,3 +288,27 @@ def test_final_expansion_read_rejects_a_changed_post(monkeypatch):
     with pytest.raises(XError):
         app.read_more()
     assert app.verified_account is None
+
+
+@pytest.mark.parametrize("timing", ["before_ocr", "after_ocr"])
+def test_expansion_preserves_current_native_control_exclusions(monkeypatch, timing):
+    replay, app = started(monkeypatch)
+    control_bounds = (
+        "[176,533][1047,974]" if timing == "before_ocr" else "[526,942][618,964]"
+    )
+
+    def cover():
+        replay.xml = mutate(
+            replay.xml,
+            '(.//*[@content-desc="Post options"])[1]',
+            "bounds",
+            control_bounds,
+        )
+
+    if timing == "before_ocr":
+        cover()
+    else:
+        replay.after_capture = cover
+    with pytest.raises(XError, match="covered"):
+        app.read_more()
+    assert not any(e[0] == "expand" for e in replay.events)

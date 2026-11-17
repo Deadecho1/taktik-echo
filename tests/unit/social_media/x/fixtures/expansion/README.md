@@ -3,7 +3,9 @@
 These eight hierarchies were captured on Nir's Pixel 4a, X `12.42.0-prod.01`, Android 13, English UI, at 1080 × 2340.
 `manifest.json` records source paths and SHA-256 hashes for the raw and sanitized XML.
 Public post text is preserved; external windows retain only their root geometry and empty content.
-Screenshots remain local and human visual review is pending.
+Screenshots remain local.
+The user approved the two Lunar companion captures; OpenAI discovery/detail companion screenshots remain outside visual sign-off.
+Three separate OpenAI screenshots from implementation run `20261117T134201.601008Z` were also explicitly approved.
 
 `source`, `expanded`, `expanded-reread`, `detail`, `detail-depth-100`, and `return` come from probe `20261117T133437.381266Z`.
 The OpenAI post expands inline within Latest results, retains its author, and has its complete expanded body inside the viewport.
