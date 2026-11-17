@@ -86,6 +86,15 @@ def test_native_motion_can_bridge_an_unmodeled_quote_video_transition():
     assert app.last_scroll_evidence["post_continuity"] == "not_established"
 
 
+def test_reused_short_label_does_not_override_a_long_exact_content_anchor():
+    before = read_screen(document("reused-label-before"), SIZE)
+    after = read_screen(document("reused-label-after"), SIZE)
+    assert _scroll_motion(before, after) == -601
+    app = X(TimelinePhone().phone)
+    app.timeline, app.verified_account = "for_you", "@fixture_owner"
+    assert app._advance_alignment(before, after, False) == (after, None, True)
+
+
 def test_fully_covered_text_edges_do_not_supply_movement_evidence():
     before = read_screen(document("covered-before"), SIZE)
     after = read_screen(document("covered-after"), SIZE)
@@ -161,10 +170,37 @@ def test_native_motion_never_invents_forward_progress(case):
             if a.visibility.bounds[1] > 1500
             and any(b.text == a.text for b in before.scroll_anchors)
         )
-        x1, y1, x2, y2 = anchor.visibility.bounds
+        x1, y1, _x2, y2 = anchor.visibility.bounds
+        # Two distinct, long text anchors must agree even when short labels
+        # elsewhere would be ignored. This mutation is explicitly synthetic.
+        long_text = (
+            "A separate long content anchor with independently measured geometry."
+        )
+        before = replace(
+            before,
+            scroll_anchors=tuple(
+                replace(
+                    a,
+                    text=long_text,
+                    visibility=replace(
+                        a.visibility,
+                        bounds=(
+                            x1,
+                            a.visibility.bounds[1],
+                            1047,
+                            a.visibility.bounds[3],
+                        ),
+                    ),
+                )
+                if a.text == anchor.text
+                else a
+                for a in before.scroll_anchors
+            ),
+        )
         changed = replace(
             anchor,
-            visibility=replace(anchor.visibility, bounds=(x1, y1 + 20, x2, y2 + 20)),
+            text=long_text,
+            visibility=replace(anchor.visibility, bounds=(x1, y1 + 20, 1047, y2 + 20)),
         )
         after = replace(
             after,

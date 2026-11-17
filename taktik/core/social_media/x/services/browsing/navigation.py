@@ -116,7 +116,7 @@ def _scroll_motion(before, after):
     old_counts = Counter(key(a) for a in before.scroll_anchors)
     new_counts = Counter(key(a) for a in after.scroll_anchors)
     old = {key(a): a for a in before.scroll_anchors if old_counts[key(a)] == 1}
-    shifts, texts = [], []
+    measurements = []
     for b in after.scroll_anchors:
         a = old.get(key(b))
         if a is None or new_counts[key(b)] != 1:
@@ -129,11 +129,20 @@ def _scroll_motion(before, after):
             and edge_visible(bv, after.content_viewport, i)
         ]
         if edges:
-            shifts.extend(edges)
-            texts.append(a.text)
+            strong = (
+                len(a.text) >= 32
+                and av.bounds[2] - av.bounds[0]
+                >= (before.content_viewport[2] - before.content_viewport[0]) * 0.5
+            )
+            measurements.append((a.text, edges, strong))
+    # A long, unique content span can establish navigation by itself. Do not
+    # pair a short annotation with an unrelated newly entered copy of it.
+    strong = [item for item in measurements if item[2]]
+    chosen = strong or measurements
+    shifts = [shift for _, edges, _ in chosen for shift in edges]
     if (
         not shifts
-        or (len(texts) < 2 and max(map(len, texts), default=0) < 32)
+        or (not strong and len(chosen) < 2)
         or max(shifts) > 2
         or max(shifts) - min(shifts) > 3
         or min(shifts)
