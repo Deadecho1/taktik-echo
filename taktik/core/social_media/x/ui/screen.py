@@ -2966,6 +2966,12 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
                         <= _rect(body)[1]
                     )
                 )
+                or (
+                    not collapsed
+                    and len(translation_nodes) == 2
+                    and min(_rect(n)[1] for n in translation_nodes) <= viewport[1]
+                    and max(_rect(n)[3] for n in translation_nodes) == _rect(body)[1]
+                )
             )
         )
     ):
