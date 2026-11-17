@@ -63,7 +63,10 @@ Returning to a Home workflow also establishes a new position and does not claim 
 Search is covered by captured XML and Phone replays from X `12.41.0-prod.01` and `12.42.0-prod.01`, Android 13, English UI, at 1080 × 2340.
 The no-resource-ID typing path additionally covers keyboard restoration, cancellation, deadlines, ambiguity, focus loss, and uncertain execution through the real shared keyboard helpers with a simulated device.
 Direct physical runs on `12.42.0-prod.01` passed Top and Latest search with two advances each, plus a native empty-result search; each run verified Taktik Keyboard and restored Gboard during cleanup.
-The local search validation record is `docs/validation/2026-11-17-x-search.md`; raw captures and screenshots remain local for human visual review.
+The local search validation record is `docs/validation/2026-11-17-x-search.md`; the user visually confirmed all twelve presented search screenshots on 17 November 2026.
+That review covers the seven successful result captures and five entry/layout references; the additional expanded-header fixture was not presented and remains outside visual sign-off.
+Post text can be observable while its video extends below the viewport; `body_complete` describes authored text and does not assert complete media visibility.
+The reviewed Top run ends at its last partly visible video, so it does not establish a subsequent physical scroll from that position.
 An exact, unobscured native no-results panel establishes an empty search; missing result posts alone do not.
 Consumer applications choose how to use these capabilities in their own workflows.
 Their configuration, model policy, and integration schedules are independent of Taktik implementation and validation.

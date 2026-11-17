@@ -11,7 +11,7 @@
     "language": "en",
     "verified_on": "2026-11-08"
   },
-  "scope": "The initial seven captures from 2026-11-08 were manually navigated and visually reviewed. The six automated captures from 2026-11-17 were verified through XML; human visual review remains pending. Expectations describe captured evidence.",
+  "scope": "The initial seven captures from 2026-11-08 were manually navigated and visually reviewed. Five automated captures from 2026-11-17 received explicit human visual approval on 2026-11-17. The expanded-before-scroll fixture was not presented and remains XML-only. Expectations describe captured evidence.",
   "sanitization": [
     "Anonymize the account owner and birth-date text.",
     "Preserve non-X window root attributes and bounds, clear their text, content description and hint, and remove their descendants.",
@@ -243,6 +243,12 @@
           1080,
           2120
         ]
+      },
+      "visual_review": {
+        "status": "confirmed",
+        "reviewed_on": "2026-11-17",
+        "review_id": "E1",
+        "evidence": "Explicit human Lavish verdict matched to the source screenshot SHA-256."
       }
     },
     {
@@ -271,6 +277,12 @@
           1080,
           1364
         ]
+      },
+      "visual_review": {
+        "status": "confirmed",
+        "reviewed_on": "2026-11-17",
+        "review_id": "E2",
+        "evidence": "Explicit human Lavish verdict matched to the source screenshot SHA-256."
       }
     },
     {
@@ -299,6 +311,12 @@
           1080,
           2230
         ]
+      },
+      "visual_review": {
+        "status": "confirmed",
+        "reviewed_on": "2026-11-17",
+        "review_id": "R1",
+        "evidence": "Explicit human Lavish verdict matched to the source screenshot SHA-256."
       }
     },
     {
@@ -326,6 +344,10 @@
           1080,
           2230
         ]
+      },
+      "visual_review": {
+        "status": "pending",
+        "reason": "Not included in the presented screenshot review."
       }
     },
     {
@@ -354,6 +376,12 @@
           1080,
           2230
         ]
+      },
+      "visual_review": {
+        "status": "confirmed",
+        "reviewed_on": "2026-11-17",
+        "review_id": "R2",
+        "evidence": "Explicit human Lavish verdict matched to the source screenshot SHA-256."
       }
     },
     {
@@ -382,6 +410,12 @@
           1080,
           2230
         ]
+      },
+      "visual_review": {
+        "status": "confirmed",
+        "reviewed_on": "2026-11-17",
+        "review_id": "R3",
+        "evidence": "Explicit human Lavish verdict matched to the source screenshot SHA-256."
       }
     }
   ]
