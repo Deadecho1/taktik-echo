@@ -658,11 +658,16 @@ def _body_annotations(body):
 
 def _quote_preview(card, body, viewport, overlaps):
     previews = [
-        n for n in card if n.get("content-desc", "").endswith("more media item")
+        n
+        for n in card
+        if n.get("content-desc", "").endswith(("more media item", "more media items"))
     ]
     if not previews:
         return (), set()
     preview = _one(previews, "compact quote preview")
+    count = re.fullmatch(
+        r"([1-9][0-9]*) more media (item|items)", preview.get("content-desc", "")
+    )
     # Offscreen bottom-clipped wrappers can precede their native count glyph.
     pending_count = (
         not len(preview)
@@ -672,7 +677,8 @@ def _quote_preview(card, body, viewport, overlaps):
     )
     if (
         body is None
-        or preview.get("content-desc") != "1 more media item"
+        or count is None
+        or count[2] != ("item" if count[1] == "1" else "items")
         or preview.get("class") != "android.view.View"
         or preview.get("clickable") == "true"
         or preview.get("text")
@@ -682,7 +688,7 @@ def _quote_preview(card, body, viewport, overlaps):
                 len(preview) != 1
                 or len(preview[0])
                 or preview[0].get("class") != "android.widget.TextView"
-                or preview[0].get("text") != "+1"
+                or preview[0].get("text") != f"+{count[1]}"
                 or preview[0].get("content-desc")
                 or preview[0].get("clickable") == "true"
                 or _intersect(_rect(preview), _rect(preview[0])) != _rect(preview[0])

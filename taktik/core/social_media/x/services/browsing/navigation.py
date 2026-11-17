@@ -1325,11 +1325,31 @@ def _quote_below_video(a, b):
                 and a.body_visibility.unobscured
             )
         )
-        or len(a.media) != 1
-        or len(b.media) != 1
+        or not a.media
+        or len(a.media) != len(b.media)
     ):
         return False
-    old, new = a.media[0], b.media[0]
+    if len(a.media) == 1:
+        if a.media[0].kind not in {"video", "gif"}:
+            return False
+    elif not all(
+        p.body_visibility is not None
+        and any(m.kind in {"video", "gif"} for m in p.media)
+        and all(m.kind in {"video", "gif", "image"} for m in p.media)
+        and len({m.visibility.bounds[1::2] for m in p.media}) == 1
+        and all(
+            left.visibility.bounds[2] <= right.visibility.bounds[0]
+            for left, right in pairwise(p.media)
+        )
+        for p in (a, b)
+    ):
+        return False
+    return all(
+        _quote_below_media_item(a, b, old, new) for old, new in zip(a.media, b.media)
+    )
+
+
+def _quote_below_media_item(a, b, old, new):
     old_rect, new_rect = old.visibility.bounds, new.visibility.bounds
     shift = new_rect[1] - old_rect[1]
     if a.body_visibility is None:
@@ -1360,7 +1380,7 @@ def _quote_below_video(a, b):
         (isinstance(b, PostFragment) or a.author == b.author)
         and _same_body(a, b)
         and old.kind == new.kind
-        and old.kind in {"video", "gif"}
+        and old.kind in {"video", "gif", "image"}
         and old.description == new.description
         and (
             (old.source_label, old.source_prefix)
