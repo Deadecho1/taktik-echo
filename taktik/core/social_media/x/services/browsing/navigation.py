@@ -2498,6 +2498,10 @@ class X:
                     # verification allowance. Entry uses its first attempt;
                     # identical clipped frames still cannot prove progress.
                     attempts = 1
+                elif pending and moved is True:
+                    # Reverified text may still precede a long media tail.
+                    # Its normal bounded search starts after pending ends.
+                    attempts = 0
                 else:
                     attempts = 0 if passed_successor else attempts + 1
                 pending = moved is None
