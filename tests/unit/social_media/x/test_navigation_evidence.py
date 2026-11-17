@@ -75,6 +75,17 @@ def test_uncovered_edges_verify_motion_when_a_floating_control_covers_the_body()
     assert app.last_scroll_evidence["post_continuity"] == "not_established"
 
 
+def test_native_motion_can_bridge_an_unmodeled_quote_video_transition():
+    before = read_screen(document("metadata-before"), SIZE)
+    after = read_screen(document("metadata-after"), SIZE)
+    assert not before.rejected_posts and not after.rejected_posts
+    assert _scroll_motion(before, after) == -589
+    app = X(TimelinePhone().phone)
+    app.timeline, app.verified_account = "for_you", "@fixture_owner"
+    assert app._advance_alignment(before, after, False) == (after, None, True)
+    assert app.last_scroll_evidence["post_continuity"] == "not_established"
+
+
 def test_fully_covered_text_edges_do_not_supply_movement_evidence():
     before = read_screen(document("covered-before"), SIZE)
     after = read_screen(document("covered-after"), SIZE)

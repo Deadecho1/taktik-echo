@@ -2371,13 +2371,6 @@ class X:
             try:
                 offset = _text_continuation(before, screen, entering=True)
             except XError:
-                if not (
-                    before.rejected_posts
-                    or screen.rejected_posts
-                    or not (*before.posts, *before.fragments)
-                    or not (*screen.posts, *screen.fragments)
-                ):
-                    raise error from None
                 try:
                     shift = _scroll_motion(before, screen)
                 except XError:
