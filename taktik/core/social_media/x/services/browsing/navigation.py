@@ -4,6 +4,7 @@ This browsing seam returns parsed Posts for the persona adapter.
 The caller owns device reservations, locks, the deadline, and Phone.close().
 """
 
+from collections import Counter
 from contextlib import contextmanager
 from dataclasses import replace
 from itertools import pairwise
@@ -26,6 +27,7 @@ SCROLL_ATTEMPTS = 4
 RESTORE_ATTEMPTS = 8
 ADVANCE_SCROLL_ATTEMPTS = 8
 ADVANCE_READ_ATTEMPTS = 3
+ADVANCE_MAX_SCROLLS = 32
 
 
 class XError(InteractionError):
@@ -62,14 +64,15 @@ def scroll_region(screen):
     if screen.kind != "home" or viewport is None:
         raise XError("X scrolling requires a recognized Home viewport.")
     width, height = viewport[2] - viewport[0], viewport[3] - viewport[1]
+    areas = screen.scroll_areas or screen.navigation_areas
     exclusions = (
         *screen.overlaps,
-        *(rect for area in screen.scroll_areas for rect in area.exclusions),
+        *(rect for area in areas for rect in area.exclusions),
     )
     regions = []
-    for candidate in screen.scroll_areas:
+    for candidate in areas:
         area = candidate.visibility.visible_bounds
-        if area is None:
+        if area is None or not candidate.visibility.accessible:
             continue
         regions.extend(
             rect
@@ -83,6 +86,55 @@ def scroll_region(screen):
     region = max(regions, key=lambda r: (r[3] - r[1], r[2] - r[0]))
     distance = min(height * 0.3, (region[3] - region[1]) * 0.6)
     return region, distance, exclusions
+
+
+def _scroll_motion(before, after):
+    """Measure native list movement without asserting post identity or content.
+
+    Unique exact text and horizontal geometry must agree on vertical motion.
+    Clamped edges, repeated text and numeric counts cannot supply a match.
+    This permits navigation past an unsupported post, never its observation.
+    """
+    if (
+        before.kind != "home"
+        or after.kind != "home"
+        or (before.collapsed and not after.collapsed)
+    ):
+        raise XError("Native X movement requires two Home snapshots.")
+
+    def key(anchor):
+        return anchor.text, anchor.visibility.bounds[::2]
+
+    old_counts = Counter(key(a) for a in before.scroll_anchors)
+    new_counts = Counter(key(a) for a in after.scroll_anchors)
+    old = {key(a): a for a in before.scroll_anchors if old_counts[key(a)] == 1}
+    shifts, texts = [], []
+    for b in after.scroll_anchors:
+        a = old.get(key(b))
+        if a is None or new_counts[key(b)] != 1:
+            continue
+        av, bv = a.visibility, b.visibility
+        if av.overlaps or bv.overlaps:
+            continue
+        edges = [
+            bv.bounds[i] - av.bounds[i]
+            for i in (1, 3)
+            if before.content_viewport[1] < av.bounds[i] < before.content_viewport[3]
+            and after.content_viewport[1] < bv.bounds[i] < after.content_viewport[3]
+        ]
+        if edges:
+            shifts.extend(edges)
+            texts.append(a.text)
+    if (
+        not shifts
+        or (len(texts) < 2 and max(map(len, texts), default=0) < 32)
+        or max(shifts) > 2
+        or max(shifts) - min(shifts) > 3
+        or min(shifts)
+        < -(before.content_viewport[3] - before.content_viewport[1]) * 0.8
+    ):
+        raise XError("Cannot verify forward X movement from native timeline text.")
+    return sorted(shifts)[len(shifts) // 2]
 
 
 def _position(post):
@@ -2125,6 +2177,9 @@ class X:
         self._expected = None
         self._screen = None
         self._index = None
+        self.last_scroll_evidence = None
+        self._motion_shift = None
+        self.navigation_gaps = []
 
     def _invalidate(self):
         self.verified_account = None
@@ -2227,6 +2282,7 @@ class X:
                     "A valid X handle and for_you/following timeline are required."
                 )
             self._expected, self.timeline = handle.lower(), timeline
+            self.navigation_gaps = []
             self.phone.command("launch", PACKAGE).require()
             screen = self._wait_for(lambda s: s.kind != "unsupported", "X launch")
             screen = self._reach_home(screen)
@@ -2291,6 +2347,8 @@ class X:
 
     def _advance_alignment(self, before, screen, pending):
         self._check_timeline(screen, before, scrolling=True)
+        self.last_scroll_evidence = {"basis": "ordered_posts"}
+        self._motion_shift = None
         if pending:
             offset = _text_continuation(before, screen)
             if not (_text_edge_visible(before) and _text_edge_visible(screen)):
@@ -2307,7 +2365,40 @@ class X:
             try:
                 offset = _text_continuation(before, screen, entering=True)
             except XError:
-                raise error from None
+                if not (
+                    before.rejected_posts
+                    or screen.rejected_posts
+                    or not (*before.posts, *before.fragments)
+                    or not (*screen.posts, *screen.fragments)
+                ):
+                    raise error from None
+                try:
+                    shift = _scroll_motion(before, screen)
+                except XError:
+                    raise error from None
+                if shift >= -2:
+                    raise error from None
+                if any(
+                    a.author == b.author
+                    and abs(
+                        b.header_visibility.bounds[1]
+                        - a.header_visibility.bounds[1]
+                        - shift
+                    )
+                    <= 3
+                    and a.body != b.body
+                    for a in before.posts
+                    for b in screen.posts
+                ):
+                    raise error from None
+                self._motion_shift = shift
+                self.last_scroll_evidence = {
+                    "basis": "native_timeline_text",
+                    "shift": shift,
+                    "post_continuity": "not_established",
+                    "rejected_posts": len(screen.rejected_posts),
+                }
+                return screen, None, shift < -2
             return screen, offset, None
         if screen.collapsed and not before.collapsed and not moved:
             raise XError("Cannot verify movement into collapsed X Home.")
@@ -2355,6 +2446,12 @@ class X:
             edges.extend(
                 t.visibility.bounds[3] for p in anchors for t in _preview_spans(p)
             )
+            if screen.rejected_posts:
+                edges.extend(
+                    a.visibility.bounds[3]
+                    for a in screen.scroll_anchors
+                    if not a.visibility.overlaps
+                )
             remaining = max(edges, default=0) - screen.content_viewport[1]
             if remaining <= 1:
                 raise XError("No remaining X content anchor for verified scrolling.")
@@ -2429,7 +2526,7 @@ class X:
                 if post.observable:
                     return self._select(screen, index)
             if attempt < SCROLL_ATTEMPTS:
-                if not screen.scroll_areas:
+                if not (screen.scroll_areas or screen.navigation_areas):
                     screen = self._wait_for(
                         lambda s: self._on_timeline(s) and bool(s.posts or s.empty),
                         "X timeline content",
@@ -2460,6 +2557,27 @@ class X:
             if self._index is None:
                 raise
         selected = self._screen.posts[self._index]
+        positions = [p.visibility.bounds[1] for p in screen.posts]
+        if positions != sorted(set(positions)):
+            raise XError("X post ordering changed outside adapter scrolling.")
+        candidates = [
+            (index, post)
+            for index, post in enumerate(screen.posts)
+            if post.content_key == selected.content_key
+            and post.visibility.bounds == selected.visibility.bounds
+        ]
+        if len(candidates) == 1:
+            index, current = candidates[0]
+            try:
+                _alignment(
+                    replace(self._screen, posts=(selected,), fragments=()),
+                    replace(screen, posts=(current,), fragments=()),
+                )
+            except XError:
+                pass
+            else:
+                self._index = index
+                return
         rejected = {
             item.bounds
             for item in self._screen.rejected_posts
@@ -2490,19 +2608,49 @@ class X:
             if self._screen.empty:
                 return None
             screen, index = self._screen, self._index
+            self.navigation_gaps = []
+            selected_key = screen.posts[index].content_key
+            geometric_cursor = False
             pending = False
             attempts = 0
+            total_scrolls = 0
             while True:
                 for next_index, post in enumerate(screen.posts):
-                    if not pending and next_index > index and post.observable:
+                    if (
+                        not pending
+                        and next_index > index
+                        and post.observable
+                        and (not geometric_cursor or post.content_key != selected_key)
+                    ):
                         return self._select(screen, next_index)
-                if attempts == ADVANCE_SCROLL_ATTEMPTS:
+                if (
+                    attempts == ADVANCE_SCROLL_ATTEMPTS
+                    or total_scrolls == ADVANCE_MAX_SCROLLS
+                ):
                     break
                 self._gesture(screen, "up")
+                total_scrolls += 1
                 after, offset, moved = self._advance_snapshot(screen, pending)
                 # Passing an unobservable successor is verified search progress.
                 # Losing only the selected post or moving within it is not.
-                passed_successor = moved is True and offset > max(index + 1, 0)
+                if offset is None:
+                    geometric_cursor = True
+                    self.navigation_gaps.append(dict(self.last_scroll_evidence))
+                    # Native motion gives a geometric cursor, not an assertion
+                    # that every intervening item parsed or was observed.
+                    cursor = (
+                        screen.posts[index].visibility.bounds[1]
+                        if 0 <= index < len(screen.posts)
+                        else screen.content_viewport[1] - 1
+                    ) + self._motion_shift
+                    new_index = (
+                        sum(p.visibility.bounds[1] <= cursor + 2 for p in after.posts)
+                        - 1
+                    )
+                    passed_successor = moved is True
+                else:
+                    new_index = index - offset
+                    passed_successor = moved is True and offset > max(index + 1, 0)
                 if moved is None and not pending:
                     # The preceding approach must not consume the clipped-text
                     # verification allowance. Entry uses its first attempt;
@@ -2515,7 +2663,7 @@ class X:
                 else:
                     attempts = 0 if passed_successor else attempts + 1
                 pending = moved is None
-                index -= offset
+                index = new_index
                 screen = after
             raise XError("Cannot verify a next X post within the scrolling limit.")
 

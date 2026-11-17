@@ -253,6 +253,9 @@ class Screen:
     collapsed: bool = False
     fragments: tuple[PostFragment, ...] = ()
     waiting_for: str | None = None
+    # Native timeline text is movement evidence, never attributed post content.
+    scroll_anchors: tuple[TextSpan, ...] = ()
+    navigation_areas: tuple[ScrollArea, ...] = ()
 
     @property
     def observable_posts(self):
@@ -3567,6 +3570,8 @@ def _read(root, area):
     if any(_intersect(viewport, rect) for rect in system_bars):
         raise _Unsupported("System overlay covers X content.")
     posts, rejected, scroll_areas, fragments = [], [], [], []
+    scroll_anchors = []
+    navigation_areas = []
     if kind in ("home", "search_results", "profile"):
         for header in scope.xpath('.//*[@resource-id="timeline_post"]'):
             try:
@@ -3597,6 +3602,29 @@ def _read(root, area):
             './node[@scrollable="true"]/node[@scrollable="true"]/node'
         )
         containers = [node for node in containers if _intersect(_rect(node), viewport)]
+        # The native list owns scrolling even when a child layout cannot be
+        # extracted as a post. Keep every nested interaction excluded as usual.
+        for container in containers:
+            if container.get("clickable") != "true":
+                continue
+            try:
+                scroll_area = _scroll_container(container, viewport, tuple(overlays))
+            except _Unsupported:
+                continue
+            navigation_areas.append(scroll_area)
+            for node in container.iterdescendants():
+                text = node.get("text", "")
+                if (
+                    node.get("class") == "android.widget.TextView"
+                    and len(text) >= 4
+                    and sum(c.isalpha() for c in text) >= 3
+                ):
+                    try:
+                        visibility = _visibility(node, viewport, tuple(overlays))
+                    except _Unsupported:
+                        continue
+                    if visibility.accessible and visibility.visible_bounds is not None:
+                        scroll_anchors.append(TextSpan(text, visibility))
         if (
             containers
             and containers[0].get("clickable") == "true"
@@ -3645,6 +3673,8 @@ def _read(root, area):
         scroll_areas=tuple(scroll_areas),
         collapsed=collapsed,
         fragments=tuple(fragments),
+        scroll_anchors=tuple(scroll_anchors),
+        navigation_areas=tuple(navigation_areas),
     )
 
 

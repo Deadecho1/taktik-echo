@@ -183,6 +183,9 @@ class XBrowser:
             if count and re.fullmatch(r"(?:\d+|\d{1,3}(?:,\d{3})+)", count)
             else None
         )
+        context = post_context(post)
+        if self.browser.navigation_gaps:
+            context["navigation_gaps"] = list(self.browser.navigation_gaps)
         return PostObservation(
             username=post.author.removeprefix("@"),
             caption=post.body or "",
@@ -198,7 +201,7 @@ class XBrowser:
             caption_type=("full" if post.body_complete else "truncated")
             if post.body is not None
             else "unknown",
-            post_context=post_context(post),
+            post_context=context,
         )
 
     def act(self, action, observation):
