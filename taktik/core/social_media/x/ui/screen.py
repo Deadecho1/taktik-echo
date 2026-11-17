@@ -546,13 +546,55 @@ def _video_credit(video):
     )
 
 
+def _gif_description_control(node):
+    wrapper = node.getparent()
+    control = _one(_desc(wrapper, "Image description"), "GIF description control")
+    if (
+        not node.get("content-desc", "").removeprefix("GIF: ").strip()
+        or node.get("class") != "android.view.View"
+        or node.get("text")
+        or len(node)
+        or node.get("enabled") != "true"
+        or any(
+            node.get(flag) == "true"
+            for flag in ("clickable", "long-clickable", "focusable", "scrollable")
+        )
+        or wrapper.get("class") != "android.view.View"
+        or wrapper.get("clickable") != "true"
+        or wrapper.get("text")
+        or wrapper.get("content-desc")
+        or control.getparent() is not wrapper
+        or control.get("class") != "android.widget.ImageView"
+        or control.get("text")
+        or len(control)
+        or any(
+            control.get(flag) != "true"
+            for flag in ("clickable", "focusable", "enabled")
+        )
+        or any(control.get(flag) == "true" for flag in ("long-clickable", "scrollable"))
+        or _rect(node)[:3] != _rect(wrapper)[:3]
+        or _rect(node)[3] < _rect(wrapper)[3]
+        or _intersect(_rect(control), _rect(node)) != _rect(control)
+        or _rect(control)[3] not in {_rect(wrapper)[3], _rect(node)[3]}
+    ):
+        raise _Unsupported("Unrecognized GIF description control.")
+    return control
+
+
 def _media(root, viewport, overlaps, excluded=()):
     result, covered = [], set()
     for node in root.iter():
         if any(node is skip or skip in node.iterancestors() for skip in excluded):
             continue
         desc = node.get("content-desc", "")
-        if desc in {"Video", "GIF", "Image"} or desc.startswith("Image:"):
+        described_gif = desc.startswith("GIF: ")
+        if (
+            desc in {"Video", "GIF", "Image"}
+            or desc.startswith("Image:")
+            or described_gif
+        ):
+            if described_gif:
+                covered.add(_gif_description_control(node))
             credit = _video_credit(node) if desc == "Video" else None
             source_label = source_prefix = None
             if credit is not None:
@@ -568,7 +610,9 @@ def _media(root, viewport, overlaps, excluded=()):
             )
             result.append(
                 Media(
-                    {"Video": "video", "GIF": "gif"}.get(desc, "image"),
+                    "gif"
+                    if described_gif
+                    else {"Video": "video", "GIF": "gif"}.get(desc, "image"),
                     desc,
                     _visibility(node, viewport, (*overlaps, *controls)),
                     source_label,
@@ -1528,11 +1572,11 @@ def _media_without_body(header, media, quote):
         raise _Unsupported("Missing body without supported media.")
     if quote is not None and not (
         len(media) == 1
-        and media[0].kind == "video"
+        and media[0].kind in {"video", "gif"}
         and quote.visibility.bounds[1] >= media[0].visibility.bounds[3]
         and quote.visibility.bounds[::2] == media[0].visibility.bounds[::2]
     ):
-        raise _Unsupported("Bodyless quote does not follow its outer video.")
+        raise _Unsupported("Bodyless quote does not follow its outer video or GIF.")
     container = header.getparent()
     controls = [
         n
