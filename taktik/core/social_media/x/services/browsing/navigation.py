@@ -105,6 +105,14 @@ def _scroll_motion(before, after):
     def key(anchor):
         return anchor.text, anchor.visibility.bounds[::2]
 
+    def edge_visible(visibility, viewport, index):
+        x1, _, x2, _ = visibility.bounds
+        y = visibility.bounds[index]
+        return viewport[1] < y < viewport[3] and not any(
+            rect[0] < x2 and rect[2] > x1 and rect[1] <= y <= rect[3]
+            for rect in visibility.overlaps
+        )
+
     old_counts = Counter(key(a) for a in before.scroll_anchors)
     new_counts = Counter(key(a) for a in after.scroll_anchors)
     old = {key(a): a for a in before.scroll_anchors if old_counts[key(a)] == 1}
@@ -114,13 +122,11 @@ def _scroll_motion(before, after):
         if a is None or new_counts[key(b)] != 1:
             continue
         av, bv = a.visibility, b.visibility
-        if av.overlaps or bv.overlaps:
-            continue
         edges = [
             bv.bounds[i] - av.bounds[i]
             for i in (1, 3)
-            if before.content_viewport[1] < av.bounds[i] < before.content_viewport[3]
-            and after.content_viewport[1] < bv.bounds[i] < after.content_viewport[3]
+            if edge_visible(av, before.content_viewport, i)
+            and edge_visible(bv, after.content_viewport, i)
         ]
         if edges:
             shifts.extend(edges)

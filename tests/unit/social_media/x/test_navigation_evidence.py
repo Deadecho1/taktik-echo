@@ -64,6 +64,35 @@ def test_native_text_verifies_motion_without_parsing_the_rejected_post():
     assert not before.observable_posts and not after.observable_posts
 
 
+def test_uncovered_edges_verify_motion_when_a_floating_control_covers_the_body():
+    before = read_screen(document("covered-before"), SIZE)
+    after = read_screen(document("covered-after"), SIZE)
+    assert before.rejected_posts and after.rejected_posts
+    assert _scroll_motion(before, after) == -607
+    app = X(TimelinePhone().phone)
+    app.timeline, app.verified_account = "for_you", "@fixture_owner"
+    assert app._advance_alignment(before, after, False) == (after, None, True)
+    assert app.last_scroll_evidence["post_continuity"] == "not_established"
+
+
+def test_fully_covered_text_edges_do_not_supply_movement_evidence():
+    before = read_screen(document("covered-before"), SIZE)
+    after = read_screen(document("covered-after"), SIZE)
+    after = replace(
+        after,
+        scroll_anchors=tuple(
+            replace(
+                a, visibility=replace(a.visibility, overlaps=(a.visibility.bounds,))
+            )
+            if len(a.text) > 32
+            else a
+            for a in after.scroll_anchors
+        ),
+    )
+    with pytest.raises(XError):
+        _scroll_motion(before, after)
+
+
 def test_advance_collects_fresh_attributed_evidence_after_unsupported_content():
     device = TimelinePhone()
     device.document = document("selected")
