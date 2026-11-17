@@ -27,7 +27,7 @@ ACTIONS = [
 PLATFORM_ACTIONS = {
     "instagram": ACTIONS,
     "tiktok": ACTIONS,
-    "x": ["skip", "watch", "inspect"],
+    "x": ["skip", "watch", "inspect", "read_more"],
 }
 
 

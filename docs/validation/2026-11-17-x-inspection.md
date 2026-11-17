@@ -1,8 +1,9 @@
 # X inspection continuation
 
 Profile visits, bounded thread inspection, image-gallery capture, visible video/GIF capture, and verified return are implemented in the standalone Taktik fork.
-Milestone 2 remains partial because native main-post detail extraction and text expansion are unavailable on the tested X version.
-The browser does not advertise `read_more` or fill missing detail content from the source feed or a reply.
+The initial inspection revision left native main-post detail extraction and text expansion unavailable on the tested X version.
+The subsequent [inline expansion continuation](2026-11-17-x-expansion.md) adds verified `read_more`; main-post detail extraction remains unavailable and milestone 2 remains partial.
+The browser does not fill missing detail content from the source feed or a reply.
 
 ## Interface and evidence
 

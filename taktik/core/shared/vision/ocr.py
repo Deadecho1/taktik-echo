@@ -1,4 +1,4 @@
-"""Local, free OCR — locate words/phrases in an image and return their bounding boxes.
+"""Local, free OCR - locate words/phrases in an image and return their bounding boxes.
 
 Reusable primitive: many IG/TikTok controls render text as a ClickableSpan with NO
 accessibility node (the "more" / "suite" / "plus" comment expanders, the full-bio
@@ -6,7 +6,7 @@ accessibility node (the "more" / "suite" / "plus" comment expanders, the full-bi
 tap the word's real on-screen position.
 
 Backed directly by the tesseract CLI. Degrades gracefully: if the binary is unavailable,
-``locate`` logs once and returns ``[]`` — callers simply skip the OCR-driven action (no
+``locate`` logs once and returns ``[]`` - callers simply skip the OCR-driven action (no
 crash). Pure: takes an image in, returns matches; no device access (see ``screen_text``
 for the device-aware wrapper).
 """
@@ -19,20 +19,22 @@ import os
 import shutil
 import subprocess
 import sys
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import Union
 
 from loguru import logger
 
 try:  # Pillow is a hard dep; keep the import defensive anyway.
     from PIL import Image
+
     _PIL_IMAGE = Image.Image
-except Exception:  # pragma: no cover
+except (ImportError, OSError):  # pragma: no cover
     Image = None  # type: ignore
     _PIL_IMAGE = object  # type: ignore
 
 ImageInput = Union["_PIL_IMAGE", str, bytes]
-Region = Tuple[int, int, int, int]  # (x1, y1, x2, y2) in image pixels
+Region = tuple[int, int, int, int]  # (x1, y1, x2, y2) in image pixels
 
 # Strip surrounding punctuation/quotes so an OCR'd "more," or "«more»" still matches "more".
 _TRIM = " \t\n\r·•.,;:!?…\"'«»“”()[]{}"
@@ -41,6 +43,7 @@ _TRIM = " \t\n\r·•.,;:!?…\"'«»“”()[]{}"
 @dataclass
 class TextMatch:
     """One OCR hit: the recognised word + its box (in the FULL image's pixel space)."""
+
     text: str
     confidence: float
     left: int
@@ -49,7 +52,7 @@ class TextMatch:
     height: int
 
     @property
-    def center(self) -> Tuple[int, int]:
+    def center(self) -> tuple[int, int]:
         return (self.left + self.width // 2, self.top + self.height // 2)
 
     @property
@@ -62,10 +65,10 @@ class OcrService:
 
     _unavailable_warned = False
     _resolved = False
-    _tesseract_cmd: Optional[str] = None
+    _tesseract_cmd: str | None = None
 
     @classmethod
-    def _resolve_tesseract_cmd(cls) -> Optional[str]:
+    def _resolve_tesseract_cmd(cls) -> str | None:
         """Resolve the bundled/system tesseract executable once.
 
         Resolution order: ``TAKTIK_TESSERACT_CMD`` env → a ``tesseract/`` folder bundled
@@ -80,21 +83,34 @@ class OcrService:
         candidates = []
         env_cmd = os.environ.get("TAKTIK_TESSERACT_CMD")
         if env_cmd:
-            candidates.append((env_cmd, os.path.join(os.path.dirname(env_cmd), "tessdata")))
-        for base in (getattr(sys, "_MEIPASS", None),
-                     os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else None):
+            candidates.append(
+                (env_cmd, os.path.join(os.path.dirname(env_cmd), "tessdata"))
+            )
+        for base in (
+            getattr(sys, "_MEIPASS", None),
+            os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else None,
+        ):
             if base:
                 folder = os.path.join(base, "tesseract")
-                candidates.append((os.path.join(folder, exe_name), os.path.join(folder, "tessdata")))
-        # Standard host install locations (dev machines / a system-installed tesseract) —
+                candidates.append(
+                    (os.path.join(folder, exe_name), os.path.join(folder, "tessdata"))
+                )
+        # Standard host install locations (dev machines / a system-installed tesseract) -
         # so it's found even when the install's PATH update hasn't reached this process.
         if os.name == "nt":
-            for root in (os.environ.get("ProgramFiles", r"C:\Program Files"),
-                         os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)"),
-                         os.path.join(os.environ.get("LOCALAPPDATA", ""), "Programs")):
+            for root in (
+                os.environ.get("ProgramFiles", r"C:\Program Files"),
+                os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)"),
+                os.path.join(os.environ.get("LOCALAPPDATA", ""), "Programs"),
+            ):
                 if root:
                     folder = os.path.join(root, "Tesseract-OCR")
-                    candidates.append((os.path.join(folder, exe_name), os.path.join(folder, "tessdata")))
+                    candidates.append(
+                        (
+                            os.path.join(folder, exe_name),
+                            os.path.join(folder, "tessdata"),
+                        )
+                    )
         for cmd, tessdata in candidates:
             resolved = cmd if cmd and os.path.isfile(cmd) else shutil.which(cmd or "")
             if resolved:
@@ -131,7 +147,7 @@ class OcrService:
         command: str,
         image,
         *,
-        lang: Optional[str],
+        lang: str | None,
         timeout_seconds: float,
     ) -> str:
         """Run tesseract out-of-process and return its TSV word data."""
@@ -146,15 +162,16 @@ class OcrService:
         completed = subprocess.run(
             args,
             input=encoded.getvalue(),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             check=False,
             timeout=max(0.1, float(timeout_seconds)),
             startupinfo=cls._startupinfo(),
         )
         if completed.returncode != 0:
             error = completed.stderr.decode("utf-8", errors="replace").strip()
-            raise RuntimeError(error or f"tesseract exited with code {completed.returncode}")
+            raise RuntimeError(
+                error or f"tesseract exited with code {completed.returncode}"
+            )
         return completed.stdout.decode("utf-8", errors="replace")
 
     @classmethod
@@ -173,10 +190,12 @@ class OcrService:
                 startupinfo=cls._startupinfo(),
             )
             return completed.returncode == 0
-        except Exception:
+        except (OSError, subprocess.SubprocessError):
             if not cls._unavailable_warned:
                 cls._unavailable_warned = True
-                logger.warning("OCR unavailable: tesseract binary not found on the host.")
+                logger.warning(
+                    "OCR unavailable: tesseract binary not found on the host."
+                )
             return False
 
     @staticmethod
@@ -188,9 +207,16 @@ class OcrService:
         try:
             if isinstance(image, (bytes, bytearray)):
                 import io
+
                 return Image.open(io.BytesIO(image))
             return Image.open(image)  # path-like
-        except Exception as exc:
+        except (
+            OSError,
+            ValueError,
+            TypeError,
+            AttributeError,
+            Image.DecompressionBombError,
+        ) as exc:
             logger.debug(f"OCR: could not load image: {exc}")
             return None
 
@@ -198,14 +224,14 @@ class OcrService:
     def locate(
         cls,
         image: ImageInput,
-        queries: Union[str, Sequence[str]],
+        queries: str | Sequence[str],
         *,
-        region: Optional[Region] = None,
+        region: Region | None = None,
         min_confidence: float = 40.0,
         whole_word: bool = True,
-        lang: Optional[str] = None,
+        lang: str | None = None,
         timeout_seconds: float = 5.0,
-    ) -> List[TextMatch]:
+    ) -> list[TextMatch]:
         """Return every box whose recognised word matches one of ``queries``.
 
         ``region`` (x1,y1,x2,y2) limits OCR to a crop (faster + avoids matching the word
@@ -232,7 +258,12 @@ class OcrService:
             x1, y1 = max(0, x1), max(0, y1)
             try:
                 img = img.crop((x1, y1, x2, y2))
-            except Exception as exc:
+            except (
+                OSError,
+                ValueError,
+                TypeError,
+                Image.DecompressionBombError,
+            ) as exc:
                 logger.debug(f"OCR: crop failed ({region}): {exc}")
                 return []
             ox, oy = x1, y1
@@ -249,14 +280,17 @@ class OcrService:
                 lang=lang,
                 timeout_seconds=timeout_seconds,
             )
-        except Exception as exc:
+        except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
             if not cls._unavailable_warned:
                 cls._unavailable_warned = True
                 logger.warning(f"OCR unavailable (tesseract call failed): {exc}")
             return []
 
-        matches: List[TextMatch] = []
-        for row in csv.DictReader(io.StringIO(tsv), delimiter="\t"):
+        matches: list[TextMatch] = []
+        # Tesseract emits literal quotes, not CSV-escaped fields.
+        for row in csv.DictReader(
+            io.StringIO(tsv), delimiter="\t", quoting=csv.QUOTE_NONE
+        ):
             raw = row.get("text") or ""
             token = (raw or "").strip().strip(_TRIM).lower()
             if not token:
@@ -270,14 +304,16 @@ class OcrService:
             hit = token in wanted if whole_word else any(w in token for w in wanted)
             if not hit:
                 continue
-            matches.append(TextMatch(
-                text=raw.strip(),
-                confidence=conf,
-                left=int(row["left"]) + ox,
-                top=int(row["top"]) + oy,
-                width=int(row["width"]),
-                height=int(row["height"]),
-            ))
+            matches.append(
+                TextMatch(
+                    text=raw.strip(),
+                    confidence=conf,
+                    left=int(row["left"]) + ox,
+                    top=int(row["top"]) + oy,
+                    width=int(row["width"]),
+                    height=int(row["height"]),
+                )
+            )
         return matches
 
     @classmethod
@@ -286,14 +322,14 @@ class OcrService:
         image: ImageInput,
         *,
         min_confidence: float = 40.0,
-        lang: Optional[str] = None,
+        lang: str | None = None,
         timeout_seconds: float = 5.0,
     ) -> str:
         """Every word tesseract recognises in the image, joined in reading order.
 
         `locate` answers "where is this word?"; this answers "what does this picture say?".
         An ad creative carries most of its message as text baked INTO the image, which no UI
-        dump can reach — that copy is exactly what makes a captured ad readable afterwards.
+        dump can reach - that copy is exactly what makes a captured ad readable afterwards.
 
         Returns "" when OCR is unavailable or nothing is legible: an empty read is a normal
         outcome here, never an error.
@@ -305,13 +341,17 @@ class OcrService:
         if img is None:
             return ""
         try:
-            tsv = cls._image_to_tsv(command, img, lang=lang, timeout_seconds=timeout_seconds)
-        except Exception as exc:
+            tsv = cls._image_to_tsv(
+                command, img, lang=lang, timeout_seconds=timeout_seconds
+            )
+        except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
             logger.debug(f"OCR read_text failed: {exc}")
             return ""
 
-        words: List[str] = []
-        for row in csv.DictReader(io.StringIO(tsv), delimiter="	"):
+        words: list[str] = []
+        for row in csv.DictReader(
+            io.StringIO(tsv), delimiter="\t", quoting=csv.QUOTE_NONE
+        ):
             raw = (row.get("text") or "").strip()
             if not raw:
                 continue

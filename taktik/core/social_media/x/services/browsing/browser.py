@@ -142,6 +142,7 @@ class XBrowser:
         self._occurrence = 0
         self._valid = False
         self._media_inspection = None
+        self._expanded_source_key = None
 
     @classmethod
     def connect(cls, serial, enabled_workflows):
@@ -155,6 +156,7 @@ class XBrowser:
     def start(self, username, workflow, target=""):
         self._valid = False
         self._media_inspection = None
+        self._expanded_source_key = None
         if workflow not in self.enabled or (workflow != "search" and target):
             raise ValueError(
                 "X requires an enabled workflow; only search accepts a target."
@@ -181,7 +183,8 @@ class XBrowser:
         post = self.browser.observe()
         if post is None:
             raise FeedEmpty(f"The X {self.workflow} timeline is empty.")
-        identity = f"x:{self._occurrence}:{post.content_key}"
+        identity_key = self._expanded_source_key or post.content_key
+        identity = f"x:{self._occurrence}:{identity_key}"
         if previous is not None and previous.identity != identity:
             self._valid = False
             raise XError("X changed while gathering additional observations.")
@@ -216,6 +219,7 @@ class XBrowser:
             platform="x",
             source_key=post.content_key,
             frames=frames,
+            caption_expanded=self._expanded_source_key is not None,
             media_type="post"
             if post.media or (post.quoted_post and post.quoted_post.media)
             else "text",
@@ -230,11 +234,13 @@ class XBrowser:
     def act(self, action, observation):
         if action not in PLATFORM_ACTIONS["x"]:
             raise XError(
-                "X currently supports watch, skip, and media inspection.",
+                "X supports watch, skip, media inspection, and inline text expansion.",
                 result=Result(Status.UNSUPPORTED),
             )
         if action == "inspect":
             self.inspect(observation)
+        elif action == "read_more":
+            self.read_more(observation)
         else:
             self._selected(observation)
         return ActionResult()
@@ -244,6 +250,7 @@ class XBrowser:
         if observation.platform != "x" or observation.identity != current.identity:
             self._valid = False
             raise XError("The X decision does not refer to the current post.")
+        return current
 
     def visit_profile(self, observation):
         self._selected(observation)
@@ -260,9 +267,17 @@ class XBrowser:
         )
         return self._media_inspection
 
+    def read_more(self, observation):
+        current = self._selected(observation)
+        post = self.browser.read_more()
+        if post.content_key != current.source_key:
+            self._expanded_source_key = self._expanded_source_key or current.source_key
+            self._media_inspection = None
+
     def advance(self):
         if not self.browsing_valid:
             raise XError("X browsing context was lost; restart account verification.")
         self.browser.advance()
         self._occurrence += 1
         self._media_inspection = None
+        self._expanded_source_key = None

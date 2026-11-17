@@ -1,11 +1,11 @@
-"""Unit tests for the shared OCR locate service (tesseract mocked — no binary needed)."""
+"""Unit tests for the shared OCR locate service (tesseract mocked - no binary needed)."""
 
 import subprocess
 
+import pytest
 from PIL import Image
 
 from taktik.core.shared.vision.ocr import OcrService
-
 
 _TSV_HEADER = "level\tpage_num\tblock_num\tpar_num\tline_num\tword_num\tleft\ttop\twidth\theight\tconf\ttext"
 
@@ -17,9 +17,18 @@ def _tsv(rows):
             "\t".join(
                 str(value)
                 for value in (
-                    5, 1, 1, 1, 1, index,
-                    row["left"], row["top"], row["width"], row["height"],
-                    row["conf"], row["text"],
+                    5,
+                    1,
+                    1,
+                    1,
+                    1,
+                    index,
+                    row["left"],
+                    row["top"],
+                    row["width"],
+                    row["height"],
+                    row["conf"],
+                    row["text"],
                 )
             )
         )
@@ -50,12 +59,43 @@ def _patch(monkeypatch, rows):
 
 
 def test_locate_finds_word_and_returns_center(monkeypatch):
-    _patch(monkeypatch, [
-        {"text": "Chez", "conf": "90", "left": 10, "top": 50, "width": 80, "height": 30},
-        {"text": "cert", "conf": "88", "left": 120, "top": 50, "width": 90, "height": 30},
-        {"text": "more", "conf": "95", "left": 300, "top": 50, "width": 70, "height": 30},
-        {"text": "1w", "conf": "80", "left": 420, "top": 50, "width": 40, "height": 30},
-    ])
+    _patch(
+        monkeypatch,
+        [
+            {
+                "text": "Chez",
+                "conf": "90",
+                "left": 10,
+                "top": 50,
+                "width": 80,
+                "height": 30,
+            },
+            {
+                "text": "cert",
+                "conf": "88",
+                "left": 120,
+                "top": 50,
+                "width": 90,
+                "height": 30,
+            },
+            {
+                "text": "more",
+                "conf": "95",
+                "left": 300,
+                "top": 50,
+                "width": 70,
+                "height": 30,
+            },
+            {
+                "text": "1w",
+                "conf": "80",
+                "left": 420,
+                "top": 50,
+                "width": 40,
+                "height": 30,
+            },
+        ],
+    )
 
     matches = OcrService.locate(Image.new("RGB", (640, 200)), ["more", "suite", "plus"])
 
@@ -64,9 +104,19 @@ def test_locate_finds_word_and_returns_center(monkeypatch):
 
 
 def test_region_offsets_coords_back_to_full_image(monkeypatch):
-    calls = _patch(monkeypatch, [
-        {"text": "more", "conf": "95", "left": 20, "top": 10, "width": 60, "height": 28},
-    ])
+    calls = _patch(
+        monkeypatch,
+        [
+            {
+                "text": "more",
+                "conf": "95",
+                "left": 20,
+                "top": 10,
+                "width": 60,
+                "height": 28,
+            },
+        ],
+    )
 
     matches = OcrService.locate(
         Image.new("RGB", (1080, 600)),
@@ -79,23 +129,119 @@ def test_region_offsets_coords_back_to_full_image(monkeypatch):
 
 
 def test_low_confidence_is_filtered(monkeypatch):
-    _patch(monkeypatch, [
-        {"text": "more", "conf": "20", "left": 0, "top": 0, "width": 9, "height": 9},
-    ])
+    _patch(
+        monkeypatch,
+        [
+            {
+                "text": "more",
+                "conf": "20",
+                "left": 0,
+                "top": 0,
+                "width": 9,
+                "height": 9,
+            },
+        ],
+    )
 
-    assert OcrService.locate(
-        Image.new("RGB", (50, 50)),
-        "more",
-        min_confidence=40,
-    ) == []
+    assert (
+        OcrService.locate(
+            Image.new("RGB", (50, 50)),
+            "more",
+            min_confidence=40,
+        )
+        == []
+    )
 
 
 def test_surrounding_punctuation_still_matches(monkeypatch):
-    _patch(monkeypatch, [
-        {"text": "«more»", "conf": "90", "left": 0, "top": 0, "width": 9, "height": 9},
-    ])
+    _patch(
+        monkeypatch,
+        [
+            {
+                "text": "«more»",
+                "conf": "90",
+                "left": 0,
+                "top": 0,
+                "width": 9,
+                "height": 9,
+            },
+        ],
+    )
 
     assert len(OcrService.locate(Image.new("RGB", (50, 50)), "more")) == 1
+
+
+@pytest.mark.parametrize("quoted", ['"If', '"money"', '"'])
+def test_quoted_words_do_not_hide_later_control_matches(monkeypatch, quoted):
+    _patch(
+        monkeypatch,
+        [
+            {
+                "text": quoted,
+                "conf": "96",
+                "left": 2,
+                "top": 1,
+                "width": 25,
+                "height": 30,
+            },
+            {
+                "text": "Show",
+                "conf": "96",
+                "left": 20,
+                "top": 80,
+                "width": 50,
+                "height": 30,
+            },
+            {
+                "text": "more",
+                "conf": "96",
+                "left": 80,
+                "top": 80,
+                "width": 45,
+                "height": 30,
+            },
+        ],
+    )
+
+    matches = OcrService.locate(Image.new("RGB", (150, 150)), ["Show", "more"])
+
+    assert [match.text for match in matches] == ["Show", "more"]
+    assert matches[1].bbox == (80, 80, 125, 110)
+
+
+@pytest.mark.parametrize("quoted", ['"If', '"money"', '"'])
+def test_read_text_preserves_literal_quotes_and_following_words(monkeypatch, quoted):
+    _patch(
+        monkeypatch,
+        [
+            {
+                "text": quoted,
+                "conf": "96",
+                "left": 2,
+                "top": 1,
+                "width": 25,
+                "height": 30,
+            },
+            {
+                "text": "Show",
+                "conf": "96",
+                "left": 20,
+                "top": 80,
+                "width": 50,
+                "height": 30,
+            },
+            {
+                "text": "more",
+                "conf": "96",
+                "left": 80,
+                "top": 80,
+                "width": 45,
+                "height": 30,
+            },
+        ],
+    )
+
+    assert OcrService.read_text(Image.new("RGB", (150, 150))) == f"{quoted} Show more"
 
 
 def test_unavailable_returns_empty(monkeypatch):

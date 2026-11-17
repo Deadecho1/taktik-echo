@@ -36,7 +36,7 @@ Consumers pin a tested complete commit hash; branch names describe the developme
 The `feature/x-platform` branch adds `taktik.core.social_media.x.ui.screen` and `taktik.core.social_media.x.services.browsing.XBrowser`.
 The interpreter consumes captured XML and recorded screen dimensions.
 The browser verifies the account, supports For you, Following, and search, and exposes post observations with separate quote and media metadata.
-Watch, skip, and explicit media inspection are enabled; unsupported or ambiguous layouts stop browsing.
+Watch, skip, explicit media inspection, and verified inline text expansion are enabled; unsupported or ambiguous layouts stop browsing.
 Native Paid partnership disclosures remain separate from authored text.
 The captured leading name/Verified/age header without a handle can retain a body
 and media as an unattributed fragment for ordered continuity. It requires an
@@ -75,7 +75,17 @@ Their configuration, model policy, and integration schedules are independent of 
 `X.inspect_thread(max_posts=10, max_scrolls=4)` returns bounded, independently attributed thread observations and native detail metadata, retaining the original source content key separately.
 The main detail author/body/media remain inaccessible on the tested version, so `main_post=None` and `main_verified=False`; the result never claims complete thread coverage.
 `max_scrolls=0` performs an initial detail visit without forward scrolling.
-Text expansion and `read_more` remain unavailable, and milestone 2 is still partial.
+Milestone 2 remains partial because main-post detail extraction is unavailable.
+
+`X.read_more()` activates the native inline Show more span and returns the independently parsed expanded post.
+`XBrowser.read_more(observation)` and `act("read_more", observation)` retain the observation identity across the verified text change and mark the next caption expanded.
+The content key changes with the expanded text, and previously captured media frames are discarded because their geometry may have changed.
+Local Tesseract OCR locates the inline control; authored text and attribution still come from native XML.
+The source is reverified after OCR and the expanded result is read again before success.
+Support requires an unquoted source, unchanged author/header position and media content, and an unobscured expanded body entirely inside the viewport.
+Missing or ambiguous OCR targets are not tapped; clipped expansion, changed context, and uncertain execution invalidate browsing for explicit recovery.
+An already complete caption is a verified no-op.
+The [expansion validation record](validation/2026-11-17-x-expansion.md) documents the physical inline expansion/detail-return run and the remaining visibility limits.
 
 `X.inspect_media(index=0, frame_count=1, interval=1.0)` captures a verified native image gallery or the uncovered, visible part of an inline video/GIF.
 It verifies source or gallery evidence around each frame and reports the crop and whether the inline media is partial.

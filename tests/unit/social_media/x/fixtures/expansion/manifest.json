@@ -1,0 +1,58 @@
+{
+  "size": [
+    1080,
+    2340
+  ],
+  "x_version": "12.42.0-prod.01",
+  "visual_review": "pending",
+  "fixtures": [
+    {
+      "file": "source.xml",
+      "source": "tests/smoke/x-expansion-probes/20261117T133437.381266Z/source.xml",
+      "source_sha256": "eeeabe41465d856269301253256ab2be74f8f3e58efa64e6b054151937e0cebd",
+      "sha256": "14fb8b85f4b36020379a536711bd7f8f1da8501cfca285a7ec56dbc7f3325398"
+    },
+    {
+      "file": "expanded.xml",
+      "source": "tests/smoke/x-expansion-probes/20261117T133437.381266Z/expanded.xml",
+      "source_sha256": "b6a092585a0edbd594773fac0151c9ca259d9e6de98cd096e635fd0d5ec3361e",
+      "sha256": "a7d8dd27cf31f84919ee11031c6a9f83ed4f1a8f24bf6bf0af14410142b77fc5"
+    },
+    {
+      "file": "expanded-reread.xml",
+      "source": "tests/smoke/x-expansion-probes/20261117T133437.381266Z/expanded-reread.xml",
+      "source_sha256": "b6a092585a0edbd594773fac0151c9ca259d9e6de98cd096e635fd0d5ec3361e",
+      "sha256": "a7d8dd27cf31f84919ee11031c6a9f83ed4f1a8f24bf6bf0af14410142b77fc5"
+    },
+    {
+      "file": "detail.xml",
+      "source": "tests/smoke/x-expansion-probes/20261117T133437.381266Z/detail.xml",
+      "source_sha256": "f301c54813f85e1bccbdc5d56bb668a241a5121e0d786c47df7f41a8d996c7ae",
+      "sha256": "1f2d821215a1388af1a7bc9138dc3f3adbcbff8d8e3b2bf205f07771f60c89f2"
+    },
+    {
+      "file": "detail-depth-100.xml",
+      "source": "tests/smoke/x-expansion-probes/20261117T133437.381266Z/detail-depth-100.xml",
+      "source_sha256": "f99c530e5312ed0281fd27baad0fb63adeaf5f838d4197847131be736b48e86f",
+      "sha256": "521b5cc8049284f391e7bdafdece8230918dd2f19d995801dbb8ca827689db63"
+    },
+    {
+      "file": "return.xml",
+      "source": "tests/smoke/x-expansion-probes/20261117T133437.381266Z/return.xml",
+      "source_sha256": "b6a092585a0edbd594773fac0151c9ca259d9e6de98cd096e635fd0d5ec3361e",
+      "sha256": "a7d8dd27cf31f84919ee11031c6a9f83ed4f1a8f24bf6bf0af14410142b77fc5"
+    },
+    {
+      "file": "long-source.xml",
+      "source": "tests/smoke/x-expansion-probes/20261117T133144.571820Z/source.xml",
+      "source_sha256": "15ce6a104e15b0504bf579ec8058a475b1a27966a79e2d1beec0077a1da24ebd",
+      "sha256": "579820b142846cce1e05b67bb193a7bcd378ef836c0e6ab27e306cb8e28f97b4"
+    },
+    {
+      "file": "long-expanded.xml",
+      "source": "tests/smoke/x-expansion-probes/20261117T133144.571820Z/expanded.xml",
+      "source_sha256": "65f20a6760df2dc08120dfb54900a9a075776f7d3b5d3ffebffc13fb7899b17f",
+      "sha256": "da514e8881c6784ae69104bc9defb30094a9db0709748f9b8cca80fd86682d72"
+    }
+  ]
+}

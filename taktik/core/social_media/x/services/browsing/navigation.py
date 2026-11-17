@@ -2787,6 +2787,12 @@ class X:
             self, index=index, frame_count=frame_count, interval=interval
         )
 
+    def read_more(self):
+        """Expand a native inline caption and verify the same selected occurrence."""
+        from .expansion import read_more
+
+        return read_more(self)
+
     def _refresh_alignment(self, screen):
         try:
             _alignment(self._screen, screen, refresh_index=self._index)
