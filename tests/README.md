@@ -36,6 +36,9 @@ layout: a folder of `tests/unit/` that mirrors no folder of the code turns it re
 holds more than 40 test files directly (the ones above it today are listed in
 `scripts/audits/audit_tree_layout_baseline.json`, a list that only shrinks).
 
+The X suite keeps reader-focused cases under `social_media/x/ui`, navigation-focused cases under `social_media/x/services/browsing`, and mixed reader/navigation cases at `social_media/x`.
+These cases share captures under `social_media/x/fixtures`.
+
 ## Local diagnostics
 
 The following folders are intentionally ignored by Git:

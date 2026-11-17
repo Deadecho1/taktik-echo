@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 from lxml import etree
+
 from taktik.core.shared.ui.geometry import bounds
 from taktik.core.social_media.x.services.browsing.browser import post_context
 from taktik.core.social_media.x.services.browsing.navigation import XError, _alignment

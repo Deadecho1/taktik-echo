@@ -63,7 +63,7 @@ def _free_regions(area, exclusions, minimum_width):
 
 def scroll_region(screen):
     viewport = screen.content_viewport
-    if screen.kind not in {"home", "search_results"} or viewport is None:
+    if screen.kind not in {"home", "search_results", "detail"} or viewport is None:
         raise XError("X scrolling requires a recognized feed viewport.")
     width, height = viewport[2] - viewport[0], viewport[3] - viewport[1]
     areas = screen.scroll_areas or screen.navigation_areas
@@ -98,7 +98,7 @@ def _scroll_motion(before, after):
     This permits navigation past an unsupported post, never its observation.
     """
     if (
-        before.kind not in {"home", "search_results"}
+        before.kind not in {"home", "search_results", "detail"}
         or after.kind != before.kind
         or (before.collapsed and not after.collapsed)
         or (
@@ -2315,6 +2315,13 @@ class X:
                 screen = self._wait_for(
                     lambda s: s.kind != "unsupported", "return from X search"
                 )
+            elif screen.kind in {"profile", "detail", "media"} and not any(
+                target.label == "Home" for target in screen.controls
+            ):
+                self._inspection_back(screen)
+                screen = self._wait_for(
+                    lambda s: s.kind != "unsupported", "return from X inspection"
+                )
             elif screen.kind in {"profile", "detail", "explore", "search_results"}:
                 self._tap(screen, "Home")
                 screen = self._wait_for(lambda s: s.kind == "home", "Home navigation")
@@ -2696,6 +2703,89 @@ class X:
             if self._index is None or not screen.posts[self._index].observable:
                 raise XError("The selected X post is no longer observable.")
             return self._select(screen, self._index)
+
+    @contextmanager
+    def _visit(self, label, kind):
+        with self._operation():
+            source = self.observe()
+            if source is None:
+                raise XError("An X inspection requires a selected post.")
+            if (
+                sum(p.content_key == source.content_key for p in self._screen.posts)
+                != 1
+            ):
+                raise XError("The selected X inspection target is ambiguous.")
+            targets = [t for t in source.targets if t.label == label]
+            if len(targets) != 1 or targets[0].visibility.visible_bounds is None:
+                raise XError(f"No visible X {label} target.")
+            target = targets[0].visibility
+            minimum = (
+                self._screen.content_viewport[2] - self._screen.content_viewport[0]
+            ) * 0.04
+            regions = [
+                r
+                for r in _free_regions(target.visible_bounds, target.overlaps, minimum)
+                if r[3] - r[1] >= minimum
+            ]
+            if not regions:
+                raise XError(f"No safe X {label} region outside nested content.")
+            region = max(regions, key=lambda r: (r[2] - r[0]) * (r[3] - r[1]))
+            self.phone.tap(region, exclude=target.overlaps).require()
+            screen = self._wait_for(lambda s: s.kind == kind, f"X {kind} inspection")
+            yield source, screen
+            current = self._snapshot()
+            if current.kind != kind:
+                raise XError("X left the inspection before returning to the feed.")
+            self._inspection_back(current)
+            restored = self._wait_for(
+                lambda s: s.kind == self._screen.kind,
+                "return to the X browsing context",
+            )
+            self._check_timeline(restored, self._screen)
+            self._refresh_alignment(restored)
+            if self._index is None or not restored.posts[self._index].observable:
+                raise XError("The original X post is not observable after inspection.")
+            self._select(restored, self._index)
+
+    def _inspection_back(self, screen):
+        for attempt in range(RESTORE_ATTEMPTS + 1):
+            if any(
+                t.label == "Back" and t.visibility.visible_bounds is not None
+                for t in screen.controls
+            ):
+                self._tap(screen, "Back")
+                return
+            if (
+                screen.kind != "detail"
+                or not screen.collapsed
+                or attempt == RESTORE_ATTEMPTS
+            ):
+                break
+            self._gesture(screen, "down")
+            screen = self._wait_for(
+                lambda s: s.kind == "detail", "detail header restoration"
+            )
+        raise XError("Cannot restore the X inspection Back control within the limit.")
+
+    def visit_profile(self):
+        """Read the selected author's profile, then verify the original feed position."""
+        from .inspection import visit_profile
+
+        return visit_profile(self)
+
+    def inspect_thread(self, *, max_posts=10, max_scrolls=4):
+        """Read bounded, independently attributed thread posts and return to the feed."""
+        from .inspection import inspect_thread
+
+        return inspect_thread(self, max_posts=max_posts, max_scrolls=max_scrolls)
+
+    def inspect_media(self, index=0, *, frame_count=1, interval=1.0):
+        """Capture verified image-gallery or visible video frames, retaining the cursor."""
+        from .inspection import inspect_media
+
+        return inspect_media(
+            self, index=index, frame_count=frame_count, interval=interval
+        )
 
     def _refresh_alignment(self, screen):
         try:

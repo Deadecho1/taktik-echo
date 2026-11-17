@@ -4,6 +4,7 @@ from dataclasses import replace
 from pathlib import Path
 
 import pytest
+
 from taktik.core.social_media.x.services.browsing.navigation import XError, _alignment
 from taktik.core.social_media.x.ui.screen import read_screen
 

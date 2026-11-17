@@ -35,8 +35,8 @@ Consumers pin a tested complete commit hash; branch names describe the developme
 
 The `feature/x-platform` branch adds `taktik.core.social_media.x.ui.screen` and `taktik.core.social_media.x.services.browsing.XBrowser`.
 The interpreter consumes captured XML and recorded screen dimensions.
-The browser verifies the account, supports For you, Following, and search, and exposes text-only post observations with separate quote and media metadata.
-Only watch and skip are enabled; unsupported or ambiguous layouts stop browsing.
+The browser verifies the account, supports For you, Following, and search, and exposes post observations with separate quote and media metadata.
+Watch, skip, and explicit media inspection are enabled; unsupported or ambiguous layouts stop browsing.
 Native Paid partnership disclosures remain separate from authored text.
 The captured leading name/Verified/age header without a handle can retain a body
 and media as an unattributed fragment for ordered continuity. It requires an
@@ -70,3 +70,20 @@ The reviewed Top run ends at its last partly visible video, so it does not estab
 An exact, unobscured native no-results panel establishes an empty search; missing result posts alone do not.
 Consumer applications choose how to use these capabilities in their own workflows.
 Their configuration, model policy, and integration schedules are independent of Taktik implementation and validation.
+
+`X.visit_profile()` visits the selected author's verified profile and returns header text and observable profile posts separately from the source post.
+`X.inspect_thread(max_posts=10, max_scrolls=4)` returns bounded, independently attributed thread observations and native detail metadata, retaining the original source content key separately.
+The main detail author/body/media remain inaccessible on the tested version, so `main_post=None` and `main_verified=False`; the result never claims complete thread coverage.
+`max_scrolls=0` performs an initial detail visit without forward scrolling.
+Text expansion and `read_more` remain unavailable, and milestone 2 is still partial.
+
+`X.inspect_media(index=0, frame_count=1, interval=1.0)` captures a verified native image gallery or the uncovered, visible part of an inline video/GIF.
+It verifies source or gallery evidence around each frame and reports the crop and whether the inline media is partial.
+The gallery's caption metadata can retain text beyond the visibly shortened caption and is never presented as expanded text.
+`XBrowser.visit_profile(observation)`, `inspect_thread(observation, ...)`, and `inspect(observation, ...)` also validate the source observation identity.
+Explicit media inspection supplies frames and `post_context.media_inspection` on the next observation while retaining its identity and caption.
+
+Successful visits verify the prior browsing context and selected occurrence after native Back navigation.
+Missing Back headers are restored within a fixed gesture bound; uncertain actions are not retried, and failed verification requires explicit recovery.
+Direct profile/detail/gallery and thread/video round trips passed on X `12.42.0-prod.01`, Android 13, at 1080 × 2340, with keyboard restoration and cleanup.
+The [inspection validation record](validation/2026-11-17-x-inspection.md) documents limits, captured evidence, and pending human visual review.

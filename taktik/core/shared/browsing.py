@@ -24,7 +24,11 @@ ACTIONS = [
 ]
 
 
-PLATFORM_ACTIONS = {"instagram": ACTIONS, "tiktok": ACTIONS, "x": ["skip", "watch"]}
+PLATFORM_ACTIONS = {
+    "instagram": ACTIONS,
+    "tiktok": ACTIONS,
+    "x": ["skip", "watch", "inspect"],
+}
 
 
 @dataclass

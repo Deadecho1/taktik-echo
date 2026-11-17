@@ -4,13 +4,17 @@ from dataclasses import replace
 
 import pytest
 from lxml import etree
+from unit.social_media.x.services.browsing.test_quote_body_preview import (
+    FIXTURES,
+    screens,
+)
+
 from taktik.core.social_media.x.services.browsing.navigation import (
     XError,
     _alignment,
     scroll_region,
 )
 from taktik.core.social_media.x.ui.screen import read_screen
-from test_quote_body_preview import FIXTURES, screens
 
 
 def test_inset_video_with_quote_supplies_a_scroll_region_without_outer_attribution():

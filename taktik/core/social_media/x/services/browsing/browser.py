@@ -1,4 +1,4 @@
-"""Text-only post observations over account-verified X timeline browsing."""
+"""Post observations and explicit inspection over account-verified X browsing."""
 
 import re
 
@@ -141,6 +141,7 @@ class XBrowser:
         self._username = None
         self._occurrence = 0
         self._valid = False
+        self._media_inspection = None
 
     @classmethod
     def connect(cls, serial, enabled_workflows):
@@ -153,6 +154,7 @@ class XBrowser:
 
     def start(self, username, workflow, target=""):
         self._valid = False
+        self._media_inspection = None
         if workflow not in self.enabled or (workflow != "search" and target):
             raise ValueError(
                 "X requires an enabled workflow; only search accepts a target."
@@ -195,6 +197,17 @@ class XBrowser:
             context["search_tab"] = self.browser.result_tab
         if self.browser.navigation_gaps:
             context["navigation_gaps"] = list(self.browser.navigation_gaps)
+        frames = []
+        inspection = self._media_inspection
+        if inspection is not None and inspection.source_key == post.content_key:
+            frames = list(inspection.frames)
+            context["visual_content_available"] = True
+            context["media_inspection"] = {
+                "index": inspection.index,
+                "view": inspection.view,
+                "crop": inspection.crop,
+                "partial": inspection.partial,
+            }
         return PostObservation(
             username=post.author.removeprefix("@"),
             caption=post.body or "",
@@ -202,6 +215,7 @@ class XBrowser:
             workflow=self.workflow,
             platform="x",
             source_key=post.content_key,
+            frames=frames,
             media_type="post"
             if post.media or (post.quoted_post and post.quoted_post.media)
             else "text",
@@ -216,17 +230,39 @@ class XBrowser:
     def act(self, action, observation):
         if action not in PLATFORM_ACTIONS["x"]:
             raise XError(
-                "X currently supports only watch and skip.",
+                "X currently supports watch, skip, and media inspection.",
                 result=Result(Status.UNSUPPORTED),
             )
+        if action == "inspect":
+            self.inspect(observation)
+        else:
+            self._selected(observation)
+        return ActionResult()
+
+    def _selected(self, observation):
         current = self.observe()
         if observation.platform != "x" or observation.identity != current.identity:
             self._valid = False
             raise XError("The X decision does not refer to the current post.")
-        return ActionResult()
+
+    def visit_profile(self, observation):
+        self._selected(observation)
+        return self.browser.visit_profile()
+
+    def inspect_thread(self, observation, *, max_posts=10, max_scrolls=4):
+        self._selected(observation)
+        return self.browser.inspect_thread(max_posts=max_posts, max_scrolls=max_scrolls)
+
+    def inspect(self, observation, *, index=0, frame_count=1, interval=1.0):
+        self._selected(observation)
+        self._media_inspection = self.browser.inspect_media(
+            index, frame_count=frame_count, interval=interval
+        )
+        return self._media_inspection
 
     def advance(self):
         if not self.browsing_valid:
             raise XError("X browsing context was lost; restart account verification.")
         self.browser.advance()
         self._occurrence += 1
+        self._media_inspection = None

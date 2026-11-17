@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 from lxml import etree
+
 from taktik.core.social_media.x.services.browsing.navigation import _alignment
 from taktik.core.social_media.x.ui.screen import PostFragment, read_screen
 

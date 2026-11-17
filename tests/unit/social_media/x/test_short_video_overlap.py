@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
+
 from taktik.core.shared.phone_interaction import Phone
 from taktik.core.social_media.x.services.browsing.navigation import (
     X,

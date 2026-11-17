@@ -9,11 +9,15 @@ import json
 import re
 from dataclasses import dataclass, replace
 from itertools import pairwise
+from typing import TYPE_CHECKING
 
 from lxml import etree
 
 from taktik.core.shared.phone_interaction import TextField
 from taktik.core.shared.ui.geometry import bounds
+
+if TYPE_CHECKING:
+    from .inspection import Detail, Gallery, Profile
 
 PACKAGE = "com.twitter.android"
 HANDLE = re.compile(r"@[A-Za-z0-9_]{1,15}", re.ASCII)
@@ -23,6 +27,7 @@ PRIMARY = {
     "SearchQuery": "search_input",
     "Search": "search_results",
     "scaffold_home_tabbed": "home",
+    "MediaGallery": "media",
 }
 ACTION_LABELS = ("Reply", "Repost", "Like", "Impressions", "Bookmark", "Share")
 VERIFICATION_LABELS = frozenset(
@@ -172,6 +177,7 @@ class Post:
     community_note: CommunityNote | None = None
     market_card: MarketCard | None = None
     sports_card: SportsCard | None = None
+    targets: tuple[Target, ...] = ()
 
     @property
     def observable(self):
@@ -258,6 +264,9 @@ class Screen:
     scroll_anchors: tuple[TextSpan, ...] = ()
     navigation_areas: tuple[ScrollArea, ...] = ()
     query_field: TextField | None = None
+    profile: "Profile | None" = None
+    detail: "Detail | None" = None
+    gallery: "Gallery | None" = None
 
     @property
     def observable_posts(self):
@@ -2308,6 +2317,8 @@ def _avatar_live_badge(container, clipped_viewport=None):
 
 
 def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle=False):
+    from .inspection import post_targets
+
     container = header.getparent()
     if container.get("clickable") != "true":
         raise _Unsupported("Unrecognized post container.")
@@ -2599,6 +2610,7 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
         advertising=advertising,
         advertising_visibility=advertising_view,
         community_note=community_note,
+        targets=post_targets(header, media, viewport, overlaps),
     )
 
 
@@ -3462,9 +3474,7 @@ def _read(root, area):
         return _post_options(window, area, external)
     landings = window.xpath('.//*[@resource-id="MainLanding"]')
     standalone = not landings
-    if standalone and window.xpath(
-        './/*[@resource-id="SearchQuery" or @resource-id="Search"]'
-    ):
+    if standalone and any(n.get("resource-id") in PRIMARY for n in window.iter()):
         landing = window
     else:
         landing = _one(landings, "MainLanding")
@@ -3488,14 +3498,22 @@ def _read(root, area):
         raise _Unsupported("Unrecognized X screen.")
     if keyboard and kind != "search_input":
         raise _Unsupported("Unexpected keyboard over X screen.")
+    if kind == "media":
+        from .inspection import read_gallery
+
+        return read_gallery(scope, area, external)
     controls, overlays = [], list(external)
     tab = query = active = profile = None
     query_field = None
-    collapsed = (kind == "home" and not _desc(landing, "Home")) or (
-        standalone
-        and kind == "search_results"
-        and not _desc(scope, "Back")
-        and not _desc(scope, "Search")
+    collapsed = (
+        (kind == "home" and not _desc(landing, "Home"))
+        or (
+            standalone
+            and kind == "search_results"
+            and not _desc(scope, "Back")
+            and not _desc(scope, "Search")
+        )
+        or (kind == "detail" and not _desc(scope, "Back"))
     )
     if kind == "search_input":
         field = _one(
@@ -3527,22 +3545,25 @@ def _read(root, area):
         overlays.append((area[0], bottom, area[2], area[3]))
     else:
         if standalone:
-            if kind != "search_results":
+            if kind not in {"search_results", "profile", "detail"}:
                 raise _Unsupported("Unsupported standalone X screen.")
-            if not collapsed:
+            if kind == "search_results" and not collapsed:
                 back = _one(_desc(scope, "Back"), "search Back")
                 back_target = _target(back, "Back", scope, area, external)
                 if not back_target.visibility.unobscured:
                     raise _Unsupported("Search Back control is obscured.")
                 controls.append(back_target)
-            composer = _one(_desc(scope, "Post"), "search composer")
-            target = _clickable(composer, scope)
-            if not _visibility(target, area, external).unobscured:
-                raise _Unsupported("Search composer is obscured.")
-            bottom = _rect(target)[3]
-            if not area[1] < bottom < area[3]:
-                raise _Unsupported("Missing standalone search bottom inset.")
-            overlays.append((area[0], bottom, area[2], area[3]))
+            if kind == "detail":
+                bottom = area[3]
+            else:
+                composer = _one(_desc(scope, "Post"), "floating composer")
+                target = _clickable(composer, scope)
+                if not _visibility(target, area, external).unobscured:
+                    raise _Unsupported("Floating composer is obscured.")
+                bottom = _rect(target)[3]
+                if not area[1] < bottom < area[3]:
+                    raise _Unsupported("Missing standalone bottom inset.")
+                overlays.append((area[0], bottom, area[2], area[3]))
         else:
             navigation = _navigation(landing)
             bottom = _rect(navigation)[1]
@@ -3558,6 +3579,8 @@ def _read(root, area):
                     )
                 )
         if kind == "detail":
+            from .inspection import back_target
+
             field = _one(
                 scope.xpath('.//*[@resource-id="post-detail-reply-text-field"]'),
                 "reply composer",
@@ -3565,8 +3588,15 @@ def _read(root, area):
             composer = field.getparent()
             overlays.append(_rect(composer))
             bottom = _rect(composer)[1]
-            back = _one(_desc(scope, "Back"), "detail Back")
-            top = _rect(_header_bar(back, scope))[3]
+            if collapsed:
+                bar = _one(system_bars, "collapsed detail status bar")
+                if bar[:3] != area[:3] or bar[3] > area[3] * 0.1:
+                    raise _Unsupported("Unrecognized collapsed detail header.")
+                top = bar[3]
+            else:
+                back = _one(_desc(scope, "Back"), "detail Back")
+                top = _rect(_header_bar(back, scope))[3]
+                controls.append(back_target(scope, area, external))
         else:
             required = {
                 "home": ("For you", "Following"),
@@ -3648,7 +3678,10 @@ def _read(root, area):
                     raise _Unsupported("Invalid noneditable query header.")
                 controls.append(_target(search, "Search", scope, area, external))
             if kind == "profile":
+                from .inspection import back_target
+
                 profile, active = _profile_identity(scope, area, top, external)
+                controls.append(back_target(scope, area, external))
     for composer in _desc(scope, "Post"):
         overlays.append(_rect(_clickable(composer, scope)))
     header_cover = None
@@ -3759,6 +3792,16 @@ def _read(root, area):
     )
     if empty and (posts or rejected or fragments):
         raise _Unsupported("Empty timeline message conflicts with post candidates.")
+    profile_evidence = detail = None
+    if kind in {"profile", "detail"}:
+        from .inspection import read_detail, read_profile
+
+        if kind == "profile":
+            profile_evidence = read_profile(scope, viewport, tuple(overlays), profile)
+        else:
+            detail, posts, rejected, scroll_areas, scroll_anchors = read_detail(
+                scope, viewport, tuple(overlays)
+            )
     return Screen(
         kind,
         reason="Main post unavailable: the inspected detail layout omits its author and body."
@@ -3780,6 +3823,8 @@ def _read(root, area):
         scroll_anchors=tuple(scroll_anchors),
         navigation_areas=tuple(navigation_areas),
         query_field=query_field,
+        profile=profile_evidence,
+        detail=detail,
     )
 
 
