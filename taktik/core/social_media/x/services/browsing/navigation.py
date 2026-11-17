@@ -103,7 +103,20 @@ def _scroll_motion(before, after):
         raise XError("Native X movement requires two Home snapshots.")
 
     def key(anchor):
-        return anchor.text, anchor.visibility.bounds[::2]
+        return anchor.text, anchor.visibility.bounds[0]
+
+    def horizontal_match(a, b):
+        if a.bounds[2] == b.bounds[2]:
+            return True
+
+        def clipped_at_cover(full, clipped, screen):
+            return any(
+                clipped.bounds[2] == rect[0] < full.bounds[2] <= rect[2]
+                and rect[1] <= clipped.bounds[1] < clipped.bounds[3] <= rect[3]
+                for rect in screen.overlaps
+            )
+
+        return clipped_at_cover(a, b, after) or clipped_at_cover(b, a, before)
 
     def edge_visible(visibility, viewport, index):
         x1, _, x2, _ = visibility.bounds
@@ -122,6 +135,8 @@ def _scroll_motion(before, after):
         if a is None or new_counts[key(b)] != 1:
             continue
         av, bv = a.visibility, b.visibility
+        if not horizontal_match(av, bv):
+            continue
         edges = [
             bv.bounds[i] - av.bounds[i]
             for i in (1, 3)

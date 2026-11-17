@@ -95,6 +95,51 @@ def test_reused_short_label_does_not_override_a_long_exact_content_anchor():
     assert app._advance_alignment(before, after, False) == (after, None, True)
 
 
+def test_two_short_anchors_can_survive_exact_clipping_at_a_floating_control():
+    before = read_screen(document("clipped-label-before"), SIZE)
+    after = read_screen(document("clipped-label-after"), SIZE)
+    assert after.rejected_posts
+    assert _scroll_motion(before, after) == -606
+    app = X(TimelinePhone().phone)
+    app.timeline, app.verified_account = "for_you", "@fixture_owner"
+    assert app._advance_alignment(before, after, False) == (after, None, True)
+
+
+@pytest.mark.parametrize("mutation", ["no_cover", "width", "left", "text", "credit"])
+def test_short_anchor_clipping_requires_exact_cover_geometry_and_two_texts(mutation):
+    before = read_screen(document("clipped-label-before"), SIZE)
+    after = read_screen(document("clipped-label-after"), SIZE)
+    if mutation == "no_cover":
+        after = replace(after, overlaps=())
+    else:
+        changed = []
+        for anchor in after.scroll_anchors:
+            x1, y1, x2, y2 = anchor.visibility.bounds
+            if (x1, x2) == (349, 389):
+                if mutation == "width":
+                    anchor = replace(
+                        anchor,
+                        visibility=replace(
+                            anchor.visibility, bounds=(x1, y1, x2 + 1, y2)
+                        ),
+                    )
+                elif mutation == "left":
+                    anchor = replace(
+                        anchor,
+                        visibility=replace(
+                            anchor.visibility, bounds=(x1 + 1, y1, x2, y2)
+                        ),
+                    )
+                elif mutation == "text":
+                    anchor = replace(anchor, text="@changed")
+            if mutation == "credit" and (x1, x2) == (264, 524):
+                anchor = replace(anchor, text="Changed credit")
+            changed.append(anchor)
+        after = replace(after, scroll_anchors=tuple(changed))
+    with pytest.raises(XError):
+        _scroll_motion(before, after)
+
+
 def test_fully_covered_text_edges_do_not_supply_movement_evidence():
     before = read_screen(document("covered-before"), SIZE)
     after = read_screen(document("covered-after"), SIZE)
