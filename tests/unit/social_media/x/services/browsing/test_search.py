@@ -167,7 +167,19 @@ def test_search_requires_matching_account_before_typing():
 
 
 @pytest.mark.parametrize(
-    "query", ["", "   ", None, "two\nlines", "bad\x00query", "tab\tquery"]
+    "query",
+    [
+        "",
+        "   ",
+        None,
+        "two\nlines",
+        "bad\x00query",
+        "tab\tquery",
+        "next\u0085line",
+        "bad\u009fquery",
+        "line\u2028separator",
+        "paragraph\u2029separator",
+    ],
 )
 def test_invalid_query_fails_before_device_interaction(query):
     replay = SearchReplay()

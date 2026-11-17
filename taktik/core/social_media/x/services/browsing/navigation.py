@@ -8,6 +8,7 @@ from collections import Counter
 from contextlib import contextmanager
 from dataclasses import replace
 from itertools import pairwise
+from unicodedata import category
 
 from taktik.core.shared.phone_interaction import InteractionError, Phone
 from taktik.core.social_media.x.ui.screen import (
@@ -2340,7 +2341,7 @@ class X:
                 if (
                     not isinstance(query, str)
                     or not query.strip()
-                    or any(ord(c) < 32 or ord(c) == 127 for c in query)
+                    or any(category(c) in {"Cc", "Zl", "Zp"} for c in query)
                     or result_tab not in SEARCH_TABS
                 ):
                     raise ValueError(
@@ -2629,18 +2630,8 @@ class X:
         after = self._snapshot()
         if self.timeline == "search":
             self._check_timeline(after, screen, scrolling=True)
-            if after.collapsed:
-                if verified:
-                    try:
-                        _, moved = _alignment(screen, after, scrolling=True)
-                    except XError:
-                        pass
-                    else:
-                        if screen.collapsed or moved:
-                            return after, True
-                return after, False
-            return after, True
-        if after.kind == "home" and after.collapsed:
+        expected_kind = "search_results" if self.timeline == "search" else "home"
+        if after.kind == expected_kind and after.collapsed:
             if verified:
                 try:
                     _, moved = _alignment(screen, after, scrolling=True)

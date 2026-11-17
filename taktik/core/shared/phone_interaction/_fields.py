@@ -76,9 +76,8 @@ def resolve_field(xml, size, locator):
     ):
         raise InteractionError("The requested text field is not usable.")
     rect = bounds(field)
-    if not all(
-        _contains(outer, rect)
-        for outer in ((0, 0, *size), bounds(window), bounds(scopes[0]))
+    if not _contains((0, 0, *size), rect) or any(
+        not _contains(bounds(node), rect) for node in ancestors if node is not root
     ):
         raise InteractionError("The text field is clipped or has invalid bounds.")
     for other in root:

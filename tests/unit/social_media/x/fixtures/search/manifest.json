@@ -11,11 +11,11 @@
     "language": "en",
     "verified_on": "2026-11-08"
   },
-  "scope": "Manually navigated, visually reviewed captures; expectations describe evidence, not implemented adapter behavior.",
+  "scope": "The initial seven captures from 2026-11-08 were manually navigated and visually reviewed. The six automated captures from 2026-11-17 were verified through XML; human visual review remains pending. Expectations describe captured evidence.",
   "sanitization": [
     "Anonymize the account owner and birth-date text.",
     "Preserve non-X window root attributes and bounds, clear their text, content description and hint, and remove their descendants.",
-    "Preserve all remaining X nodes, attributes, sibling order and geometry."
+    "Preserve all remaining X nodes, attributes, sibling order and geometry unless the case records additional transformations."
   ],
   "cases": [
     {

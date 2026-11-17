@@ -5,6 +5,8 @@ The captures used X `12.41.0-prod.01`, Android 13, English UI, and 1080 × 2340 
 `manifest.json` retains the source hashes and capture provenance for this subset.
 The owner is anonymized as `Fixture Owner` / `@fixture_owner`; public post text and geometry remain intact.
 System and keyboard windows retain their root geometry without notification or suggestion contents.
+The initial seven captures were visually reviewed during the original inspection.
+The six captures from 17 November were verified through XML; their human visual review remains pending.
 
 The tests replay account verification, Explore, query entry, Top/Latest selection, observation, and result navigation through Phone.
 The 350-pixel displacement, changed queries, keyboard variants, and failure cases are synthetic transformations of these captures.

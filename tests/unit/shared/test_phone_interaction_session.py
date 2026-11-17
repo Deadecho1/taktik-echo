@@ -5,6 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 from lxml import etree
+from unit.paths import CORE
 
 from taktik.core.shared.input import taktik_keyboard as keyboard
 from taktik.core.shared.input.taktik_keyboard import (
@@ -265,6 +266,52 @@ def test_scoped_field_change_during_typing_prevents_submission_and_restores(prob
     assert changed and result.status == Status.FAILED
     assert raw.info["text"] == "12345678"
     raw.press.assert_not_called()
+    phone.close(home=False).require()
+    assert raw.ime == "user/.Keyboard"
+
+
+@pytest.mark.parametrize("timing", ["before_focus", "during_typing"])
+@pytest.mark.parametrize("parent_bounds", ["[154,158][200,290]", "[0,0][0,0]"])
+def test_captured_field_ancestor_clipping_prevents_input_and_submission(
+    timing, parent_bounds
+):
+    phone, raw, clock = session()
+    root = etree.fromstring(
+        (
+            CORE / "tests/unit/social_media/x/fixtures/search/search-standalone.xml"
+        ).read_bytes()
+    )
+    field = root.xpath('.//*[@class="android.widget.EditText"]')[0]
+    package = field.get("package")
+    raw.app_current = Mock(return_value={"package": package})
+
+    def hierarchy():
+        field.set("text", raw.info["text"])
+        field.set("focused", str(raw.info["focused"]).lower())
+        return etree.tostring(root, encoding="unicode")
+
+    raw.dump_hierarchy = Mock(side_effect=hierarchy)
+    original_sleep = clock.sleep
+
+    def sleep(seconds):
+        original_sleep(seconds)
+        if raw.info["text"] == "12345678":
+            field.getparent().set("bounds", parent_bounds)
+
+    if timing == "before_focus":
+        field.getparent().set("bounds", parent_bounds)
+    else:
+        clock.sleep = sleep
+    result = phone.enter_text(
+        TextField(package, "SearchQuery"), "1234567890123456", submit="enter"
+    )
+    assert result.status == Status.FAILED
+    raw.press.assert_not_called()
+    if timing == "before_focus":
+        raw.long_click.assert_not_called()
+        raw.shell.assert_not_called()
+    else:
+        assert raw.info["text"] == "12345678"
     phone.close(home=False).require()
     assert raw.ime == "user/.Keyboard"
 

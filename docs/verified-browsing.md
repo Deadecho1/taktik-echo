@@ -17,7 +17,7 @@ Pass deadlines and cancellation to the same Phone object and close it before rel
 The device lock retains the established cross-process path under the system temporary directory.
 Current text entry requires Taktik Keyboard and preserves its bounded typing and restoration behavior.
 `Phone.enter_text` accepts a resource ID or `TextField(package, scope_resource_id)` for a native field without a resource ID.
-The latter requires exactly one editable field in the foreground package and screen scope, excludes nested controls from the focus tap, and rereads the hierarchy throughout typing.
+The latter requires exactly one editable field in the foreground package and screen scope, checks its bounds through every ancestor, excludes nested controls from the focus tap, and rereads the hierarchy throughout typing.
 Ambiguous fields, obscured targets, changed scope, lost focus, or inexact text prevent submission.
 
 Platform evidence capture and public URL interpretation live in `taktik.core.shared.browsing_evidence` and `taktik.core.shared.post_urls`.
