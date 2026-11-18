@@ -75,7 +75,11 @@ Rebuild with `scripts/build/build_accessibility_reader.py --java-home JDK --r8 R
 The asset targets Android API 26 or newer and uses the installed UIAutomator2 library.
 The wheel's native assets were compared byte-for-byte with the working source.
 
-The broad shared/X/Instagram-service/TikTok-service suite passed 3,131 tests with 2 skipped.
+The final shared/X/Instagram-service/TikTok-service suite passed 3,132 tests with 2 skipped on 18 November 2026.
 The final X, Phone, and file-transfer focused suite passed 1,505 tests after the header-restoration refinement.
 The file-transfer guard now allows only MediaStore publication and the native reader's private temporary DEX; reader tests enforce the exact temporary path pattern.
-Review and final publication results are recorded with the published revision.
+Direct code review checked independent attribution, verified character coverage, bounded restoration, native reader ownership and cleanup, and package contents.
+No unresolved findings remain within this continuation's scope.
+Ruff lint and formatting, the tree-layout audit, and `git diff --check` pass.
+All 50 fixture/source hash pairs and the native source/DEX hashes were reverified.
+Wheel and source-distribution contents were verified, and all 12 package metadata/runtime requirement checks passed.
