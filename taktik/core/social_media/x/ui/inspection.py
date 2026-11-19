@@ -60,7 +60,9 @@ def _control_covers(root, node):
     return tuple(
         _rect(n)
         for n in root.iter()
-        if n is not node and n not in ancestors and n.get("clickable") == "true"
+        if n is not node
+        and n not in ancestors
+        and (n.get("clickable") == "true" or n.get("long-clickable") == "true")
     )
 
 
@@ -101,6 +103,30 @@ def post_targets(header, media, viewport, overlays):
         targets.append(
             Target("Visit author", _visibility(avatar, viewport, (*overlays, *covers)))
         )
+    options = container.xpath('./node[@content-desc="Post options"]')
+    if len(options) == 1:
+        node = options[0]
+        clickable = _clickable(node, container)
+        covers = (*overlays, *_control_covers(container, clickable))
+        if _visibility(node, viewport, covers).visible_bounds is not None:
+            left, top, right, bottom = _rect(clickable)
+            # X 12.42's advertised padding opens Grok or the post itself.
+            grok_padding = (left, top, (left + right) // 2, bottom)
+            header_top, header_bottom = _rect(header)[1::2]
+            targets.append(
+                _target(
+                    node,
+                    "Post options",
+                    container,
+                    viewport,
+                    (
+                        *covers,
+                        grok_padding,
+                        (left, top, right, header_top),
+                        (left, header_bottom, right, bottom),
+                    ),
+                )
+            )
     for index, item in enumerate(media):
         if item.kind not in {"image", "video", "gif"}:
             continue

@@ -190,3 +190,123 @@ def test_wrapping_unreadable_detail_content_cannot_create_scroll_geometry():
     assert screen.kind == "detail"
     with pytest.raises(XError):
         scroll_region(screen)
+
+
+ENGAGEMENT_FIXTURES = CORE / "tests/unit/social_media/x/fixtures/engagement"
+SIZE = (1080, 2340)
+
+
+def engagement_document(name):
+    return (ENGAGEMENT_FIXTURES / f"{name}.xml").read_text()
+
+
+def test_engagement_fixture_provenance():
+    manifest = json.loads((ENGAGEMENT_FIXTURES / "manifest.json").read_text())
+    assert manifest["size"] == list(SIZE)
+    for item in manifest["fixtures"]:
+        assert (
+            hashlib.sha256(
+                (ENGAGEMENT_FIXTURES / item["file"]).read_bytes()
+            ).hexdigest()
+            == item["sha256"]
+        )
+
+
+@pytest.mark.parametrize(
+    "name,liked,saved",
+    [("source", False, False), ("liked", True, False), ("bookmarked", True, True)],
+)
+def test_native_state_labels_normalize_without_changing_post_identity(
+    name, liked, saved
+):
+    source = read_screen(engagement_document("source"), SIZE).posts[0]
+    post = read_screen(engagement_document(name), SIZE).posts[0]
+    assert post.observable and post.content_key == source.content_key
+    states = {t.label: t.selected for t in post.actions}
+    assert states["Like"] is liked and states["Bookmark"] is saved
+    assert any(t.label == "Post options" for t in post.targets)
+
+
+def test_like_animation_does_not_invent_an_engageable_post():
+    screen = read_screen(engagement_document("like-animation"), SIZE)
+    assert not screen.observable_posts
+    assert screen.rejected_posts
+
+
+def test_bookmark_toast_keeps_the_covered_search_query_unverified():
+    screen = read_screen(engagement_document("bookmark-toast"), SIZE)
+    assert screen.kind == "unsupported"
+
+
+@pytest.mark.parametrize("following", [False, True])
+def test_search_menu_exposes_native_author_and_relationship_without_feedback(following):
+    xml = engagement_document("search-options")
+    if following:
+        xml = xml.replace("Follow @NASA", "Unfollow @NASA")
+    screen = read_screen(xml, SIZE)
+    assert screen.kind == "post_options"
+    assert screen.post_options.author == "@NASA"
+    assert screen.post_options.following is following
+    assert screen.post_options.feedback_label is None
+
+
+@pytest.mark.parametrize(
+    "problem", ["author", "duplicate", "covered", "disabled", "unknown"]
+)
+def test_untrusted_menu_structure_never_supplies_an_engagement_target(problem):
+    root = etree.fromstring(engagement_document("search-options").encode())
+    label = root.xpath('.//*[@text="Follow @NASA"]')[0]
+    if problem == "author":
+        label.set("text", "Follow @other")
+    elif problem == "duplicate":
+        root.xpath('.//*[@text="Mute @NASA"]')[0].set("text", "Follow @NASA")
+    elif problem == "covered":
+        label.set("bounds", "[154,0][466,1147]")
+    elif problem == "disabled":
+        label.getparent().set("enabled", "false")
+    else:
+        label.set("text", "Subscribe @NASA")
+    assert read_screen(etree.tostring(root), SIZE).kind == "unsupported"
+
+
+def test_duplicate_footer_state_labels_reject_the_post():
+    root = etree.fromstring(engagement_document("liked").encode())
+    icon = root.xpath('.//*[@content-desc="Undo Like"]')[0]
+    extra = etree.SubElement(icon.getparent(), "node", **dict(icon.attrib))
+    extra.set("content-desc", "Like")
+    assert not read_screen(etree.tostring(root), SIZE).observable_posts
+
+
+def test_native_full_screen_dismissal_excludes_the_sheet_and_every_action_row():
+    from taktik.core.social_media.x.services.browsing.engagement import _control
+
+    screen = read_screen(engagement_document("full-screen-dismissal"), SIZE)
+    close, region = _control(screen.controls, "Close sheet")
+    assert close.visibility.bounds == (0, 0, 1080, 2340)
+    assert region[1] >= 136 and region[3] <= 986
+    for row in screen.controls:
+        if row.label != "Close sheet":
+            assert region[3] <= row.visibility.bounds[1]
+
+
+@pytest.mark.parametrize("flag", ["clickable", "long-clickable"])
+def test_nested_menu_controls_never_receive_an_engagement_tap(flag):
+    root = etree.fromstring(engagement_document("search-options").encode())
+    row = root.xpath('.//*[@text="Follow @NASA"]')[0].getparent()
+    attrs = dict(row.attrib)
+    attrs.update({"text": "", "content-desc": "", "clickable": "false", flag: "true"})
+    etree.SubElement(row, "node", **attrs)
+    assert read_screen(etree.tostring(root), SIZE).kind == "unsupported"
+
+
+def test_post_options_taps_stay_clear_of_grok_and_post_opening_padding():
+    from taktik.core.social_media.x.services.browsing.engagement import _control
+
+    for name in ("source", "home-source"):
+        screen = read_screen(engagement_document(name), SIZE)
+        post = screen.observable_posts[0]
+        target, region = _control(post.targets, "Post options")
+        left, _, right, _ = target.visibility.bounds
+        assert region[0] >= (left + right) // 2
+        assert region[1] >= post.header_visibility.bounds[1]
+        assert region[3] <= post.header_visibility.bounds[3]

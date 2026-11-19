@@ -7,6 +7,7 @@ from dataclasses import replace
 from lxml import etree
 
 from .screen import (
+    ACTION_ALIASES,
     ACTION_LABELS,
     HANDLE,
     VERIFICATION_LABELS,
@@ -73,7 +74,7 @@ def combine_hierarchies(ordinary, native):
             (n.get("text") or n.get("content-desc"), _rect(n))
             for child in listing[list(listing).index(stamp) + 1 : cut]
             for n in child.iter()
-            if n.get("content-desc") in ACTION_LABELS
+            if n.get("content-desc") in (*ACTION_LABELS, *ACTION_ALIASES)
             or n.get("text") in {"Relevant", "Most recent", "Most liked", "View quotes"}
         )
         signatures.append(
@@ -154,7 +155,11 @@ def main_header_visible(listing, viewport, overlays):
 
 
 def _action_root(node, listing):
-    icons = [d for d in node.iter() if d.get("content-desc") in ACTION_LABELS]
+    icons = [
+        d
+        for d in node.iter()
+        if d.get("content-desc") in (*ACTION_LABELS, *ACTION_ALIASES)
+    ]
     return len(icons) == 1 and _clickable(icons[0], listing) is node
 
 

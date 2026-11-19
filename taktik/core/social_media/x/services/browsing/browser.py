@@ -30,6 +30,12 @@ def _media_context(media):
 
 def post_context(post):
     quote = post.quoted_post
+    states = {
+        a.label: a.selected
+        if a.state_visibility is not None and a.state_visibility.unobscured
+        else None
+        for a in post.actions
+    }
     context = {
         "display_name": post.display_name,
         "body_complete": post.body_complete,
@@ -46,6 +52,10 @@ def post_context(post):
         "visual_content_available": False,
         "media": _media_context(post.media),
         "counts": {action.label: action.count for action in post.actions},
+        "engagement": {
+            "liked": states.get("Like"),
+            "bookmarked": states.get("Bookmark"),
+        },
         "quoted_post": {
             "username": quote.author.removeprefix("@")
             if quote.author is not None
@@ -234,7 +244,7 @@ class XBrowser:
     def act(self, action, observation):
         if action not in PLATFORM_ACTIONS["x"]:
             raise XError(
-                "X supports watch, skip, media inspection, and inline text expansion.",
+                f"Unsupported X action: {action}.",
                 result=Result(Status.UNSUPPORTED),
             )
         if action == "inspect":
@@ -243,6 +253,20 @@ class XBrowser:
             self.read_more(observation)
         else:
             self._selected(observation)
+            operations = {
+                "like": self.browser.set_liked,
+                "save": self.browser.set_bookmarked,
+                "follow": self.browser.follow,
+                "unfollow": self.browser.unfollow,
+                "not_interested": self.browser.not_interested,
+            }
+            if action in operations:
+                result = operations[action]()
+                if result.advanced:
+                    self._occurrence += 1
+                    self._media_inspection = None
+                    self._expanded_source_key = None
+                return ActionResult(advanced=result.advanced)
         return ActionResult()
 
     def _selected(self, observation):

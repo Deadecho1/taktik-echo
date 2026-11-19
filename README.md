@@ -38,11 +38,13 @@ See the [browsing guide](https://github.com/Deadecho1/taktik-echo/blob/main/docs
 
 ## X extension status
 
-The X branch supports account-verified For you and Following browsing, text-only post observations, and separate quote, media, and account metadata.
-Watch and skip are enabled. Unsupported or ambiguous layouts stop browsing.
+The X branch supports account-verified For you, Following, and search browsing, with separate quote, media, and account metadata.
+It exposes watch/skip, profile/thread/media inspection, native detail reading, and verified likes, bookmarks, follow/unfollow, and available Not interested feedback.
+Engagement rereads the selected target and its resulting native state, preserves already-selected states, and never retries an uncertain mutation.
+Unsupported or ambiguous layouts stop browsing.
 
 The X branch recognizes native Paid partnership disclosures separately from authored text.
-X search, engagement, promoted-placement recognition, physical long-text traversal, human visual review, and real-model validation remain incomplete.
+Promoted-placement recognition, further physical layout coverage, outstanding human visual review, and real-model validation remain incomplete.
 The maintained branch does not imply that every installed X layout is supported.
 
 ## Installation

@@ -2691,8 +2691,10 @@ class X:
             screen = self._snapshot()
         raise XError("Cannot reveal the X timeline after initial framing.")
 
-    def _first_post(self, screen):
-        verified = self._on_timeline(screen)
+    def _first_post(self, screen, *, retained_context=False):
+        if retained_context:
+            self._check_timeline(screen, self._screen)
+        verified = retained_context or self._on_timeline(screen)
         for attempt in range(SCROLL_ATTEMPTS + 1):
             if not verified and screen.observable_posts:
                 # Rejected content cannot prove timeline continuity. Keep moving
@@ -2841,6 +2843,36 @@ class X:
         from .expansion import read_more
 
         return read_more(self)
+
+    def set_liked(self, selected=True):
+        """Set the selected post's Like state once and verify its native readback."""
+        from .engagement import set_footer
+
+        return set_footer(self, "Like", selected)
+
+    def set_bookmarked(self, selected=True):
+        """Set the selected post's Bookmark state without toggling an existing save."""
+        from .engagement import set_footer
+
+        return set_footer(self, "Bookmark", selected)
+
+    def follow(self):
+        """Follow the selected outer author, preserving an existing relationship."""
+        from .engagement import set_following
+
+        return set_following(self, True)
+
+    def unfollow(self):
+        """Unfollow the selected outer author after verifying the native relationship."""
+        from .engagement import set_following
+
+        return set_following(self, False)
+
+    def not_interested(self):
+        """Use the offered native feedback and verify removal of the selected post."""
+        from .engagement import not_interested
+
+        return not_interested(self)
 
     def _refresh_alignment(self, screen):
         try:

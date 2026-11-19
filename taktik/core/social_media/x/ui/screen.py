@@ -17,6 +17,7 @@ from taktik.core.shared.phone_interaction import TextField
 from taktik.core.shared.ui.geometry import bounds
 
 if TYPE_CHECKING:
+    from .engagement import PostOptions, RemovalNotice
     from .inspection import Detail, Gallery, Profile
 
 PACKAGE = "com.twitter.android"
@@ -30,6 +31,7 @@ PRIMARY = {
     "MediaGallery": "media",
 }
 ACTION_LABELS = ("Reply", "Repost", "Like", "Impressions", "Bookmark", "Share")
+ACTION_ALIASES = {"Undo Like": "Like", "Delete Bookmark": "Bookmark"}
 VERIFICATION_LABELS = frozenset(
     {"Verified", "Verified Business", "Verified Governmental Account"}
 )
@@ -60,6 +62,7 @@ class Target:
     visibility: Visibility
     count: str | None = None
     selected: bool | None = None
+    state_visibility: Visibility | None = None
 
 
 @dataclass(frozen=True)
@@ -267,6 +270,8 @@ class Screen:
     profile: "Profile | None" = None
     detail: "Detail | None" = None
     gallery: "Gallery | None" = None
+    post_options: "PostOptions | None" = None
+    removal_notices: tuple["RemovalNotice", ...] = ()
 
     @property
     def observable_posts(self):
@@ -289,6 +294,11 @@ def _one(items, description):
 
 def _desc(root, label):
     return root.xpath(".//*[@content-desc=$label]", label=label)
+
+
+def _action_icons(root, label):
+    labels = (label, *(k for k, v in ACTION_ALIASES.items() if v == label))
+    return [node for native in labels for node in _desc(root, native)]
 
 
 def _rect(node):
@@ -422,38 +432,9 @@ def _drawer(root, area, overlays):
 
 
 def _post_options(root, area, overlays):
-    close = _one(_desc(root, "Close sheet"), "sheet dismissal")
-    menu = _one(root.xpath('.//*[@class="android.widget.ScrollView"]'), "options list")
-    labels = []
-    controls = [_target(close, "Close sheet", root, area, overlays)]
-    for row in menu:
-        text = _one(row.xpath('.//*[@text!=""]'), "option label")
-        label = text.get("text")
-        labels.append(label)
-        if not _visibility(text, area, overlays).unobscured:
-            raise _Unsupported("Post options are obscured.")
-        controls.append(_target(text, label, menu, area, overlays))
-    expected = {
-        "This post's not helpful",
-        "Add/remove from Lists",
-        "Report post",
-        "Request Community Note",
-        "View Post Interactions",
-        "View Hidden Replies",
-    }
-    author_labels = [label for label in labels if label not in expected]
-    authors = []
-    for prefix in ("Follow ", "Mute ", "Block "):
-        label = _one(
-            [s for s in author_labels if s.startswith(prefix)], prefix + "option"
-        )
-        handle = label.removeprefix(prefix)
-        if not HANDLE.fullmatch(handle):
-            raise _Unsupported("Invalid options author.")
-        authors.append(handle.lower())
-    if len(labels) != 9 or not expected.issubset(labels) or len(set(authors)) != 1:
-        raise _Unsupported("Unrecognized post options structure.")
-    return Screen("post_options", overlaps=overlays, controls=tuple(controls))
+    from .engagement import read_options
+
+    return read_options(root, area, overlays)
 
 
 def _profile_identity(scope, area, content_top, overlays):
@@ -1358,7 +1339,7 @@ def _actions(container, viewport, overlaps, excluded):
     for label in ACTION_LABELS:
         icons = [
             n
-            for n in _desc(container, label)
+            for n in _action_icons(container, label)
             if not any(q in n.iterancestors() for q in excluded)
         ]
         if not icons:
@@ -1366,7 +1347,10 @@ def _actions(container, viewport, overlaps, excluded):
         icon = _one(icons, label + " icon")
         target = _clickable(icon, container)
         action_icons = [
-            n for n in target.iter() if n.get("content-desc") in ACTION_LABELS
+            n
+            for n in target.iter()
+            if ACTION_ALIASES.get(n.get("content-desc"), n.get("content-desc"))
+            in ACTION_LABELS
         ]
         if len(action_icons) != 1:
             raise _Unsupported("Actions share a clickable target.")
@@ -1376,9 +1360,26 @@ def _actions(container, viewport, overlaps, excluded):
             r"[0-9]+(?:,[0-9]{3})*(?:\.[0-9]+)?[KMB]?", count
         ):
             raise _Unsupported("Unrecognized action count.")
-        if any(n.get("content-desc", "") not in ("", label) for n in target.iter()):
+        native_label = icon.get("content-desc")
+        if any(
+            n.get("content-desc", "") not in ("", native_label) for n in target.iter()
+        ):
             raise _Unsupported("Unrecognized action contents.")
-        actions.append(_target(icon, label, container, viewport, overlaps, count))
+        nested = tuple(
+            _rect(n)
+            for n in target.iterdescendants()
+            if n is not icon
+            and n not in icon.iterancestors()
+            and (n.get("clickable") == "true" or n.get("long-clickable") == "true")
+        )
+        action = _target(icon, label, container, viewport, (*overlaps, *nested), count)
+        if label in {"Like", "Bookmark"}:
+            action = replace(
+                action,
+                selected=native_label in ACTION_ALIASES,
+                state_visibility=_visibility(icon, viewport, (*overlaps, *nested)),
+            )
+        actions.append(action)
         covered.update(target.iter())
     return tuple(actions), covered
 
@@ -1410,7 +1411,7 @@ def _covered_bookmark_row(container, actions, viewport, overlaps):
             ):
                 return False
             continue
-        candidates = _desc(target, label)
+        candidates = _action_icons(target, label)
         if len(candidates) != 1 or _clickable(candidates[0], container) is not target:
             return False
         icons.append(_rect(candidates[0]))
@@ -2686,7 +2687,7 @@ def _clipped_scroll_area(container, viewport, overlays):
     if tuple(action.label for action in actions) != ACTION_LABELS:
         raise _Unsupported("Incomplete clipped post actions.")
     targets = [
-        _clickable(_one(_desc(container, label), label), container)
+        _clickable(_one(_action_icons(container, label), label), container)
         for label in ACTION_LABELS
     ]
     if any(target.getparent() is not container for target in targets):
@@ -3838,6 +3839,8 @@ def _read(root, area):
             detail, posts, rejected, scroll_areas, scroll_anchors = read_detail(
                 scope, viewport, tuple(overlays)
             )
+    from .engagement import read_notices
+
     return Screen(
         kind,
         reason=detail.main_reason if detail is not None else None,
@@ -3859,6 +3862,9 @@ def _read(root, area):
         query_field=query_field,
         profile=profile_evidence,
         detail=detail,
+        removal_notices=read_notices(scope, viewport, tuple(overlays))
+        if kind in {"home", "search_results"}
+        else (),
     )
 
 

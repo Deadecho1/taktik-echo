@@ -36,13 +36,13 @@ Consumers pin a tested complete commit hash; branch names describe the developme
 The `feature/x-platform` branch adds `taktik.core.social_media.x.ui.screen` and `taktik.core.social_media.x.services.browsing.XBrowser`.
 The interpreter consumes captured XML and recorded screen dimensions.
 The browser verifies the account, supports For you, Following, and search, and exposes post observations with separate quote and media metadata.
-Watch, skip, explicit media inspection, and verified inline text expansion are enabled; unsupported or ambiguous layouts stop browsing.
+Watch, skip, explicit media inspection, verified inline text expansion, and native engagement are enabled; unsupported or ambiguous layouts stop browsing.
 Native Paid partnership disclosures remain separate from authored text.
 The captured leading name/Verified/age header without a handle can retain a body
 and media as an unattributed fragment for ordered continuity. It requires an
 unobscured header and body, a recognized layout, and independently verified
 movement. Display names never supply an author or a new post observation.
-Engagement, promoted-placement recognition, and further physical validation remain unfinished.
+Promoted-placement recognition and further physical layout coverage remain unfinished.
 This feature builds on the shared browsing implementation on `main`.
 
 Search starts with drawer account verification, opens Explore and the scoped query field, and submits only after exact text and X screen-context verification.
@@ -70,6 +70,29 @@ The reviewed Top run ends at its last partly visible video, so it does not estab
 An exact, unobscured native no-results panel establishes an empty search; missing result posts alone do not.
 Consumer applications choose how to use these capabilities in their own workflows.
 Their configuration, model policy, and integration schedules are independent of Taktik implementation and validation.
+
+`XBrowser.act(action, observation)` supports `like`, `save` (Bookmark), `follow`, `unfollow`, and `not_interested`.
+The lower-level `X` exposes `set_liked(selected=True)`, `set_bookmarked(selected=True)`, `follow()`, `unfollow()`, and `not_interested()`.
+The setters also accept `False` for explicit removal; an already matching native state is a verified no-op.
+Low-level operations return `EngagementResult` with the source content key, whether the state changed, the verified selected state when applicable, and whether browsing advanced.
+Observations expose `post_context.engagement.liked` and `post_context.engagement.bookmarked`; missing native evidence remains unknown.
+
+Like and Bookmark states come from native `Like`/`Undo Like` and `Bookmark`/`Delete Bookmark` labels.
+The reader retains their canonical action names for post continuity and requires visible native state evidence before engagement.
+Follow/unfollow opens the selected outer author's menu and requires its exact handle and relationship state before acting.
+The installed version's options hitbox includes padding that opens adjacent Grok or the post, so taps use its right half within the observed author-header band.
+Mutations are issued once, followed by bounded rereads and a final verification.
+Temporary animation and confirmation overlays do not prove success.
+
+On X `12.42.0-prod.01`, Unfollow and Not interested replace the selected post with a native receipt and an Undo control.
+The receipt must identify the selected author at the original header position, and the selected post must be absent.
+The service rereads that evidence before selecting another independently observable post, recording an engagement removal in `navigation_gaps`.
+`ActionResult.advanced` is then true; callers must not advance again for the completed action, and the old observation cannot authorize another engagement.
+Not interested is offered by the captured For you menu; the captured search menu does not offer it.
+The service dismisses an unavailable menu without engaging and reports `Status.UNSUPPORTED`.
+Unknown outcomes invalidate browsing and raise `Status.UNCERTAIN`; recover explicitly without replaying the engagement.
+Account verification, deadlines, cancellation, reservations, locks, keyboard restoration, and cleanup use the existing Phone session.
+The [engagement validation record](validation/2026-11-19-x-engagement.md) records physical evidence and remaining review limits.
 
 `X.visit_profile()` visits the selected author's verified profile and returns header text and observable profile posts separately from the source post.
 `X.inspect_thread(max_posts=10, max_scrolls=4)` returns bounded, independently attributed thread observations and native detail metadata, retaining the original source content key separately.
