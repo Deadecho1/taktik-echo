@@ -105,7 +105,7 @@ The native ID never replaces a local content or occurrence key, and advancing, s
 Missing or obscured Share controls, unrecognized clipboard receipts, changed sources, and uncertain execution invalidate the attempt without blind retries.
 Explicit startup can dismiss a retained recognized Share sheet and reverify the account.
 The clipboard preview value is receipt metadata, and its window remains an occlusion for underlying post text and gestures.
-The [native link validation record](validation/2026-11-19-x-links.md) documents the successful repeated-copy phone run, supported device/version, regression checks, and pending visual review.
+The [native link validation record](validation/2026-11-19-x-links.md) documents the successful repeated-copy phone run, supported device/version, regression checks, and completed human review of all nine presented screenshots.
 
 `X.visit_profile()` visits the selected author's verified profile and returns header text and observable profile posts separately from the source post.
 `X.inspect_thread(max_posts=10, max_scrolls=4)` returns bounded, independently attributed thread observations and native detail metadata, retaining the original source content key separately.

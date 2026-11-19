@@ -5,7 +5,7 @@
   ],
   "version": "12.42.0-prod.01",
   "android": "13",
-  "visual_review": "pending",
+  "visual_review": "approved_presented_captures",
   "fixtures": [
     {
       "file": "source.xml",
@@ -55,5 +55,7 @@
       "source_sha256": "d229b7f570108642a96f522b7b8bda6ddd093b776676f74382a1b731eb947630",
       "sha256": "4cd8437a9ef96d24bbb0123906984c0165a6e01f74318a5e25a08bdf044f76cc"
     }
-  ]
+  ],
+  "visual_review_at": "2026-11-19T21:39:43.840Z",
+  "visual_review_receipt": ".lavish/x-link-review/review-receipt.json"
 }
