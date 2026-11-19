@@ -8,7 +8,11 @@ from lxml import etree
 from unit.paths import CORE
 
 from taktik.core.shared.phone_interaction import Phone, Result, Status
-from taktik.core.social_media.x.services.browsing.navigation import X, XError
+from taktik.core.social_media.x.services.browsing.navigation import (
+    X,
+    XError,
+    _alignment,
+)
 from taktik.core.social_media.x.ui.screen import PACKAGE, read_screen
 
 FIXTURES = CORE / "tests/unit/social_media/x/fixtures/search"
@@ -95,3 +99,49 @@ def test_reaching_home_from_collapsed_search_reveals_and_uses_back():
     app.phone.gesture.assert_called_once()
     assert app.phone.gesture.call_args.args[1] == "down"
     app.phone.tap.assert_called_once()
+
+
+COVERAGE_FIXTURES = CORE / "tests/unit/social_media/x/fixtures/coverage"
+
+
+def test_captured_clipped_video_reaches_a_verified_successor():
+    documents = [
+        (COVERAGE_FIXTURES / f"search-video-{name}.xml").read_text()
+        for name in ("source", "move-1", "move-2", "successor")
+    ]
+    screens = [read_screen(xml, SIZE) for xml in documents]
+    source = next(p for p in screens[0].posts if p.author == "@slash1sol")
+    assert source.observable and source.body_visibility.unobscured
+    assert source.media[0].visibility.bounds[3] > screens[0].content_viewport[3]
+    for before, after, offset in zip(screens, screens[1:], (1, 0, 1)):
+        assert _alignment(before, after, scrolling=True) == (offset, True)
+
+    phone = Mock(spec=Phone)
+    current = 0
+
+    def read(what):
+        return {
+            "app": {"package": "com.twitter.android"},
+            "size": SIZE,
+            "hierarchy": documents[current],
+        }[what]
+
+    def gesture(*args, **kwargs):
+        nonlocal current
+        current += 1
+        assert current < len(documents)
+        return Result(Status.SUCCESS)
+
+    phone.read.side_effect = read
+    phone.gesture.side_effect = gesture
+    app = X(phone)
+    app.timeline, app.result_tab = "search", "top"
+    app.query, app.verified_account = "astronomy filter:videos", "@fixture_owner"
+    app._select(screens[0], screens[0].posts.index(source))
+
+    successor = app.advance()
+
+    assert successor.author == "@NightSkyToday"
+    assert app.observe() == successor
+    assert not app.navigation_gaps
+    assert phone.gesture.call_count == 3

@@ -2490,13 +2490,13 @@ def _post(header, viewport, overlaps, *, header_cover=None, allow_missing_handle
                 reply_annotation = text
                 reply_to = _reply_recipients(text)
             elif node.get("clickable") == "true":
-                if (
-                    not media
-                    or not body_nodes
-                    or not re.fullmatch(r".+ and \d+ others", text)
-                ):
+                from .media_tags import media_tag
+
+                if not body_nodes:
                     raise _Unsupported("Unrecognized media tag annotation.")
-                tags.append(text)
+                tag = media_tag(node, media, actions, viewport, overlaps)
+                if tag is not None:
+                    tags.append(tag)
             elif text:
                 body_nodes.append(node)
             known.add(node)
@@ -3758,7 +3758,16 @@ def _read(root, area):
     if kind in ("home", "search_results", "profile"):
         for header in scope.xpath('.//*[@resource-id="timeline_post"]'):
             try:
-                post = _post(
+                from .passages import hidden_header_passage
+
+                passage = (
+                    hidden_header_passage(header, viewport, tuple(overlays))
+                    if kind == "search_results"
+                    and collapsed
+                    and not (posts or fragments or rejected)
+                    else None
+                )
+                post = passage or _post(
                     header,
                     viewport,
                     tuple(overlays),

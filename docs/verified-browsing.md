@@ -43,7 +43,10 @@ The captured leading name/Verified/age header without a handle can retain a body
 and media as an unattributed fragment for ordered continuity. It requires an
 unobscured header and body, a recognized layout, and independently verified
 movement. Display names never supply an author or a new post observation.
-Promoted-placement recognition and further physical layout coverage remain unfinished.
+Single-account and plural native media-tag labels are recognized beneath outer media and remain separate from caption and author attribution.
+The reader checks their native structure, accessibility, geometry, and complete action-row boundary; tagged display names never supply an inferred handle.
+Clipped or occluded tag labels remain excluded from observation context.
+Promoted-placement recognition remains unfinished.
 This feature builds on the shared browsing implementation on `main`.
 
 Search starts with drawer account verification, opens Explore and the scoped query field, and submits only after exact text and X screen-context verification.
@@ -67,7 +70,12 @@ Direct physical runs on `12.42.0-prod.01` passed Top and Latest search with two 
 The local search validation record is `docs/validation/2026-11-17-x-search.md`; the user visually confirmed all twelve presented search screenshots on 17 November 2026.
 That review covers the seven successful result captures and five entry/layout references; the additional expanded-header fixture was not presented and remains outside visual sign-off.
 Post text can be observable while its video extends below the viewport; `body_complete` describes authored text and does not assert complete media visibility.
-The reviewed Top run ends at its last partly visible video, so it does not establish a subsequent physical scroll from that position.
+The original reviewed Top run ends at its last partly visible video.
+A subsequent direct `astronomy filter:videos` run covered the same relevance-prompt/partial-video layout and three verified outgoing movements to an independently observed successor, using current search results.
+Direct Latest browsing also traversed two pending long-text phases and their video tails, reaching a real successor after 23 gestures.
+A fully hidden native header that has lost its age label can retain its clipped text as an unattributed passage; it supplies no new author or post observation.
+The eight-attempt pending/no-progress bounds and 32-gesture total bound remain unchanged.
+The [layout coverage record](validation/2026-11-20-x-layout-coverage.md) documents these runs, native media tags, and the outstanding ad-placement and visual-review limits.
 An exact, unobscured native no-results panel establishes an empty search; missing result posts alone do not.
 Consumer applications choose how to use these capabilities in their own workflows.
 Their configuration, model policy, and integration schedules are independent of Taktik implementation and validation.

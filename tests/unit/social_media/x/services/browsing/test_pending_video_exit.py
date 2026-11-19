@@ -1,13 +1,24 @@
 """Reverified pending text leaves a bounded allowance to exit its video tail."""
 
+import json
 from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
 from unit.paths import CORE
 
-from taktik.core.shared.phone_interaction import Phone, Result, SessionExpired, Status
-from taktik.core.social_media.x.services.browsing.navigation import X, XError
+from taktik.core.shared.phone_interaction import (
+    InteractionCancelled,
+    Phone,
+    Result,
+    SessionExpired,
+    Status,
+)
+from taktik.core.social_media.x.services.browsing.navigation import (
+    ADVANCE_MAX_SCROLLS,
+    X,
+    XError,
+)
 from taktik.core.social_media.x.ui.screen import read_screen
 
 
@@ -92,3 +103,98 @@ def test_session_deadline_interrupts_exit_allowance():
         app.advance()
     assert device.phone.gesture.call_count == 14
     assert app.verified_account is None
+
+
+FIXTURES = CORE / "tests/unit/social_media/x/fixtures/coverage"
+
+
+def test_captured_search_header_loss_enters_pending_without_a_new_observation():
+    before, after = [
+        read_screen((FIXTURES / f"pending-search-{name}.xml").read_text(), (1080, 2340))
+        for name in ("before", "hidden-header")
+    ]
+    app = X(Mock(spec=Phone))
+    app.timeline, app.result_tab = "search", "latest"
+    app.query = '(from:NASA "stellar merger") OR (from:Sai60012 "BHOLE")'
+    app.verified_account = "@fixture_owner"
+
+    _, offset, moved = app._advance_alignment(before, after, False)
+
+    assert offset == 1 and moved is None
+    assert not after.posts and not after.rejected_posts
+    (passage,) = after.fragments
+    assert passage.body == before.posts[0].body
+    assert not hasattr(passage, "author")
+    assert passage.translation == "Translated from Hindi"
+
+
+class PassageReplay:
+    def __init__(self):
+        self.case = json.loads((FIXTURES / "long-text-traversal.json").read_text())
+        self.documents = [(FIXTURES / name).read_text() for name in self.case["files"]]
+        self.index = 0
+        self.now = 0
+        self.phone = Phone(self, clock=lambda: self.now, sleep=self.sleep)
+        self.app = X(self.phone)
+        self.app.timeline, self.app.result_tab = "search", self.case["tab"]
+        self.app.query, self.app.verified_account = self.case["query"], "@fixture_owner"
+        screen = read_screen(self.documents[0], (1080, 2340))
+        selected = next(
+            i
+            for i, post in enumerate(screen.posts)
+            if post.content_key == self.case["source_key"]
+        )
+        self.app._select(screen, selected)
+
+    def bind(self, phone):
+        pass
+
+    def sleep(self, seconds):
+        self.now += seconds
+
+    def read(self, what):
+        return {
+            "app": {"package": "com.twitter.android"},
+            "size": (1080, 2340),
+            "hierarchy": self.documents[self.index],
+        }[what]
+
+    def gesture(self, intent, direction, region, distance, exclude):
+        assert intent == "scroll" and direction == "up"
+        self.index += 1
+        assert self.index < len(self.documents)
+
+
+def test_physical_long_text_and_video_exit_reaches_a_real_successor():
+    replay = PassageReplay()
+    outcomes = []
+    alignment = replay.app._advance_alignment
+
+    def recorded(before, after, pending):
+        result = alignment(before, after, pending)
+        outcomes.append(
+            {"before_pending": pending, "offset": result[1], "moved": result[2]}
+        )
+        return result
+
+    replay.app._advance_alignment = recorded
+    successor = replay.app.advance()
+
+    assert successor.content_key == replay.case["successor_key"]
+    assert successor.content_key != replay.case["source_key"]
+    assert replay.app.observe() == successor
+    assert outcomes == replay.case["outcomes"]
+    assert any(item["before_pending"] and item["moved"] for item in outcomes)
+    assert not replay.app.navigation_gaps
+    assert replay.index == 23 < ADVANCE_MAX_SCROLLS
+
+
+def test_cancellation_during_captured_pending_text_stops_without_retry():
+    replay = PassageReplay()
+    replay.phone.configure(cancelled=lambda: replay.index >= 15)
+
+    with pytest.raises(InteractionCancelled):
+        replay.app.advance()
+
+    assert replay.index == 15
+    assert replay.app.verified_account is None

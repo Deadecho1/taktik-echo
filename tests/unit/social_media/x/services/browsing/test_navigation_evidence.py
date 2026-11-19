@@ -18,6 +18,23 @@ from taktik.core.social_media.x.ui.screen import read_screen
 SIZE = (1080, 2340)
 
 
+def test_unlabeled_inline_content_does_not_supply_missing_movement_evidence():
+    fixtures = CORE / "tests/unit/social_media/x/fixtures/coverage"
+    before, after = [
+        read_screen((fixtures / f"unlabeled-inline-{stage}.xml").read_text(), SIZE)
+        for stage in ("before", "after")
+    ]
+    for screen in (before, after):
+        assert not screen.observable_posts
+        assert not screen.fragments
+        assert screen.rejected_posts[0].reason == "Unrecognized inline body annotation."
+    app = X(Mock(spec=Phone))
+    app.timeline, app.verified_account = "for_you", "@fixture_owner"
+
+    with pytest.raises(XError, match="no overlapping candidates"):
+        app._advance_alignment(before, after, False)
+
+
 class TimelinePhone:
     def __init__(self):
         self.document = ""
