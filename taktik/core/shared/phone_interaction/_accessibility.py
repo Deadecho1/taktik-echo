@@ -4,6 +4,7 @@ import base64
 import binascii
 import shlex
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
 
 from lxml import etree
@@ -51,6 +52,34 @@ def _decode(output):
     return xml
 
 
+@contextmanager
+def _restore_after(action):
+    try:
+        yield
+    except BaseException as error:
+        try:
+            action()
+        except Exception as cleanup_error:
+            raise error from cleanup_error
+        raise
+    else:
+        action()
+
+
+def _restore(backend, config, remote, stopped):
+    with (
+        backend.phone.cleanup(),
+        _restore_after(lambda: _shell(backend, ["rm", "-f", remote])),
+    ):
+        if stopped:
+            _released(backend)
+            backend._call("start_uiautomator")
+            if backend._raw.jsonrpc.setConfigurator(config) != config:
+                raise InteractionError(
+                    "The native reader configuration was not restored."
+                )
+
+
 def read_hierarchy(backend):
     raw, phone = backend._raw, backend.phone
     asset = Path(__file__).with_name("native") / "hierarchy-reader.dex"
@@ -61,7 +90,7 @@ def read_hierarchy(backend):
     remote = f"/data/local/tmp/taktik-hierarchy-{uuid.uuid4().hex}.dex"
     config = raw.jsonrpc.getConfigurator()
     stopped = False
-    try:
+    with _restore_after(lambda: _restore(backend, config, remote, stopped)):
         phone._check()
         raw.adb_device.sync.push(str(asset), remote, check=True)
         stopped = True
@@ -73,17 +102,6 @@ def read_hierarchy(backend):
             f"CLASSPATH={classpath} app_process / taktik.phone.HierarchyReader",
             timeout=15,
         )
-    finally:
-        with phone.cleanup():
-            try:
-                if stopped:
-                    _released(backend)
-                    backend._call("start_uiautomator")
-                    if raw.jsonrpc.setConfigurator(config) != config:
-                        raise InteractionError(
-                            "The native reader configuration was not restored."
-                        )
-            finally:
-                _shell(backend, ["rm", "-f", remote])
+        phone._check()
     phone._check()
     return _decode(output)

@@ -41,10 +41,10 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     package_data={
-        "taktik.core.shared.phone_interaction": [
-            "native/*.dex",
-            "native/*.java",
-            "native/*.json",
+        "taktik.core.shared.phone_interaction.native": [
+            "*.dex",
+            "*.java",
+            "*.json",
         ],
     },
     # 3.10 for the command line of the public repository, 3.14 for the launcher the installer

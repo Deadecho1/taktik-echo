@@ -39,13 +39,15 @@ See the [browsing guide](https://github.com/Deadecho1/taktik-echo/blob/main/docs
 ## X extension status
 
 The X branch supports account-verified For you, Following, and search browsing, with separate quote, media, and account metadata.
-It exposes watch/skip, profile/thread/media inspection, native detail reading, and verified likes, bookmarks, follow/unfollow, and available Not interested feedback.
+It exposes watch/skip, profile/thread/media inspection, native detail reading, native post links and IDs, and verified likes, bookmarks, follow/unfollow, and available Not interested feedback.
 Engagement rereads the selected target and its resulting native state, preserves already-selected states, and never retries an uncertain mutation.
 Unsupported or ambiguous layouts stop browsing.
 
 The X branch recognizes native Paid partnership disclosures separately from authored text.
-Promoted-placement recognition, further physical layout coverage, outstanding human visual review, and real-model validation remain incomplete.
+Promoted-placement recognition and outstanding human visual review remain incomplete.
+Consumer model policy, real-model validation, and dependency adoption belong to the consuming workspace.
 The maintained branch does not imply that every installed X layout is supported.
+See the [operational guide](docs/x-operations.md) for the supported device/version, session lifecycle, and reproducible compatibility checks.
 
 ## Installation
 
@@ -74,6 +76,8 @@ Do not bypass the shared Phone implementation with direct device operations.
 Tests for the shared Phone implementation live in `tests/unit/shared/test_phone_interaction_session.py`.
 Persona Engine also carries browsing and integration regression tests, including its ownership checks in `tests/test_phone_architecture.py`.
 Publish and test changes to this fork before advancing Persona Engine's dependency pin.
+The Browsing compatibility workflow checks shared Phone, X, Instagram/TikTok services, and distribution contents on Python 3.10 and 3.14.
+It builds the wheel from the source archive so installation does not depend on files outside that archive.
 
 ## Upstream and license
 

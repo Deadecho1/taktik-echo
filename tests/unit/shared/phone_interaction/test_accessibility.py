@@ -162,6 +162,78 @@ def test_cancellation_during_native_read_restores_the_server_and_removes_the_ass
     assert raw.events[-3:] == ["start", "restore_config", "remove"]
 
 
+@pytest.mark.parametrize("failure", ["start", "restore_config", "remove", "bad_config"])
+@pytest.mark.parametrize("expired", [False, True])
+@pytest.mark.parametrize("raised", [False, True])
+def test_cleanup_failure_preserves_cancellation_and_expiry(failure, expired, raised):
+    raw, phone = session()
+    expected = SessionExpired if expired else InteractionCancelled
+    original = expected("Original interruption")
+    if expired:
+        phone.configure(deadline=1)
+
+    def interrupt():
+        if raised:
+            raise original
+        if expired:
+            raw.now = 2
+        else:
+            raw.cancelled = True
+
+    raw.native_callback = interrupt
+    raw.fail_at = failure
+    raw.bad_config = failure == "bad_config"
+    with pytest.raises(expected) as error:
+        phone.read("screen_reader_hierarchy")
+    if raised:
+        assert error.value is original
+    assert error.value.__cause__ is not None
+    assert raw.events.count("native") == 1
+    assert raw.events.count("start") == 1
+    assert raw.events.count("remove") == 1
+    assert phone._cleaning == 0
+
+
+def test_restoration_failure_does_not_downgrade_uncertain_native_execution():
+    raw, phone = session()
+    raw.fail_at = "native"
+    raw.bad_config = True
+    with pytest.raises(InteractionError) as error:
+        phone.read("screen_reader_hierarchy")
+    assert error.value.result.status == Status.UNCERTAIN
+    assert "native" in error.value.result.detail
+    assert raw.events == ["push", "stop", "native", "start", "restore_config", "remove"]
+
+
+@pytest.mark.parametrize("read_failed", [False, True])
+@pytest.mark.parametrize("remove_failed", [False, True])
+def test_new_cancellation_during_restoration_escapes_a_prior_read_failure(
+    read_failed, remove_failed
+):
+    raw, phone = session()
+    raw.fail_at = "native" if read_failed else None
+    original = InteractionCancelled("Cancelled during restoration")
+    shell = raw.shell
+
+    def cleanup_shell(command, *, timeout):
+        if remove_failed and command == ["rm", "-f", raw.remote]:
+            raw.events.append("remove")
+            raise OSError("Cleanup transport failure")
+        return shell(command, timeout=timeout)
+
+    def interrupt():
+        raw.events.append("start")
+        raise original
+
+    raw.start_uiautomator = interrupt
+    raw.shell = cleanup_shell
+    with pytest.raises(InteractionCancelled) as error:
+        phone.read("screen_reader_hierarchy")
+    assert error.value is original
+    assert raw.events == ["push", "stop", "native", "start", "remove"]
+    assert phone._cleaning == 0
+
+
 @pytest.mark.parametrize(
     "payload", ["", "garbage", "TAKTIK_HIERARCHY_V1:!", "TAKTIK_HIERARCHY_V1:eA=="]
 )

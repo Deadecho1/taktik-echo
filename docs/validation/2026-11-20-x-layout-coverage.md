@@ -23,7 +23,7 @@ No scrolling, retry, deadline, cancellation, or observation-completeness limits 
 ## Physical evidence
 
 All sessions used Nir's Pixel 4a `0A031JEC221805`, Android 13, X `12.42.0-prod.01`, English UI, and 1080 × 2340 dimensions.
-Successful browsing runs verified `@NirGalel` through the drawer and checked the selected query and tab.
+Successful browsing runs verified `@NirGalel` through the drawer and checked the browsing context, including the selected query and tab for search.
 The harness checked controller reservations and held the existing device and account locks through Phone cleanup.
 Every session, including the failed discovery, restored the original input method and reported successful cleanup.
 No session remains active.
@@ -73,6 +73,28 @@ The reviewed continuation is published on `feature/x-platform`; milestone 5 rema
 Native promoted/ad placements still need a captured source and direct validation on a supported account/device.
 Paid-partnership disclosure support remains a separate capability.
 The user confirmed that the test account does not have an ad-free subscription.
+
+Fresh bounded discovery on 20 November 2026 completed 49 advances across three sessions without exposing an Ad, Promoted, Sponsored, or Advertisement disclosure in the saved native XML.
+All three sessions used the same Pixel 4a, Android 13, English X `12.42.0-prod.01`, and 1080 × 2340 dimensions described above.
+Run identifiers below are UTC; raw captures, events, results, and per-run `evidence-audit.json` files remain under ignored `tests/smoke/x-coverage-runs/`.
+
+- `20261119T223911.001107Z`: For you completed 35 advances, 36 observations, and 121 verified movement checks.
+  Of those checks, 116 used ordered posts and five used native timeline text; four observations explicitly retained continuity gaps.
+- `20261119T224606.037065Z`: Following completed eight advances, nine observations, and 11 verified movement checks.
+  Nine paired ordinary/screen-reader samples preserved the selected source's content, author-header geometry, and body visibility after the owned accessibility service was restored.
+- `20261119T224808.796665Z`: Top search for `technology` completed six advances, seven observations, and 12 verified movement checks.
+  Seven paired ordinary/screen-reader samples passed the same source-restoration checks.
+  Exact query entry verified Taktik Keyboard before restoring Gboard during cleanup.
+
+Independent replay reproduced all 52 observations and 144 movement checks across these sessions.
+The audit scanned text, content descriptions, and resource IDs in all 427 saved XML files, including the 16 screen-reader samples, with no matching ad-label candidates.
+This does not establish that the sampled posts were organic, that pixels contained no ads, or that an unexposed layout is supported.
+Controller reservations were clear, device/account locks covered the sessions through cleanup, all three sessions restored the original input method, and no phone session remains active.
+The unchanged production X suite passed all 1,525 tests in 44.96 seconds before discovery.
+The local capture harness now supports optional paired screen-reader sampling; the audit verifies the selected source after restoration as well as the recorded observations and movement evidence.
+No production recognizer was added without a captured native ad layout, and milestone 5 remains open for that missing evidence.
+These 52 new screenshots remain local and pending separate human visual review.
+
 Additional For you run `20261119T220838.413049Z` completed eight advances and nine observations before stopping at an unlabeled inline element.
 Its native View has neither text nor a content description; the reader rejects that unsupported body and cannot verify the next movement once its usable anchors disappear.
 The two final snapshots now protect this conservative stop in the navigation-evidence regression suite.

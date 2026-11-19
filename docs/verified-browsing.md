@@ -31,6 +31,7 @@ Consumer applications should not duplicate selectors, screen parsing, or gesture
 The shared Phone implementation and verified Instagram/TikTok browsing are maintained on `main`.
 The X extension builds on that shared implementation in `feature/x-platform`.
 Consumers pin a tested complete commit hash; branch names describe the development line.
+The [X operational guide](x-operations.md) records supported device/runtime versions, session ownership, recovery rules, and the reproducible compatibility and distribution checks.
 
 ## X extension
 
