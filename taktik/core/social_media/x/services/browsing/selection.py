@@ -1,0 +1,59 @@
+"""Fresh selected-post evidence and control-free action targets."""
+
+from taktik.core.shared.phone_interaction import Result, Status
+
+from .navigation import XError, _free_regions
+
+
+def _unsupported(message):
+    raise XError(message, result=Result(Status.UNSUPPORTED, detail=message))
+
+
+def _source(app):
+    source = app.observe()
+    if source is None:
+        _unsupported("An X action requires a selected post.")
+    if sum(p.content_key == source.content_key for p in app._screen.posts) != 1:
+        _unsupported("The selected X action target is ambiguous.")
+    return source
+
+
+def _control(targets, label):
+    matches = [t for t in targets if t.label == label]
+    if len(matches) != 1 or matches[0].visibility.visible_bounds is None:
+        _unsupported(f"No unique visible X {label} control.")
+    target = matches[0]
+    regions = [
+        r
+        for r in _free_regions(
+            target.visibility.visible_bounds, target.visibility.overlaps, 12
+        )
+        if r[3] - r[1] >= 12
+    ]
+    if not regions:
+        _unsupported(f"No uncovered X {label} target.")
+    return target, max(regions, key=lambda r: (r[2] - r[0]) * (r[3] - r[1]))
+
+
+def _tap(app, targets, label):
+    target, region = _control(targets, label)
+    app.phone.tap(region, exclude=target.visibility.overlaps).require()
+
+
+def _post(app, source, screen):
+    if screen.kind == "unsupported":
+        return None
+    app._check_timeline(screen, app._screen)
+    candidates = [
+        p
+        for p in screen.observable_posts
+        if p.content_key == source.content_key
+        and p.author == source.author
+        and p.visibility.bounds == source.visibility.bounds
+    ]
+    if len(candidates) != 1:
+        return None
+    app._refresh_alignment(screen)
+    if app._index is None or screen.posts[app._index] != candidates[0]:
+        raise XError("The X action occurrence changed.")
+    return candidates[0]

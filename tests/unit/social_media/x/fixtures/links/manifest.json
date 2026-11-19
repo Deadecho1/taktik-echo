@@ -1,0 +1,59 @@
+{
+  "size": [
+    1080,
+    2340
+  ],
+  "version": "12.42.0-prod.01",
+  "android": "13",
+  "visual_review": "pending",
+  "fixtures": [
+    {
+      "file": "source.xml",
+      "source": "tests/smoke/x-link-probes/20261119T203255.253570Z/source.xml",
+      "source_sha256": "f1e318a6547421a9214686fc37bda19faa6025c4fe960c140e66c9b6c22dbd86",
+      "sha256": "97dab41f40ff6a41bc0e60ff82245edc2dfc800dabdd12ca25319f50c5e5d00c"
+    },
+    {
+      "file": "share.xml",
+      "source": "tests/smoke/x-link-probes/20261119T203255.253570Z/share.xml",
+      "source_sha256": "0b04a1c1cbbdc5720b62b3997f23c8d3e8ec5de6d605d48bc40c0b0b70ef245f",
+      "sha256": "0a31361863461a0ee6f132f76d7e69825e24b29c54c916b2b8ef09c04f486a4b"
+    },
+    {
+      "file": "copied.xml",
+      "source": "tests/smoke/x-link-probes/20261119T203255.253570Z/copied.xml",
+      "source_sha256": "33571f33b988fb2e056a3da6c67f9109cb2888b30a13b5ec79a5c3eeb16691dc",
+      "sha256": "5c9d55ed245f13bd71cd5e2bbaa3008f45743a85ca6b4a423aa60c7497b42891"
+    },
+    {
+      "file": "copy-stable.xml",
+      "source": "tests/smoke/x-link-probes/20261119T203255.253570Z/copy-stable.xml",
+      "source_sha256": "35b6ad6194b4f543721c0703c3d0326c62251020b44dca880f325acafcd162df",
+      "sha256": "d388778fae340206a35b9317c83d312b201a03c354142cbef454039ad8af8736"
+    },
+    {
+      "file": "top-source.xml",
+      "source": "tests/smoke/x-link-runs/20261119T203818.638521Z/source.xml",
+      "source_sha256": "4006335f0ba491f497909bb26ba32559b98c3c472333e314de60d56e3632dc6e",
+      "sha256": "36fd1497d47f760867ef8e284d2251aec2659bad8046ec3b345d58e9dbc6cd67"
+    },
+    {
+      "file": "top-share.xml",
+      "source": "tests/smoke/x-link-runs/20261119T203818.638521Z/native-share.xml",
+      "source_sha256": "5873724afad8b31bf7f409d76a840f189c04541b76b6c8f3cfb114f415260179",
+      "sha256": "0a31361863461a0ee6f132f76d7e69825e24b29c54c916b2b8ef09c04f486a4b"
+    },
+    {
+      "file": "top-receipt.xml",
+      "source": "tests/smoke/x-link-runs/20261119T203818.638521Z/native-receipt.xml",
+      "source_sha256": "bd696ee73d25b5cfc013877fadf8b84af47af5246e7ad45c48533d9671b2b8dd",
+      "sha256": "6eff891f5176d6cf8b16c9b2195e81ae65b184dc95d88f7ac69f2e10220ed7ba"
+    },
+    {
+      "file": "top-return.xml",
+      "source": "tests/smoke/x-link-runs/20261119T203818.638521Z/link-return.xml",
+      "source_sha256": "d229b7f570108642a96f522b7b8bda6ddd093b776676f74382a1b731eb947630",
+      "sha256": "4cd8437a9ef96d24bbb0123906984c0165a6e01f74318a5e25a08bdf044f76cc"
+    }
+  ]
+}

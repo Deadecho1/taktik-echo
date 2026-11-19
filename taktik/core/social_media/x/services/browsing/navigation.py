@@ -2321,11 +2321,11 @@ class X:
                     lambda s: s.kind not in {"drawer", "unsupported"},
                     "drawer dismissal",
                 )
-            elif screen.kind == "post_options":
+            elif screen.kind in {"post_options", "share"}:
                 self._tap(screen, "Close sheet")
                 screen = self._wait_for(
-                    lambda s: s.kind not in {"post_options", "unsupported"},
-                    "post-options dismissal",
+                    lambda s: s.kind not in {"post_options", "share", "unsupported"},
+                    "X sheet dismissal",
                 )
             elif screen.kind == "search_results" and screen.collapsed:
                 self._gesture(screen, "down")
@@ -2843,6 +2843,12 @@ class X:
         from .expansion import read_more
 
         return read_more(self)
+
+    def copy_link(self):
+        """Read a fresh native post URL and verify return to the same occurrence."""
+        from .links import copy_link
+
+        return copy_link(self)
 
     def set_liked(self, selected=True):
         """Set the selected post's Like state once and verify its native readback."""

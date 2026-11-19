@@ -272,6 +272,7 @@ class Screen:
     gallery: "Gallery | None" = None
     post_options: "PostOptions | None" = None
     removal_notices: tuple["RemovalNotice", ...] = ()
+    clipboard_text: str | None = None
 
     @property
     def observable_posts(self):
@@ -3489,7 +3490,7 @@ def _read(root, area):
     window = _one(windows, "X window")
     if any(n.get("package") != PACKAGE for n in window.iter()):
         raise _Unsupported("Unexpected package inside X window.")
-    keyboard, system_bars = [], []
+    keyboard, system_bars, receipts, clipboard_overlays = [], [], [], []
     for other in root:
         if other is window:
             continue
@@ -3501,13 +3502,25 @@ def _read(root, area):
         elif other.get("package") != "com.android.systemui":
             raise _Unsupported("Unrecognized external window.")
         elif _rect(other)[1] != 0:
-            raise _Unsupported("Unrecognized system overlay.")
+            from .links import read_clipboard
+
+            receipts.append(read_clipboard(other, area))
+            clipboard_overlays.append(_rect(other))
         else:
             system_bars.append(_rect(other))
-    external = (*keyboard, *system_bars)
+    external = (*keyboard, *system_bars, *clipboard_overlays)
+    if len(receipts) > 1:
+        raise _Unsupported("Ambiguous clipboard receipts.")
     if _desc(window, "Close sheet"):
         if _desc(window, "Close navigation menu"):
             raise _Unsupported("Conflicting X overlays.")
+        if window.xpath('.//*[@text="Copy link" or @text="Share via…"]'):
+            from .links import read_share
+
+            return replace(
+                read_share(window, area, external),
+                clipboard_text=receipts[0] if receipts else None,
+            )
         return _post_options(window, area, external)
     landings = window.xpath('.//*[@resource-id="MainLanding"]')
     standalone = not landings
@@ -3865,6 +3878,7 @@ def _read(root, area):
         removal_notices=read_notices(scope, viewport, tuple(overlays))
         if kind in {"home", "search_results"}
         else (),
+        clipboard_text=receipts[0] if receipts else None,
     )
 
 

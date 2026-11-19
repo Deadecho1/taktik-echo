@@ -1,5 +1,6 @@
 """Native inspection evidence never borrows missing main-post text from replies."""
 
+import copy
 import hashlib
 import json
 
@@ -7,11 +8,13 @@ import pytest
 from lxml import etree
 from unit.paths import CORE
 
+from taktik.core.shared.behavior.tap import free_tap_zone
+from taktik.core.shared.ui.geometry import bounds
 from taktik.core.social_media.x.services.browsing.navigation import (
     _free_regions,
     _scroll_motion,
 )
-from taktik.core.social_media.x.ui.screen import read_screen
+from taktik.core.social_media.x.ui.screen import PACKAGE, read_screen
 
 FIXTURES = CORE / "tests/unit/social_media/x/fixtures/inspection"
 SIZE = (1080, 2340)
@@ -310,3 +313,117 @@ def test_post_options_taps_stay_clear_of_grok_and_post_opening_padding():
         assert region[0] >= (left + right) // 2
         assert region[1] >= post.header_visibility.bounds[1]
         assert region[3] <= post.header_visibility.bounds[3]
+
+
+LINK_FIXTURES = CORE / "tests/unit/social_media/x/fixtures/links"
+LINK_QUERY = 'from:NASA "stellar merger"'
+LINK_URL = "https://x.com/NASA/status/2123169377855922254"
+
+
+def link_document(name):
+    return (LINK_FIXTURES / f"{name}.xml").read_text()
+
+
+def test_link_fixture_provenance():
+    manifest = json.loads((LINK_FIXTURES / "manifest.json").read_text())
+    assert manifest["size"] == list(SIZE)
+    for item in manifest["fixtures"]:
+        assert (
+            hashlib.sha256((LINK_FIXTURES / item["file"]).read_bytes()).hexdigest()
+            == item["sha256"]
+        )
+
+
+def test_share_exposes_only_copy_and_safe_dismissal_targets():
+    screen = read_screen(link_document("share"), SIZE)
+    assert screen.kind == "share"
+    assert not screen.posts
+    assert [c.label for c in screen.controls] == ["Close sheet", "Copy link"]
+    close, link = screen.controls
+    assert link.visibility.unobscured
+    assert link.visibility.bounds == (220, 1996, 418, 2230)
+    zone = free_tap_zone(close.visibility.visible_bounds, close.visibility.overlaps)
+    assert zone[1] >= 136 and zone[3] <= 507
+
+
+def test_clipboard_receipt_is_metadata_and_occludes_the_underlying_timeline():
+    before = read_screen(link_document("source"), SIZE)
+    after = read_screen(link_document("copied"), SIZE)
+    assert after.kind == "search_results"
+    assert after.clipboard_text.startswith(LINK_URL + "?")
+    assert before.clipboard_text is None
+    assert (
+        before.observable_posts[0].content_key == after.observable_posts[0].content_key
+    )
+    assert (22, 1938, 608, 2257) in after.overlaps
+    assert all(after.clipboard_text != p.body for p in after.posts)
+
+
+def test_clipboard_covering_authored_text_cannot_leave_the_post_observable():
+    root = etree.fromstring(link_document("copied").encode())
+    for node in root[0].iter():
+        left, top, right, bottom = bounds(node)
+        node.set("bounds", f"[{left},{top - 1300}][{right},{bottom - 1300}]")
+    screen = read_screen(etree.tostring(root), SIZE)
+    assert screen.kind == "search_results"
+    assert not screen.observable_posts
+
+
+@pytest.mark.parametrize(
+    "problem",
+    ["missing", "duplicate", "disabled", "hidden", "nested", "row", "package"],
+)
+def test_share_rejects_unverifiable_copy_targets(problem):
+    root = etree.fromstring(link_document("share").encode())
+    label = root.xpath('.//*[@text="Copy link"]')[0]
+    target = label.getparent()
+    if problem == "missing":
+        target.remove(label)
+    elif problem == "duplicate":
+        target.append(copy.deepcopy(label))
+    elif problem in {"disabled", "hidden"}:
+        target.set("enabled" if problem == "disabled" else "visible-to-user", "false")
+    elif problem == "nested":
+        child = etree.SubElement(target, "node", dict(label.attrib))
+        child.set("text", "External app")
+        child.set("clickable", "true")
+    elif problem == "row":
+        target.getparent().getparent().append(target)
+    else:
+        label.set("package", "other.app")
+    assert read_screen(etree.tostring(root), SIZE).kind == "unsupported"
+
+
+@pytest.mark.parametrize(
+    "problem",
+    [
+        "missing",
+        "duplicate",
+        "package",
+        "hidden",
+        "preview_parent",
+        "clipped",
+        "unknown",
+    ],
+)
+def test_unrecognized_system_overlays_still_block_browsing(problem):
+    root = etree.fromstring(link_document("copied").encode())
+    receipt = root.xpath('.//*[@resource-id="com.android.systemui:id/clipboard_ui"]')[0]
+    preview = receipt.xpath(
+        './/*[@resource-id="com.android.systemui:id/text_preview"]'
+    )[0]
+    if problem == "missing":
+        preview.getparent().remove(preview)
+    elif problem == "duplicate":
+        preview.getparent().append(copy.deepcopy(preview))
+    elif problem == "package":
+        preview.set("package", PACKAGE)
+    elif problem == "hidden":
+        preview.set("visible-to-user", "false")
+    elif problem == "preview_parent":
+        preview.getparent().set("resource-id", "other")
+    elif problem == "clipped":
+        preview.set("bounds", "[55,2004][800,2224]")
+    else:
+        receipt.set("resource-id", "com.android.systemui:id/other")
+    assert read_screen(etree.tostring(root), SIZE).kind == "unsupported"

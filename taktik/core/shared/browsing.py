@@ -52,6 +52,8 @@ class PostObservation:
     date_label: str = ""
     caption_type: str | None = None
     post_context: dict | None = None
+    native_post_id: str | None = None
+    post_url: str | None = None
 
 
 @dataclass(frozen=True)

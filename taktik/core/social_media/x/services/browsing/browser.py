@@ -153,6 +153,7 @@ class XBrowser:
         self._valid = False
         self._media_inspection = None
         self._expanded_source_key = None
+        self._post_link = None
 
     @classmethod
     def connect(cls, serial, enabled_workflows):
@@ -167,6 +168,7 @@ class XBrowser:
         self._valid = False
         self._media_inspection = None
         self._expanded_source_key = None
+        self._post_link = None
         if workflow not in self.enabled or (workflow != "search" and target):
             raise ValueError(
                 "X requires an enabled workflow; only search accepts a target."
@@ -221,6 +223,9 @@ class XBrowser:
                 "crop": inspection.crop,
                 "partial": inspection.partial,
             }
+        link = self._post_link
+        if link is not None and link.source_key != post.content_key:
+            link = None
         return PostObservation(
             username=post.author.removeprefix("@"),
             caption=post.body or "",
@@ -239,6 +244,8 @@ class XBrowser:
             if post.body is not None
             else "unknown",
             post_context=context,
+            native_post_id=link.post_id if link else None,
+            post_url=link.url if link else None,
         )
 
     def act(self, action, observation):
@@ -266,6 +273,7 @@ class XBrowser:
                     self._occurrence += 1
                     self._media_inspection = None
                     self._expanded_source_key = None
+                    self._post_link = None
                 return ActionResult(advanced=result.advanced)
         return ActionResult()
 
@@ -279,6 +287,11 @@ class XBrowser:
     def visit_profile(self, observation):
         self._selected(observation)
         return self.browser.visit_profile()
+
+    def copy_link(self, observation):
+        self._selected(observation)
+        self._post_link = self.browser.copy_link()
+        return self._post_link
 
     def inspect_thread(self, observation, *, max_posts=10, max_scrolls=4):
         self._selected(observation)
@@ -297,6 +310,7 @@ class XBrowser:
         if post.content_key != current.source_key:
             self._expanded_source_key = self._expanded_source_key or current.source_key
             self._media_inspection = None
+            self._post_link = None
 
     def advance(self):
         if not self.browsing_valid:
@@ -305,3 +319,4 @@ class XBrowser:
         self._occurrence += 1
         self._media_inspection = None
         self._expanded_source_key = None
+        self._post_link = None

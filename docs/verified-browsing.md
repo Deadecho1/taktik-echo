@@ -7,6 +7,7 @@ Additional supported layouts and attribution checks are maintained in these plat
 
 `taktik.core.shared.browsing.PostObservation` carries the observed author, text, identity, media metadata, and optional frames.
 Its elapsed time is supplied by the consumer that tracks time spent viewing the post.
+Optional `native_post_id` and `post_url` fields carry independently verified native identity and remain separate from local observation and content keys.
 The module also exposes supported workflows and actions so consumers can reject unavailable operations before execution.
 It contains no model policy, learning, persona configuration, or retained history.
 
@@ -93,6 +94,18 @@ The service dismisses an unavailable menu without engaging and reports `Status.U
 Unknown outcomes invalidate browsing and raise `Status.UNCERTAIN`; recover explicitly without replaying the engagement.
 Account verification, deadlines, cancellation, reservations, locks, keyboard restoration, and cleanup use the existing Phone session.
 The [engagement validation record](validation/2026-11-19-x-engagement.md) records physical evidence and remaining review limits.
+
+`X.copy_link()` returns the selected outer post's native `PostLink(source_key, author, post_id, url)` after a verified Share/Copy link round trip.
+`XBrowser.copy_link(observation)` also checks the observation identity and supplies `native_post_id` and `post_url` on subsequent observations of that occurrence.
+The operation is explicit; ordinary observations leave these fields unknown.
+It copies to the Android clipboard, requires a fresh native clipboard receipt after an independently checked Share sheet, matches the outer author, and verifies the original post and browsing context again.
+Repeated copies of the same URL require a new receipt; a retained clipboard string alone is insufficient.
+Only Copy link and sheet dismissal are used, with no OCR, network URL resolution, recipient selection, or external sharing.
+The native ID never replaces a local content or occurrence key, and advancing, starting again, successor selection, or caption expansion clears the retained link.
+Missing or obscured Share controls, unrecognized clipboard receipts, changed sources, and uncertain execution invalidate the attempt without blind retries.
+Explicit startup can dismiss a retained recognized Share sheet and reverify the account.
+The clipboard preview value is receipt metadata, and its window remains an occlusion for underlying post text and gestures.
+The [native link validation record](validation/2026-11-19-x-links.md) documents the successful repeated-copy phone run, supported device/version, regression checks, and pending visual review.
 
 `X.visit_profile()` visits the selected author's verified profile and returns header text and observable profile posts separately from the source post.
 `X.inspect_thread(max_posts=10, max_scrolls=4)` returns bounded, independently attributed thread observations and native detail metadata, retaining the original source content key separately.
