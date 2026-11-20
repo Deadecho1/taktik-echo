@@ -14,6 +14,12 @@ It contains no model policy, learning, persona configuration, or retained histor
 `taktik.core.shared.phone_interaction.Phone` owns a single device session and uses the existing Taktik device, gesture, and keyboard helpers.
 Mutations return a result that must be checked, and uncertain execution must not be blindly retried.
 Account and post-state verification remain the platform service's responsibility.
+Explicit controlled scrolls honor the requested distance even below the calibrated swipe floor.
+Vertical travel must be finite and at least one pixel, and sampled paths must satisfy the requested reach and usable-region checks before injection.
+Explicit controlled requests and prepared paths must also meet a conservative minimum of 3.2% of full screen height, rounded up, using the existing drag-departure clearance.
+This is a host policy rather than a queried Android touch-slop value; smaller requests fail without enlargement or tap-sized injection.
+Path-validation failures retain their specific reason, while uncertain execution still prevents automatic retry.
+Gesture execution alone does not establish movement of the application's content.
 Pass deadlines and cancellation to the same Phone object and close it before releasing its device lock.
 The device lock retains the established cross-process path under the system temporary directory.
 Current text entry requires Taktik Keyboard and preserves its bounded typing and restoration behavior.

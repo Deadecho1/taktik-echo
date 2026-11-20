@@ -1,6 +1,6 @@
 # Retained expanded-caption startup and Home reset
 
-These captures come from one bounded physical diagnostic on 20 November 2026.
+The twelve retained-caption/reset captures come from one bounded physical diagnostic on 20 November 2026.
 The phone ran English X `12.42.0-prod.01` on Android 13 at 1080 × 2340.
 `manifest.json` records original and fixture hashes from run `20261120T133655.284102Z`.
 The owner is anonymized as `Fixture Owner` / `@fixture_owner`, and external windows retain only empty root geometry.
@@ -16,3 +16,8 @@ One Home tap at `[0,2120,199,2274]` produces `reset`, where an independently obs
 This establishes a new browsing position and does not read the abandoned caption or prove continuity of intervening posts.
 Unlike the earlier workflow replay against a separate startup fixture, the expansion and recovery here were captured in the same physical diagnostic.
 Repeated frames, wrong accounts/tabs, interruptions, and failed resets in tests are explicitly synthetic variants of this sequence.
+
+`short-scroll` comes from the subsequent three-hour revalidation attempt `20261120T135150.651075Z`, snapshot 3.
+It records the unobservable source whose partly visible media/footer needs a 103.5-pixel framing scroll in the safe region `[0,598,137,2004]`.
+The real shared Phone/backend replay exercises sampling, exact-reach checks, exclusions, and transport injection for that captured X request.
+The screenshot remains local and visually unreviewed.

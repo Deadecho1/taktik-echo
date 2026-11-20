@@ -8,6 +8,7 @@ from unittest.mock import Mock
 import pytest
 from PIL import Image
 from unit.paths import CORE
+from unit.shared.phone_interaction.test_gestures import recording_session
 from unit.social_media.x.services.browsing.test_search import (
     SearchReplay,
     shifted_results,
@@ -364,6 +365,23 @@ def test_startup_fixture_hashes():
             hashlib.sha256((STARTUP_FIXTURES / item["file"]).read_bytes()).hexdigest()
             == item["sha256"]
         )
+
+
+def test_captured_short_framing_scroll_executes_with_its_safe_requested_travel():
+    screen = read_screen(startup_document("short-scroll"), SIZE)
+    assert not screen.observable_posts
+    for seed in range(20):
+        phone, raw, _ = recording_session(seed)
+        events = []
+        phone.configure(diagnostic=events.append)
+        X(phone)._gesture(screen, "up")
+        raw.swipe_points.assert_called_once()
+        path = raw.swipe_points.call_args.args[0]
+        travel = abs(path[-1][1] - path[0][1])
+        assert 96.325 <= travel <= 105.5
+        assert all(0 <= x < 137 and 598 <= y < 2004 for x, y in path)
+        assert sum(e["action"] == "gesture_geometry" for e in events) == 1
+        phone.close(home=False).require()
 
 
 def test_startup_resets_home_once_after_captured_framing_exhaustion():
