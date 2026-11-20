@@ -122,6 +122,9 @@ The [engagement validation record](validation/2026-11-19-x-engagement.md) record
 The operation is explicit; ordinary observations leave these fields unknown.
 It copies to the Android clipboard, requires a fresh native clipboard receipt after an independently checked Share sheet, matches the outer author, and verifies the original post and browsing context again.
 Repeated copies of the same URL require a new receipt; a retained clipboard string alone is insufficient.
+Share keeps its native clickable wrapper and glyph geometry separately, and uses the owned glyph's uncovered area when it meets the existing minimum tap dimensions.
+The supported horizontally clipped Share glyph can instead use a narrow right-hand strip only when a single native cover meets its exact left edge and spans its full height; the strip stays inside the wrapper, within the glyph's vertical band, at most one glyph-height wide, and includes retained glyph pixels.
+Malformed geometry, ambiguous or inconsistent cover relationships, and insufficient uncovered space reject before tapping; opening Share is never retried after an unverified outcome.
 Only Copy link and sheet dismissal are used, with no OCR, network URL resolution, recipient selection, or external sharing.
 The native ID never replaces a local content or occurrence key, and advancing, starting again, successor selection, or caption expansion clears the retained link.
 Missing or obscured Share controls, unrecognized clipboard receipts, changed sources, and uncertain execution invalidate the attempt without blind retries.

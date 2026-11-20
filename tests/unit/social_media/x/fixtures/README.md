@@ -87,3 +87,8 @@ Both sequences use the real Phone/TaktikDevice boundary with fake raw transport;
 All author/display names, post captions, profile-image descriptions, counts, ages, and custom-list labels in these fixtures are synthetic.
 External system-window children are absent while their geometry remains, and native control labels retain their required semantics.
 For these fixtures `engagement/undo-manifest.json` records only synthetic fixture hashes; private source provenance remains in local diagnostics.
+
+The `links/share-glyph-*.xml` fixtures contain synthetic text and identities with native Share wrapper, glyph, sheet, and clipboard geometry.
+They cover an unobscured glyph inside non-activating wrapper padding and a complete Share/copy/source-return sequence through the real Phone/TaktikDevice boundary with fake raw transport.
+The existing covered-footer sequence separately verifies a successful edge-clipped Share strip; it is not a continuation of the new sequence.
+The synthetic fixture integrity hashes are recorded in `links/share-glyph-manifest.json`; raw source provenance stays in local diagnostics.

@@ -63,6 +63,7 @@ class Target:
     count: str | None = None
     selected: bool | None = None
     state_visibility: Visibility | None = None
+    glyph_visibility: Visibility | None = None
 
 
 @dataclass(frozen=True)
@@ -1377,6 +1378,11 @@ def _actions(container, viewport, overlaps, excluded):
             and (n.get("clickable") == "true" or n.get("long-clickable") == "true")
         )
         action = _target(icon, label, container, viewport, (*overlaps, *nested), count)
+        if label == "Share":
+            action = replace(
+                action,
+                glyph_visibility=_visibility(icon, viewport, (*overlaps, *nested)),
+            )
         if label in {"Like", "Bookmark"}:
             action = replace(
                 action,

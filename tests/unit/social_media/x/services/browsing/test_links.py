@@ -1,5 +1,7 @@
 """Single-attempt native Copy link flows through the real Phone boundary."""
 
+import hashlib
+import json
 from copy import deepcopy
 from dataclasses import replace
 
@@ -7,13 +9,14 @@ import pytest
 from lxml import etree
 from unit.social_media.x.services.browsing.test_search import SearchReplay
 from unit.social_media.x.ui.test_inspection_screen import (
+    LINK_FIXTURES,
+    SIZE,
+)
+from unit.social_media.x.ui.test_inspection_screen import (
     LINK_QUERY as QUERY,
 )
 from unit.social_media.x.ui.test_inspection_screen import (
     LINK_URL as URL,
-)
-from unit.social_media.x.ui.test_inspection_screen import (
-    SIZE,
 )
 from unit.social_media.x.ui.test_inspection_screen import (
     link_document as document,
@@ -22,12 +25,292 @@ from unit.social_media.x.ui.test_inspection_screen import (
 from taktik.core.shared.phone_interaction import (
     InteractionCancelled,
     InteractionError,
+    Phone,
     SessionExpired,
     Status,
 )
+from taktik.core.shared.phone_interaction._device import TaktikDevice
 from taktik.core.social_media.x.services.browsing.browser import XBrowser
 from taktik.core.social_media.x.services.browsing.navigation import X, XError
+from taktik.core.social_media.x.services.browsing.selection import _control
 from taktik.core.social_media.x.ui.screen import read_screen
+
+
+class GlyphLinkReplay:
+    def __init__(self):
+        self.state = "source"
+        self.now = 0
+        self.actions = []
+        self.share_error = self.copy_error = None
+        self.controls = []
+        self.frames = {
+            "source": document("share-glyph-complete-source"),
+            "share": document("share-glyph-sheet"),
+            "receipt": document("share-glyph-receipt"),
+        }
+
+    def app_current(self):
+        return {"package": "com.twitter.android"}
+
+    def window_size(self):
+        return SIZE
+
+    def dump_hierarchy(self):
+        return self.frames[self.state]
+
+    def sleep(self, seconds):
+        self.now += seconds
+
+    def long_click(self, x, y, duration):
+        self.actions.append((self.state, x, y))
+        if self.state == "source":
+            self.controls.append("Share")
+            if 1003 <= x < 1047 and 1928 <= y < 1972:
+                self.state = "share"
+            if self.share_error:
+                raise self.share_error
+        elif self.state == "share":
+            screen = read_screen(self.dump_hierarchy(), SIZE)
+            for label, following in (
+                ("Copy link", "receipt"),
+                ("Close sheet", "source"),
+            ):
+                _, region = _control(screen.controls, label)
+                if region[0] <= x < region[2] and region[1] <= y < region[3]:
+                    self.controls.append(label)
+                    self.state = following
+                    if label == "Copy link" and self.copy_error:
+                        raise self.copy_error
+                    break
+            else:
+                raise AssertionError("The tap missed the verified sheet controls.")
+        else:
+            raise AssertionError("No additional native mutation is expected.")
+
+
+def glyph_browser(raw=None):
+    raw = raw or GlyphLinkReplay()
+    phone = Phone(
+        TaktikDevice(raw, "fixture"),
+        seed=0,
+        clock=lambda: raw.now,
+        sleep=raw.sleep,
+    )
+    browser = XBrowser(phone, {"for_you"})
+    app = browser.browser
+    app.timeline = "for_you"
+    app.verified_account = app._expected = "@fixture_owner"
+    screen = read_screen(raw.dump_hierarchy(), SIZE)
+    app._select(
+        screen,
+        next(
+            i for i, post in enumerate(screen.posts) if post.author == "@fixture_author"
+        ),
+    )
+    browser.workflow, browser._username, browser._valid = (
+        "for_you",
+        "fixture_owner",
+        True,
+    )
+    return raw, browser
+
+
+def test_share_glyph_tap_opens_sheet_and_copies_without_wrapper_padding():
+    raw, browser = glyph_browser()
+    source = browser.observe()
+    link = browser.copy_link(source)
+    returned = browser.observe(previous=source)
+    assert returned.identity == source.identity
+    assert returned.source_key == source.source_key == link.source_key
+    assert (
+        returned.post_url
+        == link.url
+        == "https://x.com/fixture_author/status/1000000000000000001"
+    )
+    assert returned.native_post_id == link.post_id
+    assert [action[0] for action in raw.actions] == ["source", "share"]
+    assert 1003 <= raw.actions[0][1] < 1047 and 1928 <= raw.actions[0][2] < 1972
+
+
+def test_share_target_excludes_the_padding_point_that_did_not_open_a_sheet():
+    screen = read_screen(document("share-glyph-source"), SIZE)
+    source = next(post for post in screen.posts if post.author == "@fixture_author")
+    target, region = _control(source.actions, "Share")
+    assert target.visibility.bounds == (959, 1784, 1080, 1902)
+    assert region == (1003, 1828, 1047, 1872)
+    assert not (region[0] <= 977 < region[2] and region[1] <= 1832 < region[3])
+
+
+def test_share_glyph_fixture_integrity():
+    manifest = json.loads((LINK_FIXTURES / "share-glyph-manifest.json").read_text())
+    assert manifest["kind"] == "synthetic_native_layout"
+    for item in manifest["fixtures"]:
+        assert item["kind"] == "synthetic_native_layout"
+        assert (
+            hashlib.sha256((LINK_FIXTURES / item["file"]).read_bytes()).hexdigest()
+            == item["sha256"]
+        )
+
+
+def test_edge_clipped_share_uses_the_proven_strip_within_the_glyph_height():
+    source = read_screen(document("soak-source"), SIZE).observable_posts[0]
+    target, region = _control(source.actions, "Share")
+    assert target.visibility.bounds == (959, 2059, 1080, 2177)
+    assert target.glyph_visibility.bounds == (1036, 2103, 1047, 2147)
+    assert region == (1036, 2103, 1080, 2147)
+    assert region[0] <= 1055 < region[2] and region[1] <= 2120 < region[3]
+    assert all(
+        region[2] <= c[0] or region[0] >= c[2] or region[3] <= c[1] or region[1] >= c[3]
+        for c in target.visibility.overlaps
+    )
+
+
+@pytest.mark.parametrize("scale", [1, 2, 3])
+def test_share_glyph_geometry_scales_with_native_coordinates(scale):
+    for name in ("share-glyph-source", "soak-source"):
+        screen = read_screen(document(name), SIZE)
+        source = (
+            next(p for p in screen.observable_posts if p.author == "@fixture_author")
+            if name == "share-glyph-source"
+            else screen.observable_posts[0]
+        )
+        target = next(t for t in source.actions if t.label == "Share")
+        _, original = _control((target,), "Share")
+
+        def scaled(visibility):
+            return replace(
+                visibility,
+                bounds=tuple(v * scale for v in visibility.bounds),
+                visible_bounds=tuple(v * scale for v in visibility.visible_bounds),
+                overlaps=tuple(
+                    tuple(v * scale for v in r) for r in visibility.overlaps
+                ),
+            )
+
+        target = replace(
+            target,
+            visibility=scaled(target.visibility),
+            glyph_visibility=scaled(target.glyph_visibility),
+        )
+        expected = tuple(v * scale for v in original)
+        if name == "soak-source" and scale > 1:
+            expected = target.glyph_visibility.bounds
+        assert _control((target,), "Share")[1] == expected
+
+
+@pytest.mark.parametrize(
+    "problem",
+    [
+        "ambiguous",
+        "edge",
+        "neighbor",
+        "height",
+        "missing_cover",
+        "parent_clip",
+        "detached",
+        "unowned",
+        "inaccessible",
+        "invisible",
+    ],
+)
+def test_unknown_share_clipping_cannot_use_wrapper_padding(problem):
+    source = read_screen(document("soak-source"), SIZE).observable_posts[0]
+    target = next(t for t in source.actions if t.label == "Share")
+    control, glyph = target.visibility, target.glyph_visibility
+    cover = control.overlaps[0]
+    if problem == "ambiguous":
+        control = replace(control, overlaps=(cover, (1050, 2059, 1080, 2070)))
+    elif problem == "edge":
+        control = replace(
+            control, overlaps=((cover[0], cover[1], cover[2] - 1, cover[3]),)
+        )
+    elif problem == "neighbor":
+        control = replace(control, overlaps=((1000, cover[1], cover[2], cover[3]),))
+    elif problem == "height":
+        control = replace(control, overlaps=((cover[0], 2120, cover[2], cover[3]),))
+    elif problem == "missing_cover":
+        control = replace(control, overlaps=())
+    elif problem == "parent_clip":
+        control = replace(control, visible_bounds=(959, 2059, 1079, 2177))
+    elif problem == "detached":
+        control = replace(
+            control,
+            bounds=(959, 2059, 1120, 2177),
+            visible_bounds=(959, 2059, 1120, 2177),
+        )
+    elif problem == "unowned":
+        glyph = replace(glyph, bounds=(950, 2103, 1047, 2147))
+    elif problem == "inaccessible":
+        glyph = replace(glyph, accessible=False)
+    else:
+        glyph = replace(glyph, visible_bounds=None)
+    with pytest.raises(InteractionError, match="(?:glyph|target)"):
+        _control(
+            (replace(target, visibility=control, glyph_visibility=glyph),), "Share"
+        )
+
+
+@pytest.mark.parametrize(
+    "problem", ["hidden", "disabled", "missing", "duplicate", "unowned", "tiny"]
+)
+def test_invalid_native_share_glyph_rejects_before_injection(problem):
+    raw, browser = glyph_browser()
+    source = browser.observe()
+    root = etree.fromstring(raw.frames["source"].encode())
+    icon = root.xpath('.//node[@content-desc="Share"]')[-1]
+    if problem == "hidden":
+        icon.set("visible-to-user", "false")
+    elif problem == "disabled":
+        icon.set("enabled", "false")
+    elif problem == "missing":
+        icon.set("content-desc", "")
+    elif problem == "duplicate":
+        icon.getparent().append(deepcopy(icon))
+    elif problem == "unowned":
+        icon.set("bounds", "[950,1928][980,1972]")
+    else:
+        icon.set("bounds", "[1003,1928][1014,1939]")
+    raw.frames["source"] = etree.tostring(root, encoding="unicode")
+    with pytest.raises(InteractionError):
+        browser.copy_link(source)
+    assert raw.actions == []
+    assert not browser.browsing_valid
+
+
+def test_share_glyph_geometry_is_part_of_source_return_verification():
+    raw, browser = glyph_browser()
+    root = etree.fromstring(raw.frames["receipt"].encode())
+    root.xpath('.//node[@content-desc="Share"]')[-1].set(
+        "bounds", "[1004,1928][1048,1972]"
+    )
+    raw.frames["receipt"] = etree.tostring(root, encoding="unicode")
+    with pytest.raises(InteractionError, match="source changed"):
+        browser.copy_link(browser.observe())
+    assert raw.controls == ["Share", "Copy link"]
+    assert not browser.browsing_valid
+
+
+@pytest.mark.parametrize("stage", ["share", "copy"])
+@pytest.mark.parametrize("problem", ["transport", "cancel", "deadline"])
+def test_glyph_tap_failure_is_never_repeated(stage, problem):
+    raw, browser = glyph_browser()
+    error = {
+        "transport": OSError("response lost"),
+        "cancel": InteractionCancelled("stop"),
+        "deadline": SessionExpired("expired"),
+    }[problem]
+    setattr(raw, stage + "_error", error)
+    with pytest.raises(
+        type(error) if problem != "transport" else InteractionError
+    ) as caught:
+        browser.copy_link(browser.observe())
+    if problem == "transport":
+        assert caught.value.result.status == Status.UNCERTAIN
+    else:
+        assert caught.value is error
+    assert raw.controls.count("Share") == 1
+    assert raw.controls.count("Copy link") == (stage == "copy")
+    assert not browser.browsing_valid
 
 
 class LinkReplay(SearchReplay):
