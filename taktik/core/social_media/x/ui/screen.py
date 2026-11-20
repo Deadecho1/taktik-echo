@@ -3064,6 +3064,80 @@ def _clipped_media_before_footer(container, body, media, media_nodes, viewport):
     return True
 
 
+def _gif_picture_shape(node):
+    shape = [(child.get("class"), len(child)) for child in node.iter()]
+    return shape in (
+        [("android.view.View", 0)],
+        [
+            ("androidx.compose.ui.viewinterop.u", 1),
+            ("android.widget.FrameLayout", 1),
+            ("android.widget.FrameLayout", 2),
+            ("android.view.View", 0),
+            ("android.widget.FrameLayout", 1),
+            ("android.view.View", 0),
+        ],
+    )
+
+
+def _clipped_gif_before_footer(container, body, media, viewport):
+    """Recognize the native body/GIF pair before any footer enters the hierarchy."""
+    if (
+        container.get("class") != "android.view.View"
+        or container.get("text")
+        or container.get("content-desc")
+        or container.get("scrollable") == "true"
+        or container.get("long-clickable") == "true"
+        or body is None
+        or len(container) != 2
+        or container[0] is not body
+        or len(media) != 1
+        or media[0].kind != "gif"
+        or len(body)
+        or body.get("content-desc")
+        or any(
+            body.get(flag) == "true"
+            for flag in ("clickable", "long-clickable", "focusable", "scrollable")
+        )
+    ):
+        return False
+    wrapper = container[1]
+    text, gif = _rect(body), media[0].visibility.bounds
+    if not (
+        len(wrapper) == 2
+        and wrapper.get("class") == "android.view.View"
+        and wrapper[0].get("class") == "android.view.View"
+        and not len(wrapper[0])
+        and wrapper[0].get("content-desc") == "GIF"
+        and _gif_picture_shape(wrapper[1])
+        and _rect(wrapper) == gif
+        and text[::2] == gif[::2]
+        and text[1] < viewport[1] < text[3] <= gif[1]
+        and gif[3] == _rect(container)[3] >= viewport[3]
+        and _intersect(text, _rect(container)) == text
+        and _intersect(gif, _rect(container)) == gif
+        and not wrapper.get("content-desc")
+        and wrapper.get("clickable") == "true"
+        and wrapper.get("focusable") == "true"
+        and wrapper.get("long-clickable") == "true"
+    ):
+        return False
+    return all(
+        not node.get("text")
+        and node.get("enabled") == "true"
+        and node.get("scrollable") != "true"
+        and _rect(node) == gif
+        and (node is wrapper[0] or not node.get("content-desc"))
+        and (
+            node is wrapper
+            or not any(
+                node.get(flag) == "true"
+                for flag in ("clickable", "long-clickable", "focusable")
+            )
+        )
+        for node in wrapper.iter()
+    )
+
+
 def _fragment(container, viewport, overlays, *, collapsed=False):
     if (
         container.get("clickable") != "true"
@@ -3215,6 +3289,17 @@ def _fragment(container, viewport, overlays, *, collapsed=False):
         return PostFragment(
             body.get("text"),
             (),
+            _visibility(container, viewport, overlays),
+            _visibility(body, viewport, overlays),
+        )
+    if (
+        collapsed
+        and _clipped_gif_before_footer(container, body, media, viewport)
+        and _visibility(body, viewport, overlays).accessible
+    ):
+        return PostFragment(
+            body.get("text"),
+            media,
             _visibility(container, viewport, overlays),
             _visibility(body, viewport, overlays),
         )

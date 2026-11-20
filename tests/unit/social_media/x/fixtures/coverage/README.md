@@ -27,3 +27,12 @@ They preserve rejection of that unknown body and refusal of movement without usa
 Malformed variants in tests are synthetic and establish rejection behavior only.
 No fixture establishes native promoted/ad detection or complete visual review.
 See the [validation record](../../../../../../docs/validation/2026-11-20-x-layout-coverage.md).
+
+The five `caption-gif-240` through `caption-gif-244` fixtures preserve the stopped soak's approach to a headerless expanded caption followed by an entirely offscreen GIF.
+They establish bounded pending continuity, with no usable pair of text edges, no new observation, and no captured successor.
+`caption-gif-visible.xml` captures the native renderer revealed during the first bounded continuation attempt.
+The `caption-gif-entry` pair captures a later attempt where the first body edge and part of the GIF appear together.
+The eight `caption-gif-physical-17` through `caption-gif-physical-24` fixtures preserve one complete successful physical advance from run `20261120T194306.709075Z`.
+Its seven gestures include pending entry, the first lower-edge reveal, independently reverified movement, footer revelation, and an observable successor.
+These are separate captured sequences, not a synthetic splice or evidence that the original expanded caption became complete.
+Their source and sanitized hashes are recorded in the manifest; synthetic mutations in tests only establish rejection behavior.

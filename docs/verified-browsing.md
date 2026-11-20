@@ -81,6 +81,10 @@ The original reviewed Top run ends at its last partly visible video.
 A subsequent direct `astronomy filter:videos` run covered the same relevance-prompt/partial-video layout and three verified outgoing movements to an independently observed successor, using current search results.
 Direct Latest browsing also traversed two pending long-text phases and their video tails, reaching a real successor after 23 gestures.
 A fully hidden native header that has lost its age label can retain its clipped text as an unattributed passage; it supplies no new author or post observation.
+Collapsed Home also retains the exact native body/GIF structure before its footer appears, including the offscreen placeholder and captured inert renderer.
+The unique unchanged caption can enter pending continuity when the GIF is offscreen or appears with the first visible lower text edge.
+Pending continuity does not prove movement or complete the caption; two usable lower-edge frames and independent ordered alignment are required before selecting an observable successor.
+The physical caption/GIF continuation completed seven gestures with a reverified exit and a new observable successor.
 The eight-attempt pending/no-progress bounds and 32-gesture total bound remain unchanged.
 The [layout coverage record](validation/2026-11-20-x-layout-coverage.md) documents these runs, native media tags, and the outstanding ad-placement and visual-review limits.
 An exact, unobscured native no-results panel establishes an empty search; missing result posts alone do not.

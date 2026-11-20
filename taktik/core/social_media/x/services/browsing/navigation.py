@@ -2150,6 +2150,22 @@ def _alignment(before, after, *, scrolling=False, refresh_index=None):
     return alignments[0]
 
 
+def _pending_gif_entry(fragment, viewport):
+    if len(fragment.media) != 1 or fragment.body_visibility is None:
+        return False
+    (gif,) = fragment.media
+    body = fragment.body_visibility.bounds
+    return (
+        gif.kind == "gif"
+        and gif.description == "GIF"
+        and gif.visibility.bounds[::2] == body[::2]
+        and gif.visibility.bounds[1] >= body[3]
+        and body[3] > viewport[1]
+        and gif.visibility.bounds[3] == fragment.visibility.bounds[3] >= viewport[3]
+        and not fragment.actions
+    )
+
+
 def _text_continuation(before, after, *, entering=False):
     """Match a pending text passage without treating clipped bounds as movement."""
     if (
@@ -2173,13 +2189,14 @@ def _text_continuation(before, after, *, entering=False):
     index = matches[0]
     source = old[index]
     a, b = source.body_visibility, fragment.body_visibility
+    gif_entry = _pending_gif_entry(fragment, after.content_viewport)
     if entering and (
         a is None
         or b is None
         or a.bounds[3] < before.content_viewport[3]
-        or b.bounds[3] < after.content_viewport[3]
+        or (b.bounds[3] < after.content_viewport[3] and not gif_entry)
         or source.media
-        or fragment.media
+        or (fragment.media and not gif_entry)
         or source.quoted_post
         or fragment.quoted_post
     ):
@@ -2190,6 +2207,18 @@ def _text_continuation(before, after, *, entering=False):
         or not a.accessible
         or not b.accessible
         or a.bounds[::2] != b.bounds[::2]
+        or any(
+            x.visibility.bounds[::2] != y.visibility.bounds[::2]
+            or (
+                x.kind == "gif"
+                and abs(
+                    (x.visibility.bounds[1] - a.bounds[3])
+                    - (y.visibility.bounds[1] - b.bounds[3])
+                )
+                > 2
+            )
+            for x, y in zip(source.media, fragment.media)
+        )
         or b.bounds[1] > after.content_viewport[1]
         or not (
             _same_content(source, fragment)

@@ -263,6 +263,118 @@
       "source_sha256": "13ec8bc0b7448bd68091c731422b55bce643944eb948a2f9289aca79e93d0508",
       "sha256": "2e346712340d24aac19a91d9f8ac28c627e3ca306221ac4c8abba0f6f10f9162",
       "version": "12.42.0-prod.01"
+    },
+    {
+      "file": "caption-gif-240.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T151758.840200Z/snapshot-000240-hierarchy.xml",
+      "source_sha256": "42c6f6ba158836527ab3e02714f544227a6d2eb31006434fd6e54b9fa4ee11f6",
+      "sha256": "cdb5e7c1ff9040816521468fa4675b92477c0d4c453d082b7d546aca4e390deb",
+      "version": "12.42.0-prod.01"
+    },
+    {
+      "file": "caption-gif-241.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T151758.840200Z/snapshot-000241-hierarchy.xml",
+      "source_sha256": "58178e14afd04941713b302f2c65bd4840ad478c48dca1f093e819137ebb2c38",
+      "sha256": "95534bb4a3a2d681dd568ad5d2328bf58bee5ea2af29676ddac403bec7687114",
+      "version": "12.42.0-prod.01"
+    },
+    {
+      "file": "caption-gif-242.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T151758.840200Z/snapshot-000242-hierarchy.xml",
+      "source_sha256": "37a04d0e302de6bd8bc63846d396fa597303039db041dd282b277da6541e7d56",
+      "sha256": "f0089fbb23b7e7f5e400537454509707dc97377018ec7ffd2600752de812499e",
+      "version": "12.42.0-prod.01"
+    },
+    {
+      "file": "caption-gif-243.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T151758.840200Z/snapshot-000243-hierarchy.xml",
+      "source_sha256": "271a3b2492a401a3a45051bc54be0d3527e0e042310cb964a651ae41428a3262",
+      "sha256": "95dc05f772db3429bc5016504bdee88fc5ca3e57a8242e9c22b5aa2c21fa25fb",
+      "version": "12.42.0-prod.01"
+    },
+    {
+      "file": "caption-gif-244.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T151758.840200Z/snapshot-000244-hierarchy.xml",
+      "source_sha256": "6c8e031a1ebee2ab13a88ac24f4d25602b2412ed8459548718fa4e0c0cc8ac37",
+      "sha256": "cbdde4ce5b6bedd19d902def79dfcc75c519304e6a864a1b2e21281ffe00e920",
+      "version": "12.42.0-prod.01"
+    },
+    {
+      "file": "caption-gif-visible.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T193900.157225Z/snapshot-000020-hierarchy.xml",
+      "source_sha256": "9f38e07b430aa41454f06e41e4fbc4fa2f2ab95154600ec450daba7f872be029",
+      "sha256": "9cc8cfe6031a302d3208d73e9693de444444560e5638a75e6b02ada3849765d7",
+      "version": "12.42.0-prod.01"
+    },
+    {
+      "file": "caption-gif-entry-before.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T194050.513184Z/snapshot-000022-hierarchy.xml",
+      "source_sha256": "104c190e7f1ada1ff8fc3ff0020cc998ab53bc7c18ef02af90b176650b2c8448",
+      "sha256": "e2bf47759b3a64bc09263fa6bff41022683d77f029e9cfb82458b3421f1c6f67",
+      "version": "12.42.0-prod.01"
+    },
+    {
+      "file": "caption-gif-entry-visible.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T194050.513184Z/snapshot-000023-hierarchy.xml",
+      "source_sha256": "7a52f76eaff9b6c1f7f5ff490992d7605341d23092b3d9cb299fd973bbbed6f2",
+      "sha256": "1010955eb6772ab2a941deaf22d29b965d0ffe8361a1a07d90ef2d314a5747b9",
+      "version": "12.42.0-prod.01"
+    },
+    {
+      "file": "caption-gif-physical-17.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T194306.709075Z/snapshot-000017-hierarchy.xml",
+      "source_sha256": "f152fb5e5b6143d81806c2796aed3c56d2e8df4cc0b505bbdfacfbfdade71c44",
+      "sha256": "8db607f220b0d61d9b5616f5a6b49273fe564434040463632928e3ead317b428",
+      "version": "12.42.0-prod.01"
+    },
+    {
+      "file": "caption-gif-physical-18.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T194306.709075Z/snapshot-000018-hierarchy.xml",
+      "source_sha256": "7b348806f49e534bc0a9a1076a1fcff5acdc3e0ce8d5829d544b30cb8367240d",
+      "sha256": "0dd74864cbc81889f812ba3c99f0a730d2d57917d681ea29e6d8323734a539ef",
+      "version": "12.42.0-prod.01"
+    },
+    {
+      "file": "caption-gif-physical-19.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T194306.709075Z/snapshot-000019-hierarchy.xml",
+      "source_sha256": "d2a2ba5ce790c52fa01a897157edbc821de51614d590c9bf524936de4f2e3de3",
+      "sha256": "0ece25bdd2957f9c1a5f78a6f8d9aac0d230dd7b08ee3fada58564f576c22df7",
+      "version": "12.42.0-prod.01"
+    },
+    {
+      "file": "caption-gif-physical-20.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T194306.709075Z/snapshot-000020-hierarchy.xml",
+      "source_sha256": "54c2301059574b31a7f32d4500e3e2003b895681d708fc5b4b66b9732cef35ef",
+      "sha256": "2952c762e791696e249f00c670f833bddda739091d4958d32e7c8d7ff6a80145",
+      "version": "12.42.0-prod.01"
+    },
+    {
+      "file": "caption-gif-physical-21.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T194306.709075Z/snapshot-000021-hierarchy.xml",
+      "source_sha256": "9f1bbad4295a55e0ebf743815e81bcad99719a27fd4898958a2fba0858f0d604",
+      "sha256": "28ed7f652940433ac6c8a7f6a446d24ed7cbdccaea3983cb5d5bf13fdb4e6e12",
+      "version": "12.42.0-prod.01"
+    },
+    {
+      "file": "caption-gif-physical-22.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T194306.709075Z/snapshot-000022-hierarchy.xml",
+      "source_sha256": "5463aa8a77aaf82821208280fa76bbd0d98d5ffa873b1e2a18db5227a6d975bc",
+      "sha256": "a6319585e0b96c66976af163ce1b32d05b3f1d63c63a51cfd15231e923d171fa",
+      "version": "12.42.0-prod.01"
+    },
+    {
+      "file": "caption-gif-physical-23.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T194306.709075Z/snapshot-000023-hierarchy.xml",
+      "source_sha256": "3c681f042178647da149241e739bd35ab8f48ece816dbb5c45fe97751f808b08",
+      "sha256": "8d779e90d1dc65c8f2f2b220f3f5f2d850612a8849fcfe803561bf99f533e43f",
+      "version": "12.42.0-prod.01"
+    },
+    {
+      "file": "caption-gif-physical-24.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T194306.709075Z/snapshot-000024-hierarchy.xml",
+      "source_sha256": "a69f6e4ccad0c40fad8e7d1bd8d53777780ed20211b31232469889a48c260688",
+      "sha256": "58e01175551861eb55bade0b5cf04e0a2b6f79fe32216a645487ae716e9bc801",
+      "version": "12.42.0-prod.01"
     }
   ]
 }
