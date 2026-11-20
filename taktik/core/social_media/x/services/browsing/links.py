@@ -1,11 +1,11 @@
 """Bind a fresh native Copy link receipt to the selected browsing occurrence."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from urllib.parse import urlsplit
 
 from taktik.core.shared.post_urls import canonicalize
 
-from .navigation import XError
+from .navigation import XError, _alignment
 from .selection import _control, _post, _source, _tap
 
 
@@ -44,6 +44,27 @@ def _restore(app, source):
     app.observe()
 
 
+def _returned(app, source, link, screen):
+    if (
+        screen.clipboard_text is not None
+        and _link(source, screen.clipboard_text) != link
+    ):
+        raise XError("The native copied link changed during verification.")
+    app._check_timeline(screen, app._screen)
+    candidates = [p for p in screen.posts if p.content_key == source.content_key]
+    if (
+        len(candidates) != 1
+        or candidates[0].author != source.author
+        or candidates[0].visibility.bounds != source.visibility.bounds
+    ):
+        raise XError("Copy link did not return to the selected X occurrence.")
+    _alignment(
+        replace(app._screen, posts=(source,), fragments=()),
+        replace(screen, posts=(candidates[0],), fragments=()),
+    )
+    return _post(app, source, screen) is not None
+
+
 def copy_link(app):
     with app._operation():
         source = _source(app)
@@ -67,15 +88,17 @@ def copy_link(app):
                 "a fresh native Copy link receipt",
             )
             link = _link(source, screen.clipboard_text)
-            if _post(app, source, screen) is None:
-                raise XError("Copy link did not return to the selected X occurrence.")
+            if not _returned(app, source, link, screen):
+                # The clipboard preview can cover the unchanged source body.
+                screen = app._wait_for(
+                    lambda s: _returned(app, source, link, s),
+                    "the selected X occurrence after Copy link",
+                    interval=1.0,
+                )
             app._select(screen, app._index)
             app.observe()
-            if (
-                app._screen.clipboard_text is not None
-                and _link(source, app._screen.clipboard_text) != link
-            ):
-                raise XError("The native copied link changed during verification.")
+            if not _returned(app, source, link, app._screen):
+                raise XError("Copy link did not return to the selected X occurrence.")
             return link
         except BaseException as error:
             with app.phone.cleanup():

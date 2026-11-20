@@ -5,55 +5,98 @@
   ],
   "version": "12.42.0-prod.01",
   "android": "13",
-  "visual_review": "approved_presented_captures",
+  "visual_review": "mixed_see_individual_fixtures",
   "fixtures": [
     {
       "file": "source.xml",
       "source": "tests/smoke/x-link-probes/20261119T203255.253570Z/source.xml",
       "source_sha256": "f1e318a6547421a9214686fc37bda19faa6025c4fe960c140e66c9b6c22dbd86",
-      "sha256": "97dab41f40ff6a41bc0e60ff82245edc2dfc800dabdd12ca25319f50c5e5d00c"
+      "sha256": "97dab41f40ff6a41bc0e60ff82245edc2dfc800dabdd12ca25319f50c5e5d00c",
+      "visual_review": "approved_presented_captures"
     },
     {
       "file": "share.xml",
       "source": "tests/smoke/x-link-probes/20261119T203255.253570Z/share.xml",
       "source_sha256": "0b04a1c1cbbdc5720b62b3997f23c8d3e8ec5de6d605d48bc40c0b0b70ef245f",
-      "sha256": "0a31361863461a0ee6f132f76d7e69825e24b29c54c916b2b8ef09c04f486a4b"
+      "sha256": "0a31361863461a0ee6f132f76d7e69825e24b29c54c916b2b8ef09c04f486a4b",
+      "visual_review": "approved_presented_captures"
     },
     {
       "file": "copied.xml",
       "source": "tests/smoke/x-link-probes/20261119T203255.253570Z/copied.xml",
       "source_sha256": "33571f33b988fb2e056a3da6c67f9109cb2888b30a13b5ec79a5c3eeb16691dc",
-      "sha256": "5c9d55ed245f13bd71cd5e2bbaa3008f45743a85ca6b4a423aa60c7497b42891"
+      "sha256": "5c9d55ed245f13bd71cd5e2bbaa3008f45743a85ca6b4a423aa60c7497b42891",
+      "visual_review": "approved_presented_captures"
     },
     {
       "file": "copy-stable.xml",
       "source": "tests/smoke/x-link-probes/20261119T203255.253570Z/copy-stable.xml",
       "source_sha256": "35b6ad6194b4f543721c0703c3d0326c62251020b44dca880f325acafcd162df",
-      "sha256": "d388778fae340206a35b9317c83d312b201a03c354142cbef454039ad8af8736"
+      "sha256": "d388778fae340206a35b9317c83d312b201a03c354142cbef454039ad8af8736",
+      "visual_review": "approved_presented_captures"
     },
     {
       "file": "top-source.xml",
       "source": "tests/smoke/x-link-runs/20261119T203818.638521Z/source.xml",
       "source_sha256": "4006335f0ba491f497909bb26ba32559b98c3c472333e314de60d56e3632dc6e",
-      "sha256": "36fd1497d47f760867ef8e284d2251aec2659bad8046ec3b345d58e9dbc6cd67"
+      "sha256": "36fd1497d47f760867ef8e284d2251aec2659bad8046ec3b345d58e9dbc6cd67",
+      "visual_review": "approved_presented_captures"
     },
     {
       "file": "top-share.xml",
       "source": "tests/smoke/x-link-runs/20261119T203818.638521Z/native-share.xml",
       "source_sha256": "5873724afad8b31bf7f409d76a840f189c04541b76b6c8f3cfb114f415260179",
-      "sha256": "0a31361863461a0ee6f132f76d7e69825e24b29c54c916b2b8ef09c04f486a4b"
+      "sha256": "0a31361863461a0ee6f132f76d7e69825e24b29c54c916b2b8ef09c04f486a4b",
+      "visual_review": "approved_presented_captures"
     },
     {
       "file": "top-receipt.xml",
       "source": "tests/smoke/x-link-runs/20261119T203818.638521Z/native-receipt.xml",
       "source_sha256": "bd696ee73d25b5cfc013877fadf8b84af47af5246e7ad45c48533d9671b2b8dd",
-      "sha256": "6eff891f5176d6cf8b16c9b2195e81ae65b184dc95d88f7ac69f2e10220ed7ba"
+      "sha256": "6eff891f5176d6cf8b16c9b2195e81ae65b184dc95d88f7ac69f2e10220ed7ba",
+      "visual_review": "approved_presented_captures"
     },
     {
       "file": "top-return.xml",
       "source": "tests/smoke/x-link-runs/20261119T203818.638521Z/link-return.xml",
       "source_sha256": "d229b7f570108642a96f522b7b8bda6ddd093b776676f74382a1b731eb947630",
-      "sha256": "4cd8437a9ef96d24bbb0123906984c0165a6e01f74318a5e25a08bdf044f76cc"
+      "sha256": "4cd8437a9ef96d24bbb0123906984c0165a6e01f74318a5e25a08bdf044f76cc",
+      "visual_review": "approved_presented_captures"
+    },
+    {
+      "file": "soak-source.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T074807.351791Z/snapshot-000347-hierarchy.xml",
+      "source_sha256": "25d703d1cf99e8174d2191319fe5239041adb57c977a37113969c770d71b7043",
+      "sha256": "66379f2808ea33998ffc23600b351b3a56714092f0f6ff3cb6429d78b69b376f",
+      "visual_review": "pending"
+    },
+    {
+      "file": "soak-share.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T074807.351791Z/snapshot-000349-hierarchy.xml",
+      "source_sha256": "daf51a6c4ef6283f7f1f91560aa6b7b6271ec78fe9597a1dbc49385e316bf316",
+      "sha256": "4e8c363f0ad424ace0c88925a9476c94cada9c299afd6883c28c58e8ab4abc7c",
+      "visual_review": "pending"
+    },
+    {
+      "file": "soak-receipt.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T074807.351791Z/snapshot-000350-hierarchy.xml",
+      "source_sha256": "f5f18683c22818ceadbfc52e5c254027bbb7b82357e0ee51a4333eebbaf5212e",
+      "sha256": "83c5ebcdfd68207056ee3aaf3d2807e54c7e5a325f807ebe0809aa2b1cac6dd5",
+      "visual_review": "pending"
+    },
+    {
+      "file": "soak-covered.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T074807.351791Z/snapshot-000351-hierarchy.xml",
+      "source_sha256": "ac60ad4b866dabb779b8880c7d7ebfb8af04bdbea6486291cbb866c16cd7573b",
+      "sha256": "4c2c18f0214e5b15f2af01c3694571b0b5b13a5af1ed1e8eb54e9713074499cf",
+      "visual_review": "pending"
+    },
+    {
+      "file": "soak-return.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T074807.351791Z/snapshot-000356-hierarchy.xml",
+      "source_sha256": "25d703d1cf99e8174d2191319fe5239041adb57c977a37113969c770d71b7043",
+      "sha256": "66379f2808ea33998ffc23600b351b3a56714092f0f6ff3cb6429d78b69b376f",
+      "visual_review": "pending"
     }
   ],
   "visual_review_at": "2026-11-19T21:39:43.840Z",

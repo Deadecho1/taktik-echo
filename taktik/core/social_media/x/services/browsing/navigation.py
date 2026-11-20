@@ -2273,7 +2273,7 @@ class X:
             )
         return result
 
-    def _wait_for(self, predicate, description):
+    def _wait_for(self, predicate, description, *, interval=0.3):
         for attempt in range(READ_ATTEMPTS):
             screen = self._snapshot()
             if screen.kind == "drawer":
@@ -2281,7 +2281,7 @@ class X:
             if predicate(screen):
                 return screen
             if attempt < READ_ATTEMPTS - 1:
-                self.phone.wait(0.3, purpose="readiness")
+                self.phone.wait(interval, purpose="readiness")
         raise XError(f"Cannot verify {description}: {screen.reason or screen.kind}.")
 
     def _tap(self, screen, label):
