@@ -108,6 +108,9 @@ On X `12.42.0-prod.01`, Unfollow and Not interested replace the selected post wi
 The receipt must identify the selected author at the original header position, and the selected post must be absent.
 The service rereads that evidence before selecting another independently observable post, recording an engagement removal in `navigation_gaps`.
 `ActionResult.advanced` is then true; callers must not advance again for the completed action, and the old observation cannot authorize another engagement.
+Successor framing can scroll the receipt out of view, so callers cannot assume Undo remains available after this action returns.
+The maintained evaluation helper `check_feedback_roundtrip` shares native feedback confirmation, verifies a fresh unique Undo receipt, and restores the original occurrence before successor framing.
+It credits only a verified feedback/Undo round trip; it does not change the public action's advancement contract.
 Not interested is offered by the captured For you menu; the captured search menu does not offer it.
 The service dismisses an unavailable menu without engaging and reports `Status.UNSUPPORTED`.
 Unknown outcomes invalidate browsing and raise `Status.UNCERTAIN`; recover explicitly without replaying the engagement.

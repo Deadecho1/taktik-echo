@@ -103,7 +103,7 @@ def _close_menu(app, source, screen):
     return _return_to_source(app, source)
 
 
-def _removed(app, source, action):
+def _removal_confirmation(app, source, action):
     def confirmed(screen):
         if screen.kind in {"unsupported", "post_options"}:
             return False
@@ -123,6 +123,10 @@ def _removed(app, source, action):
     current = app._snapshot()
     if not confirmed(current) or current.removal_notices != screen.removal_notices:
         raise XError("The X engagement confirmation did not persist.")
+    return current
+
+
+def _advance_removed(app, source, action, current):
     app.navigation_gaps.append(
         {
             "method": "engagement_removal",
@@ -134,6 +138,12 @@ def _removed(app, source, action):
     app.observe()
     return EngagementResult(
         action, source.content_key, True, False if action == "unfollow" else None, True
+    )
+
+
+def _removed(app, source, action):
+    return _advance_removed(
+        app, source, action, _removal_confirmation(app, source, action)
     )
 
 
@@ -170,22 +180,28 @@ def set_following(app, selected):
         return EngagementResult(action, source.content_key, True, selected)
 
 
+def _apply_feedback_and_confirm(app, source):
+    screen = _open_menu(app, source)
+    state = _menu_author(source, screen)
+    if state.feedback_label != "Not interested in Post":
+        _close_menu(app, source, screen)
+        _unsupported("X does not offer verified Not interested feedback for this post.")
+    current = app._snapshot()
+    if _menu_author(source, current) != state:
+        raise XError("The X feedback menu changed before engagement.")
+    _control(current.controls, state.feedback_label)
+    try:
+        _tap(app, current.controls, state.feedback_label)
+        return _removal_confirmation(app, source, "not_interested")
+    except InteractionError as error:
+        _uncertain("not_interested", error)
+
+
 def not_interested(app):
     with app._operation():
         source = _source(app)
-        screen = _open_menu(app, source)
-        state = _menu_author(source, screen)
-        if state.feedback_label != "Not interested in Post":
-            _close_menu(app, source, screen)
-            _unsupported(
-                "X does not offer verified Not interested feedback for this post."
-            )
-        current = app._snapshot()
-        if _menu_author(source, current) != state:
-            raise XError("The X feedback menu changed before engagement.")
-        _control(current.controls, state.feedback_label)
+        current = _apply_feedback_and_confirm(app, source)
         try:
-            _tap(app, current.controls, state.feedback_label)
-            return _removed(app, source, "not_interested")
+            return _advance_removed(app, source, "not_interested", current)
         except InteractionError as error:
             _uncertain("not_interested", error)

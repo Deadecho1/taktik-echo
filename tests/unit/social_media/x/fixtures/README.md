@@ -77,3 +77,13 @@ unique matching, refresh, and continued scrolling. No author is inferred.
 `covered-quote-reveal-*.xml` retain the known New posts cover over an outer handle while article text enters its quote. `gif-tail-*.xml` retain native GIF geometry after the outer body/header leave. `quote-header-body-edge-*.xml` and `video-and-quote-entry-*.xml` preserve previously verified transitions that newly recognized offscreen quote headers must not obstruct. All use synthetic post/author text at the captured 1080 × 2340 geometry.
 
 `header-control-padding-*.xml` preserve shared native control padding above the container. `retained-quoted-summary-*.xml` preserve quoted-summary revelation after the outer body has already left. Content is synthetic; retained text, movement, and projected revelation are required.
+
+
+The engagement `undo-*.xml` fixtures are synthetic text versions of native X layouts, preserving control structure and geometry.
+The source/options/receipt/framing/successor sequence exercises a caller that waits until successor framing before looking for Undo, when the complete receipt is no longer visible.
+The evaluator test models restoration by returning the saved synthetic source after its verified Undo tap.
+The separate `undo-complete-*.xml` sequence includes a native transition, receipt, and restored-source layout for a complete round trip.
+Both sequences use the real Phone/TaktikDevice boundary with fake raw transport; successful restoration performs no successor-framing scroll.
+All author/display names, post captions, profile-image descriptions, counts, ages, and custom-list labels in these fixtures are synthetic.
+External system-window children are absent while their geometry remains, and native control labels retain their required semantics.
+For these fixtures `engagement/undo-manifest.json` records only synthetic fixture hashes; private source provenance remains in local diagnostics.
