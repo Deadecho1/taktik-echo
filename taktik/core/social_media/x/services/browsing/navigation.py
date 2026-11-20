@@ -36,6 +36,12 @@ class XError(InteractionError):
     """X could not establish a navigation or browsing outcome."""
 
 
+class _FramingLimit(XError):
+    def __init__(self, screen):
+        super().__init__("No observable X post within the framing limit.")
+        self.screen = screen
+
+
 def _intersection(a, b):
     result = max(a[0], b[0]), max(a[1], b[1]), min(a[2], b[2]), min(a[3], b[3])
     return result if result[0] < result[2] and result[1] < result[3] else None
@@ -2399,7 +2405,22 @@ class X:
                     self._tap(screen, TIMELINES[timeline])
                 screen = self._wait_for(self._on_timeline, "selected X timeline")
             self.verified_account = account
-            return self._first_post(screen)
+            try:
+                return self._first_post(screen)
+            except _FramingLimit as error:
+                if timeline == "search":
+                    raise
+                screen = self._reveal_timeline(error.screen)
+                self._tap(screen, "Home")
+                screen = self._wait_for(self._on_timeline, "Home after startup reset")
+                self.navigation_gaps.append(
+                    {
+                        "basis": "home_reset",
+                        "reason": "initial_framing_limit",
+                        "post_continuity": "not_established",
+                    }
+                )
+                return self._first_post(screen)
 
     def _search(self, home):
         self._tap(home, "Explore")
@@ -2717,7 +2738,7 @@ class X:
                     verified = True
                 else:
                     screen, verified = self._frame(screen, verified)
-        raise XError("No observable X post within the framing limit.")
+        raise _FramingLimit(screen)
 
     def observe(self):
         """Refresh the selected occurrence without silently selecting a new post."""

@@ -1,0 +1,82 @@
+{
+  "size": [
+    1080,
+    2340
+  ],
+  "x_version": "12.42.0-prod.01",
+  "visual_review": "pending",
+  "fixtures": [
+    {
+      "file": "source.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T133655.284102Z/snapshot-000009-hierarchy.xml",
+      "source_sha256": "047b0476dde61ac3c3992b9fe10b0b380ae02c3975c0bf48b2b0f3737f670ddb",
+      "sha256": "61739cb6646e950a00dfb22932e2c4f29fd1a8e7a91d65094bd95837330bf181"
+    },
+    {
+      "file": "expanded.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T133655.284102Z/snapshot-000010-hierarchy.xml",
+      "source_sha256": "a7a39333638717c4fa3fc81fbc1fa9925b7cc21a9c52d439c22c00acf3439d0d",
+      "sha256": "1d0e940ba4157b795b9496f693f7dae3c8710e14997a1bd398c5443ad60615dc"
+    },
+    {
+      "file": "launch.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T133655.284102Z/snapshot-000011-hierarchy.xml",
+      "source_sha256": "a7a39333638717c4fa3fc81fbc1fa9925b7cc21a9c52d439c22c00acf3439d0d",
+      "sha256": "1d0e940ba4157b795b9496f693f7dae3c8710e14997a1bd398c5443ad60615dc"
+    },
+    {
+      "file": "drawer.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T133655.284102Z/snapshot-000013-hierarchy.xml",
+      "source_sha256": "ecf91f6b2bedb622a1e688de3c44ba1aa1aab1af568cb2bbf2e6046f2ac21fd2",
+      "sha256": "42b59bc8288bb3b85977bceb474474073e8a57f937e3c5eda15270b367d28a72"
+    },
+    {
+      "file": "returned.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T133655.284102Z/snapshot-000014-hierarchy.xml",
+      "source_sha256": "a7a39333638717c4fa3fc81fbc1fa9925b7cc21a9c52d439c22c00acf3439d0d",
+      "sha256": "1d0e940ba4157b795b9496f693f7dae3c8710e14997a1bd398c5443ad60615dc"
+    },
+    {
+      "file": "frame-1.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T133655.284102Z/snapshot-000016-hierarchy.xml",
+      "source_sha256": "734b6c949831ddf881886abd5dfcc34a4d99d767ccdde2deeb6b753da3465827",
+      "sha256": "a408a8ec3f21a0ffdf610ee0b4ef9dd15e079d6ddd9ba77b8c86cbe553e00d85"
+    },
+    {
+      "file": "frame-2.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T133655.284102Z/snapshot-000017-hierarchy.xml",
+      "source_sha256": "f218f2f01d885335b66dd543e08168e4cb61d2898718b38589c4c86aa33a2218",
+      "sha256": "f3698f0e62643bfde857f5ec7a54ff4fe56267d6dd24501e02231ea06ef27d32"
+    },
+    {
+      "file": "frame-3.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T133655.284102Z/snapshot-000018-hierarchy.xml",
+      "source_sha256": "feddcd878f30dc2103281853b7774b6e2dd8897fc6a0a31b824b483632ba8925",
+      "sha256": "9816cf9888ea82e4994711b9b6d88d2ae05c6c3d1915495b0c3158a93dc0963e"
+    },
+    {
+      "file": "frame-4.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T133655.284102Z/snapshot-000019-hierarchy.xml",
+      "source_sha256": "f218f2f01d885335b66dd543e08168e4cb61d2898718b38589c4c86aa33a2218",
+      "sha256": "f3698f0e62643bfde857f5ec7a54ff4fe56267d6dd24501e02231ea06ef27d32"
+    },
+    {
+      "file": "reveal-1.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T133655.284102Z/snapshot-000021-hierarchy.xml",
+      "source_sha256": "0fdf131c7def144453964746e9731eb17535dfbd58d665cfe23896260e7e7be0",
+      "sha256": "25608516707596726c24e2ad2d013b3d81f280d43be3bfbf8fec197fb27dd300"
+    },
+    {
+      "file": "reveal-2.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T133655.284102Z/snapshot-000022-hierarchy.xml",
+      "source_sha256": "1d4db481c9f5d03ff08c1af4de301fb72662e3272ae9bba8c4ad91c90b57ceae",
+      "sha256": "bebe06bd3075bc8243ab201c9e44e1c541e524618941b2ea30299383468d50db"
+    },
+    {
+      "file": "reset.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T133655.284102Z/snapshot-000023-hierarchy.xml",
+      "source_sha256": "bff71fc8858f609123182b473c2b8706527882f9f894a3e09d087c78fef7977a",
+      "sha256": "80009429e3ab81c2e68b07f3705a98921039e6fbdd1841be6c322cbc6c77cfb7"
+    }
+  ]
+}

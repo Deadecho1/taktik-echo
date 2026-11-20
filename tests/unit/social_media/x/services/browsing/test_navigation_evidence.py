@@ -1,12 +1,31 @@
 """Scrolling can cross rejected content without promoting it to an observation."""
 
+import hashlib
+import json
 from dataclasses import replace
 from unittest.mock import Mock
 
 import pytest
+from PIL import Image
 from unit.paths import CORE
+from unit.social_media.x.services.browsing.test_search import (
+    SearchReplay,
+    shifted_results,
+)
+from unit.social_media.x.services.browsing.test_search import (
+    document as search_document,
+)
 
-from taktik.core.shared.phone_interaction import Phone, Result, SessionExpired, Status
+from scripts.eval.x_caption_validation import check_caption
+from taktik.core.shared.phone_interaction import (
+    InteractionCancelled,
+    InteractionError,
+    Phone,
+    Result,
+    SessionExpired,
+    Status,
+)
+from taktik.core.social_media.x.services.browsing import expansion
 from taktik.core.social_media.x.services.browsing.browser import XBrowser
 from taktik.core.social_media.x.services.browsing.navigation import (
     X,
@@ -277,3 +296,217 @@ def test_native_motion_never_invents_forward_progress(case):
         after = replace(after, scroll_anchors=())
     with pytest.raises(XError):
         _scroll_motion(before, after)
+
+
+STARTUP_FIXTURES = CORE / "tests/unit/social_media/x/fixtures/startup"
+TAP = (568, 1478, 660, 1500)
+
+
+def startup_document(name):
+    return (STARTUP_FIXTURES / f"{name}.xml").read_text()
+
+
+class StartupReplay(SearchReplay):
+    def __init__(self):
+        super().__init__()
+        self.xml = startup_document("launch")
+        self.drawer = startup_document("drawer")
+        self.reset = startup_document("reset")
+        self.up = [startup_document(f"frame-{i}") for i in range(1, 5)]
+        self.down = [startup_document(f"reveal-{i}") for i in range(1, 3)]
+        self.home_error = None
+        self.interrupt_gesture = None
+
+    def read(self, what):
+        if what == "screenshot":
+            return Image.new("RGB", SIZE)
+        return super().read(what)
+
+    def command(self, name, value):
+        super().command(name, value)
+        if name == "launch":
+            self.xml = startup_document("launch")
+
+    def tap(self, target, exclude, kind):
+        if target == TAP:
+            self.events.append(("expand", target))
+            self.xml = startup_document("expanded")
+            return
+        screen = read_screen(self.xml, SIZE)
+        matches = [
+            c.label for c in screen.controls if c.visibility.visible_bounds == target
+        ]
+        assert len(matches) == 1, matches
+        label = matches[0]
+        self.events.append(("tap", label))
+        self.xml = {
+            "Show navigation drawer": self.drawer,
+            "Close navigation menu": startup_document("returned"),
+            "Home": self.reset,
+        }[label]
+        if label == "Home" and self.home_error:
+            raise self.home_error
+
+    def gesture(self, intent, direction, region, distance, exclude):
+        super().gesture(intent, direction, region, distance, exclude)
+        if self.interrupt_gesture:
+            self.interrupt_gesture()
+        captures = self.up if direction == "up" else self.down
+        if captures:
+            self.xml = captures.pop(0)
+
+
+def test_startup_fixture_hashes():
+    manifest = json.loads((STARTUP_FIXTURES / "manifest.json").read_text())
+    assert manifest["size"] == list(SIZE)
+    for item in manifest["fixtures"]:
+        assert (
+            hashlib.sha256((STARTUP_FIXTURES / item["file"]).read_bytes()).hexdigest()
+            == item["sha256"]
+        )
+
+
+def test_startup_resets_home_once_after_captured_framing_exhaustion():
+    replay = StartupReplay()
+    browser = XBrowser(replay.phone, {"for_you"})
+    browser.start("fixture_owner", "for_you")
+    observation = browser.observe()
+    assert observation.username == "rubana_kh"
+    assert browser.browser.verified_account == "@fixture_owner"
+    assert replay.events.count(("tap", "Home")) == 1
+    assert [e[2] for e in replay.events if e[0] == "gesture"] == ["up"] * 4 + [
+        "down"
+    ] * 2
+    assert observation.post_context["navigation_gaps"] == [
+        {
+            "basis": "home_reset",
+            "reason": "initial_framing_limit",
+            "post_continuity": "not_established",
+        }
+    ]
+    replay.phone.close().require()
+    assert replay.closed
+
+
+def test_same_capture_sequence_recovers_after_inline_limit_without_read_credit(
+    monkeypatch,
+):
+    replay = StartupReplay()
+    replay.xml = startup_document("source")
+    browser = XBrowser(replay.phone, {"for_you"})
+    app = browser.browser
+    app.timeline = "for_you"
+    app.verified_account = app._expected = "@fixture_owner"
+    screen = read_screen(replay.xml, SIZE)
+    app._select(screen, next(i for i, p in enumerate(screen.posts) if p.observable))
+    browser.workflow, browser._username, browser._valid = (
+        "for_you",
+        "fixture_owner",
+        True,
+    )
+    monkeypatch.setattr(expansion, "_target", lambda *_: TAP)
+    source = browser.observe()
+    events = []
+    result = check_caption(
+        browser, source, features={}, covered=lambda *event: events.append(event)
+    )
+    current = browser.observe()
+    assert (
+        current.identity != source.identity and current.source_key != source.source_key
+    )
+    assert current.username == "rubana_kh"
+    assert result["original_text_complete"] is False
+    assert [name for name, _ in events] == [
+        "inline_caption_attempt",
+        "inline_limit",
+        "recovery",
+    ]
+    assert replay.events.count(("expand", TAP)) == 1
+    assert replay.events.count(("tap", "Home")) == 1
+    with pytest.raises(XError):
+        browser.act("skip", source)
+
+
+def test_reset_that_retains_clipped_text_stops_after_one_attempt():
+    replay = StartupReplay()
+    replay.reset = startup_document("reveal-2")
+    browser = XBrowser(replay.phone, {"for_you"})
+    with pytest.raises(XError, match="framing limit"):
+        browser.start("fixture_owner", "for_you")
+    assert replay.events.count(("tap", "Home")) == 1
+    assert len([e for e in replay.events if e[0] == "gesture"]) == 10
+    assert not browser.browsing_valid
+
+
+@pytest.mark.parametrize("stage", ["account", "framing", "reveal", "reset"])
+def test_changed_context_cannot_be_hidden_by_home_reset(stage):
+    replay = StartupReplay()
+    if stage == "account":
+        replay.drawer = replay.drawer.replace("@fixture_owner", "@different_owner")
+    elif stage == "framing":
+        replay.up[0] = search_document("explore")
+    elif stage == "reveal":
+        replay.down[-1] = replay.down[-1].replace('text="For you"', 'text="Following"')
+    else:
+        replay.reset = search_document("explore")
+    browser = XBrowser(replay.phone, {"for_you"})
+    with pytest.raises(XError):
+        browser.start("fixture_owner", "for_you")
+    assert not browser.browsing_valid
+    assert replay.events.count(("tap", "Home")) == (1 if stage == "reset" else 0)
+
+
+@pytest.mark.parametrize(
+    "error", [InteractionCancelled("cancelled"), OSError("lost tap")]
+)
+def test_interrupted_or_uncertain_home_tap_is_never_repeated(error):
+    replay = StartupReplay()
+    replay.home_error = error
+    browser = XBrowser(replay.phone, {"for_you"})
+    expected = (
+        InteractionCancelled
+        if isinstance(error, InteractionCancelled)
+        else InteractionError
+    )
+    with pytest.raises(expected) as raised:
+        browser.start("fixture_owner", "for_you")
+    if isinstance(error, InteractionCancelled):
+        assert isinstance(raised.value, InteractionCancelled)
+    else:
+        assert raised.value.result.status == Status.UNCERTAIN
+    assert replay.events.count(("tap", "Home")) == 1
+    assert not browser.browsing_valid
+    replay.phone.close().require()
+    assert replay.closed
+
+
+def test_deadline_stops_framing_before_reset():
+    replay = StartupReplay()
+    replay.interrupt_gesture = lambda: replay.phone.configure(deadline=replay.now)
+    browser = XBrowser(replay.phone, {"for_you"})
+    with pytest.raises(SessionExpired):
+        browser.start("fixture_owner", "for_you")
+    assert not browser.browsing_valid
+    assert ("tap", "Home") not in replay.events
+
+
+def test_generic_error_with_same_message_does_not_trigger_reset(monkeypatch):
+    replay = StartupReplay()
+    app = X(replay.phone)
+
+    def fail(*_):
+        raise XError("No observable X post within the framing limit.")
+
+    monkeypatch.setattr(app, "_frame", fail)
+    with pytest.raises(XError, match="framing limit"):
+        app.start("fixture_owner", "for_you")
+    assert ("tap", "Home") not in replay.events
+
+
+def test_search_framing_failure_does_not_reset_home():
+    replay = SearchReplay()
+    replay.results = shifted_results(1400)
+    app = X(replay.phone)
+    with pytest.raises(XError, match="framing limit"):
+        app.start("fixture_owner", "search", query="astronomy", result_tab="latest")
+    assert ("tap", "Home") not in replay.events

@@ -42,6 +42,9 @@ next_observation = browser.observe()
 ```
 
 `start` verifies the account through the drawer and establishes a new browsing occurrence.
+Home startup may reset its timeline once after exhausting four initial framing attempts, using only revealed native Home controls and independently reverified timeline/post evidence.
+The second framing search has the same bound; failed or uncertain reset actions are not repeated.
+The resulting `home_reset` navigation gap does not establish continuity through the abandoned content.
 Search query entry verifies exact text and context before submission; the lower-level `X` also accepts `result_tab="latest"`.
 Only a recognized native empty state produces `FeedEmpty`; a missing or unsupported post does not establish an empty feed.
 Each action requires the current observation, and engagement may itself select a successor.

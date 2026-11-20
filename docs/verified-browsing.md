@@ -152,6 +152,11 @@ The body must remain accessible and its visible bounds must equal its intersecti
 The exception does not establish full text or offscreen media completeness.
 Other clipping, changed content, or uncertain execution retains its existing failure semantics.
 `XBrowser.recover()` rechecks the saved account, timeline, query, and result tab through the same Phone, clears retained caption/link/media state, and creates a new occurrence.
+If Home startup exhausts its four initial framing attempts, it can reveal the verified timeline controls, tap Home once, and repeat the same bounded framing search.
+The returned observation records `home_reset` in `navigation_gaps`, with post continuity explicitly unestablished.
+This can abandon a retained expanded caption; it does not complete that caption or restore its original occurrence.
+Search startup, engagement successor selection, and unexpected framing errors do not use this reset.
+An ineffective reset, uncertain tap, cancellation, or deadline still terminates the operation without another reset attempt.
 An observation from before recovery cannot be used to act on that new occurrence, even if the same post reappears.
 An already complete caption is a verified no-op.
 The [expansion validation record](validation/2026-11-17-x-expansion.md) documents the physical inline expansion/detail-return run and the remaining visibility limits.
