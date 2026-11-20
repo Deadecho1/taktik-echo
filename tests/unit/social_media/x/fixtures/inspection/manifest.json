@@ -101,6 +101,12 @@
       "source": "tests/smoke/x-inspection-runs/20261117T130556.304837Z/snapshot-030.xml",
       "sha256": "c921facb771dc96f6b44bf91c85f1f424efba9d48d7f96c4d5bd342bf6af89b7",
       "source_sha256": "3ee56782d211f921689c17e75af995c86326c2445ac54b998b93107e80b4e416"
+    },
+    {
+      "file": "ambiguous-image-source.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T141911.022052Z/snapshot-000162-hierarchy.xml",
+      "sha256": "a04e9a7c184a6bbbd3b6bbbf2b3e3f923c9a8db4010ab1457f0658056ec73f06",
+      "source_sha256": "dae69427e06823a02c27f166b91d97a9054c11fc503fe8296d8a60e2d7395a16"
     }
   ]
 }
