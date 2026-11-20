@@ -146,6 +146,13 @@ Local Tesseract OCR locates the inline control; authored text and attribution st
 The source is reverified after OCR and the expanded result is read again before success.
 Support requires an unquoted source, unchanged author/header position and media content, and an unobscured expanded body entirely inside the viewport.
 Missing or ambiguous OCR targets are not tapped; clipped expansion, changed context, and uncertain execution invalidate browsing for explicit recovery.
+`XInlineExpansionLimit`, exported with `XBrowser`, identifies the narrower case where the source header, prefix, body origin, context, controls, and overlays remain verified while the expanded body extends below the viewport.
+It permits missing media/footer evidence only when those elements followed the original body and the expanded body now pushes them below view.
+The body must remain accessible and its visible bounds must equal its intersection with the content viewport; unexpected ancestor clipping does not qualify.
+The exception does not establish full text or offscreen media completeness.
+Other clipping, changed content, or uncertain execution retains its existing failure semantics.
+`XBrowser.recover()` rechecks the saved account, timeline, query, and result tab through the same Phone, clears retained caption/link/media state, and creates a new occurrence.
+An observation from before recovery cannot be used to act on that new occurrence, even if the same post reappears.
 An already complete caption is a verified no-op.
 The [expansion validation record](validation/2026-11-17-x-expansion.md) documents the physical inline expansion/detail-return run and the remaining visibility limits.
 

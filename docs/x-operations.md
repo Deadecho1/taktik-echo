@@ -56,6 +56,20 @@ The temporary native accessibility reader preserves these interruptions and prio
 Restoration still attempts removal of its temporary asset, and a new interruption during restoration remains an interruption.
 The eight-attempt pending/no-progress bounds and 32-gesture advance limit also remain subject to the Phone deadline.
 
+## Caption validation
+
+The maintained caption-validation workflow is `scripts/eval/x_caption_validation.py`.
+Call `check_caption(browser, observation, features=features, covered=covered)` on an observable, unquoted Show more source within the already-owned Phone session.
+The `features` mapping holds successful evidence-event counts, and `covered(name, details)` increments that mapping and persists the supplied evidence.
+The helper alternates inline attempts with bounded native-detail attempts until the corresponding coverage is established.
+After a verified inline viewport limit it explicitly recovers, records both occurrence identities, and retains `original_text_complete=false` for the abandoned source.
+It never marks that event as `read_more` or a successful native-text read.
+Native-detail attempts use at most eight scrolls and award `native_main_text` or `native_long_caption` only from observed character coverage, independently of whether the initial detail snapshot fits the viewport.
+Successful supported inline expansion remains a separate `read_more` requirement.
+Other errors and interruptions propagate to the session owner's normal cleanup path.
+The local all-feature soak calls this maintained helper and requires both `read_more` and `native_long_caption`; raw captures and device-specific orchestration remain local.
+The [long-caption follow-up validation](validation/2026-11-20-x-long-caption-fix.md) records the replay evidence and remaining physical requirements.
+
 ## Reproducible compatibility checks
 
 Run these commands from a clean checkout in a virtual environment using Python 3.10 or 3.14:
@@ -65,7 +79,7 @@ python -m pip install -c requirements.lock -r requirements-dev.txt build
 python -m pytest -o addopts='' -q \
   tests/unit/shared tests/unit/social_media/x \
   tests/unit/social_media/instagram/services \
-  tests/unit/social_media/tiktok/services tests/unit/scripts/build \
+  tests/unit/social_media/tiktok/services tests/unit/scripts/build tests/unit/scripts/eval \
   tests/unit/test_package_metadata.py tests/unit/test_package_requirements.py
 python scripts/audits/audit_tree_layout.py
 python -m build --no-isolation

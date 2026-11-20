@@ -1,9 +1,13 @@
 # Native inline expansion captures
 
-These eight hierarchies were captured on Nir's Pixel 4a, X `12.42.0-prod.01`, Android 13, English UI, at 1080 × 2340.
+These ten hierarchies were captured on Nir's Pixel 4a, X `12.42.0-prod.01`, Android 13, English UI, at 1080 × 2340.
 `manifest.json` records source paths and SHA-256 hashes for the raw and sanitized XML.
 Public post text is preserved; external windows retain only their root geometry and empty content.
 Screenshots remain local.
+`soak-source` and `soak-expanded` retain the 20 November run's 288-character Show more source and 3,143-character clipped expansion.
+They correspond to snapshots 449 and 450 from `20261120T110248.963317Z`, with the single recorded tap at `[568,1647,660,1669]`.
+Their companion screenshots have not received visual review.
+Workflow tests compose this captured rejection with the separate existing startup/account fixtures to verify a new occurrence; no physical recovery or native-detail read of this source was captured.
 The user approved the two Lunar companion captures; OpenAI discovery/detail companion screenshots remain outside visual sign-off.
 Three separate OpenAI screenshots from implementation run `20261117T134201.601008Z` were also explicitly approved.
 

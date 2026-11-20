@@ -9,6 +9,9 @@ from unit.paths import CORE
 from unit.social_media.x.services.browsing.test_inspection_visits import (
     InspectionReplay,
 )
+from unit.social_media.x.services.browsing.test_search import (
+    document as search_document,
+)
 
 from taktik.core.shared.behavior.tap import free_tap_zone
 from taktik.core.shared.phone_interaction import (
@@ -18,8 +21,10 @@ from taktik.core.shared.phone_interaction import (
     Status,
 )
 from taktik.core.shared.vision.ocr import OcrService, TextMatch
+from taktik.core.social_media.x.services.browsing import expansion
 from taktik.core.social_media.x.services.browsing.browser import XBrowser
 from taktik.core.social_media.x.services.browsing.navigation import X, XError
+from taktik.core.social_media.x.ui.screen import read_screen
 
 FIXTURES = CORE / "tests/unit/social_media/x/fixtures/expansion"
 SIZE = (1080, 2340)
@@ -312,3 +317,141 @@ def test_expansion_preserves_current_native_control_exclusions(monkeypatch, timi
     with pytest.raises(XError, match="covered"):
         app.read_more()
     assert not any(e[0] == "expand" for e in replay.events)
+
+
+LIMIT_TAP = (568, 1647, 660, 1669)
+
+
+class LimitReplay(InspectionReplay):
+    def __init__(self):
+        super().__init__()
+        self.xml = document("soak-source")
+        self.expanded = document("soak-expanded")
+
+    def tap(self, target, exclude, kind):
+        if target == LIMIT_TAP:
+            assert free_tap_zone(target, exclude) == target
+            self.events.append(("expand", target))
+            self.xml = self.expanded
+        else:
+            super().tap(target, exclude, kind)
+
+    def command(self, name, value):
+        super().command(name, value)
+        if name == "launch":
+            # Separate startup capture, not a physical return to the expanded post.
+            self.xml = search_document("for-you")
+
+
+def limit_selected(monkeypatch):
+    replay = LimitReplay()
+    browser = XBrowser(replay.phone, {"for_you"})
+    app = browser.browser
+    app.timeline = "for_you"
+    app.verified_account = app._expected = "@fixture_owner"
+    screen = read_screen(replay.xml, SIZE)
+    index = next(
+        i for i, p in enumerate(screen.posts) if p.body and p.body.endswith("Show more")
+    )
+    app._select(screen, index)
+    browser.workflow, browser._username, browser._valid = (
+        "for_you",
+        "fixture_owner",
+        True,
+    )
+    monkeypatch.setattr(expansion, "_target", lambda *_: LIMIT_TAP)
+    return replay, browser
+
+
+def test_captured_limit_is_typed_only_after_source_verification(monkeypatch):
+    replay, browser = limit_selected(monkeypatch)
+    before = browser.observe()
+    with pytest.raises(XError) as raised:
+        browser.read_more(before)
+    assert type(raised.value).__name__ == "XInlineExpansionLimit"
+    assert not browser.browsing_valid
+    assert replay.events == [("expand", LIMIT_TAP)]
+    post = next(
+        p for p in read_screen(replay.xml, SIZE).posts if len(p.body or "") == 3143
+    )
+    assert not post.observable and not post.body_complete
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        "author",
+        "header",
+        "origin",
+        "prefix",
+        "tab",
+        "duplicate",
+        "overlay",
+        "inaccessible",
+        "disabled",
+        "ancestor_clip",
+    ],
+)
+def test_changed_or_ambiguous_source_is_not_a_recoverable_viewport_limit(
+    monkeypatch, change
+):
+    replay, browser = limit_selected(monkeypatch)
+    source = browser.observe()
+    root = etree.fromstring(replay.expanded.encode())
+    body = next(n for n in root.iter("node") if len(n.get("text", "")) == 3143)
+    header = root.xpath('.//*[@resource-id="timeline_post"]')[-1]
+    if change == "author":
+        replay.expanded = replay.expanded.replace(
+            "@" + source.username, "@someone_else"
+        )
+    else:
+        if change == "header":
+            header.set("bounds", "[176,920][876,970]")
+        elif change == "origin":
+            body.set("bounds", "[176,1081][1047,2340]")
+        elif change == "prefix":
+            body.set("text", "Unrelated text" * 300)
+        elif change in {"inaccessible", "disabled"}:
+            body.set(
+                "visible-to-user" if change == "inaccessible" else "enabled", "false"
+            )
+        elif change == "ancestor_clip":
+            body.getparent().set("bounds", "[0,908][1080,1500]")
+        elif change == "tab":
+            root.xpath('.//*[@resource-id="scaffold_home_tabbed"]')[0].set(
+                "resource-id", "unknown_context"
+            )
+        elif change == "duplicate":
+            container = header.getparent()
+            container.addnext(etree.fromstring(etree.tostring(container)))
+        elif change == "overlay":
+            etree.SubElement(
+                root,
+                "node",
+                package="external.app",
+                text="Unknown dialog",
+                bounds="[0,0][1080,2340]",
+                **{"visible-to-user": "true"},
+            )
+        replay.expanded = etree.tostring(root, encoding="unicode")
+    with pytest.raises(XError) as raised:
+        browser.read_more(source)
+    assert not isinstance(raised.value, expansion.XInlineExpansionLimit)
+    assert not browser.browsing_valid
+    assert replay.events.count(("expand", LIMIT_TAP)) == 1
+
+
+def test_clipped_expansion_with_changed_visible_media_remains_unclassified(monkeypatch):
+    replay, app = started(monkeypatch)
+    replay.expanded = mutate(
+        replay.expanded,
+        './/*[starts-with(@text,"ChatGPT for Healthcare")]',
+        "bounds",
+        "[176,533][1047,2340]",
+    )
+    replay.expanded = mutate(
+        replay.expanded, './/*[@content-desc="Video"]', "content-desc", "GIF"
+    )
+    with pytest.raises(XError) as raised:
+        app.read_more()
+    assert not isinstance(raised.value, expansion.XInlineExpansionLimit)

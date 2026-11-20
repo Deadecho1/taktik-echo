@@ -61,6 +61,20 @@
       "source_sha256": "65f20a6760df2dc08120dfb54900a9a075776f7d3b5d3ffebffc13fb7899b17f",
       "sha256": "da514e8881c6784ae69104bc9defb30094a9db0709748f9b8cca80fd86682d72",
       "visual_review": "approved"
+    },
+    {
+      "file": "soak-source.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T110248.963317Z/snapshot-000449-hierarchy.xml",
+      "source_sha256": "41bd1253cbf493a8bddd7b6050a36e1b4d82f21e32045e0c2246c902bbca454d",
+      "sha256": "90cd48bbd375b5dddf9a882779d9772e7ffb391599060ffb0796548b6a1dd5fd",
+      "visual_review": "not_presented"
+    },
+    {
+      "file": "soak-expanded.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T110248.963317Z/snapshot-000450-hierarchy.xml",
+      "source_sha256": "4ffb10ee54ff47b324643c0acd72c5afc39295a94d968b4e33f4c3cab6922763",
+      "sha256": "82ece1bb719deea4245da1a0b908ce2e9c9bc55397298e1c9f9f70ef1274101a",
+      "visual_review": "not_presented"
     }
   ]
 }

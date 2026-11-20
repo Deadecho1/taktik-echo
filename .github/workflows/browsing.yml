@@ -38,6 +38,7 @@ jobs:
           tests/unit/social_media/instagram/services
           tests/unit/social_media/tiktok/services
           tests/unit/scripts/build
+          tests/unit/scripts/eval
           tests/unit/test_package_metadata.py
           tests/unit/test_package_requirements.py
       - name: Check repository layout

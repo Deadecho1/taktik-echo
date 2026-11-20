@@ -151,9 +151,7 @@ class XBrowser:
         self._username = None
         self._occurrence = 0
         self._valid = False
-        self._media_inspection = None
-        self._expanded_source_key = None
-        self._post_link = None
+        self._clear_observation_state()
 
     @classmethod
     def connect(cls, serial, enabled_workflows):
@@ -164,11 +162,14 @@ class XBrowser:
     def browsing_valid(self):
         return self._valid and self.browser.verified_account is not None
 
-    def start(self, username, workflow, target=""):
-        self._valid = False
+    def _clear_observation_state(self):
         self._media_inspection = None
         self._expanded_source_key = None
         self._post_link = None
+
+    def start(self, username, workflow, target=""):
+        self._valid = False
+        self._clear_observation_state()
         if workflow not in self.enabled or (workflow != "search" and target):
             raise ValueError(
                 "X requires an enabled workflow; only search accepts a target."
@@ -188,6 +189,14 @@ class XBrowser:
             raise XError("Unavailable X workflow.", result=Result(Status.UNSUPPORTED))
         if (workflow, target) != (self.workflow, self.target):
             self.start(self._username, workflow, target)
+
+    def recover(self):
+        """Reverify the saved account/context and establish a new occurrence."""
+        self._valid = False
+        self._clear_observation_state()
+        self.browser.recover()
+        self._occurrence += 1
+        self._valid = True
 
     def observe(self, frame_count=1, interval=1.0, previous=None):
         if not self.browsing_valid:
@@ -271,9 +280,7 @@ class XBrowser:
                 result = operations[action]()
                 if result.advanced:
                     self._occurrence += 1
-                    self._media_inspection = None
-                    self._expanded_source_key = None
-                    self._post_link = None
+                    self._clear_observation_state()
                 return ActionResult(advanced=result.advanced)
         return ActionResult()
 
@@ -317,6 +324,4 @@ class XBrowser:
             raise XError("X browsing context was lost; restart account verification.")
         self.browser.advance()
         self._occurrence += 1
-        self._media_inspection = None
-        self._expanded_source_key = None
-        self._post_link = None
+        self._clear_observation_state()

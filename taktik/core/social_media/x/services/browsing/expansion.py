@@ -11,6 +11,10 @@ from .navigation import XError
 MORE = re.compile(r"\sShow more\s*$")
 
 
+class XInlineExpansionLimit(XError):
+    """Verified source expansion exceeded the viewport; explicit recovery is required."""
+
+
 def _target(source, screenshot):
     area = source.body_visibility.bounds
     words = OcrService.locate(
@@ -54,9 +58,7 @@ def _exclusions(source, target):
     return tuple(exclusions)
 
 
-def _verify(source, post):
-    if not post.observable or not post.body_complete:
-        raise XError("The expanded X body is not fully visible within the viewport.")
+def _verify(source, post, *, viewport_limit=False):
     stable = replace(
         source,
         body=post.body,
@@ -72,10 +74,31 @@ def _verify(source, post):
         stable != post
         or source.body_visibility.bounds[:3] != post.body_visibility.bounds[:3]
         or post.body_visibility.bounds[3] <= source.body_visibility.bounds[3]
-        or tuple(replace(m, visibility=None) for m in source.media)
-        != tuple(replace(m, visibility=None) for m in post.media)
-        or tuple((a.label, a.selected) for a in source.actions)
-        != tuple((a.label, a.selected) for a in post.actions)
+    ):
+        raise XError("The expanded X post changed identity, content, or geometry.")
+    if not post.observable or not post.body_complete:
+        # Offscreen media/footer cannot be verified as retained or mutated.
+        # Only classify their disappearance when the body pushes all of them below view.
+        hidden_below_body = (
+            not post.media
+            and not post.actions
+            and all(
+                m.visibility.bounds[1] >= source.body_visibility.bounds[3]
+                for m in source.media
+            )
+            and all(
+                a.visibility.bounds[1] >= source.body_visibility.bounds[3]
+                for a in source.actions
+            )
+        )
+        error = (
+            XInlineExpansionLimit if viewport_limit and hidden_below_body else XError
+        )
+        raise error("The expanded X body is not fully visible within the viewport.")
+    if tuple(replace(m, visibility=None) for m in source.media) != tuple(
+        replace(m, visibility=None) for m in post.media
+    ) or tuple((a.label, a.selected) for a in source.actions) != tuple(
+        (a.label, a.selected) for a in post.actions
     ):
         raise XError("The expanded X post changed identity, content, or geometry.")
 
@@ -135,6 +158,17 @@ def read_more(app):
         if len(candidates) != 1 or screen.content_viewport != before.content_viewport:
             raise XError("The expanded X source or browsing context is ambiguous.")
         index, expanded = candidates[0]
-        _verify(fresh, expanded)
+        _verify(
+            fresh,
+            expanded,
+            viewport_limit=(
+                expanded.body_visibility.bounds[3] > screen.content_viewport[3]
+                and expanded.body_visibility.accessible
+                and expanded.body_visibility.visible_bounds
+                == _intersect(expanded.body_visibility.bounds, screen.content_viewport)
+                and screen.overlaps == before.overlaps
+                and screen.controls == before.controls
+            ),
+        )
         app._select(screen, index)
         return app.observe()
