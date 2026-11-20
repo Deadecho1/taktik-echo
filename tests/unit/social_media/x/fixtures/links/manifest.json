@@ -97,6 +97,41 @@
       "source_sha256": "25d703d1cf99e8174d2191319fe5239041adb57c977a37113969c770d71b7043",
       "sha256": "66379f2808ea33998ffc23600b351b3a56714092f0f6ff3cb6429d78b69b376f",
       "visual_review": "pending"
+    },
+    {
+      "file": "dismissal-source.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T094336.645235Z/snapshot-000020-hierarchy.xml",
+      "source_sha256": "b1ada606d70a5081890d9a8f96ffc152c8d71e4386d19f276e651d5b0ef10692",
+      "sha256": "e7c1fc9a58752fcb83e8bb3fc6fe9c824af0c0052b9c7fe7ebe9a3f5502f09de",
+      "visual_review": "pending"
+    },
+    {
+      "file": "dismissal-share.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T094336.645235Z/snapshot-000022-hierarchy.xml",
+      "source_sha256": "6a340e708fd4890ae84fb898460f9923e3c35719233ac51bf413b8b3422a82c9",
+      "sha256": "0a31361863461a0ee6f132f76d7e69825e24b29c54c916b2b8ef09c04f486a4b",
+      "visual_review": "pending"
+    },
+    {
+      "file": "dismissal-receipt.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T094336.645235Z/snapshot-000023-hierarchy.xml",
+      "source_sha256": "36dd7955d3fd0696d544771816ad095abd0c5f937b2da8496738d531b80bdf33",
+      "sha256": "5193ffd65575b83ef18feda8f8b3e664bd8dd18e132bc8516a6a2b20a090c43a",
+      "visual_review": "pending"
+    },
+    {
+      "file": "dismissal-empty.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T094336.645235Z/snapshot-000028-hierarchy.xml",
+      "source_sha256": "0113ad77d67eb9b4cb1ffb86bd28218d2b0bee4575d157932e81af5a8dfd8235",
+      "sha256": "ba53d87cfcb6c286e55fdeb4ea5307ca2fd4f2be63a0ec1ba880d1a9682447c3",
+      "visual_review": "pending"
+    },
+    {
+      "file": "dismissal-return.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T094336.645235Z/snapshot-000029-hierarchy.xml",
+      "source_sha256": "f2d7c6b23b68421fe3aaf41316ef05027a499119444db9eb7c78e573b607eb29",
+      "sha256": "e7c1fc9a58752fcb83e8bb3fc6fe9c824af0c0052b9c7fe7ebe9a3f5502f09de",
+      "visual_review": "pending"
     }
   ],
   "visual_review_at": "2026-11-19T21:39:43.840Z",

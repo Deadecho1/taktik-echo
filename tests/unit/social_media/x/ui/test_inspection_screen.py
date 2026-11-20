@@ -427,3 +427,63 @@ def test_unrecognized_system_overlays_still_block_browsing(problem):
     else:
         receipt.set("resource-id", "com.android.systemui:id/other")
     assert read_screen(etree.tostring(root), SIZE).kind == "unsupported"
+
+
+def test_empty_system_window_keeps_underlying_occlusion_without_receipt_or_targets():
+    root = etree.fromstring(link_document("soak-covered").encode())
+    window = next(w for w in root if w.get("bounds") == "[22,1993][608,2257]")
+    empty = etree.fromstring(link_document("dismissal-empty").encode())[0]
+    root.replace(window, empty)
+    screen = read_screen(etree.tostring(root), SIZE)
+    assert screen.kind == "unsupported"
+    assert screen.clipboard_text is None
+    assert not screen.posts and not screen.controls and not screen.scroll_areas
+    assert (27, 1938, 608, 2257) in screen.overlaps
+    underlying = screen.obscured_screen
+    assert underlying.clipboard_text is None
+    assert underlying.clipboard_bounds == (27, 1938, 608, 2257)
+    source = next(p for p in underlying.posts if p.author == "@BlaireWhite")
+    assert not source.observable
+    assert source.body_visibility.overlaps == ((27, 1938, 608, 2257),)
+    target = next(t.visibility for t in source.targets if t.label == "Open post")
+    assert (27, 1938, 608, 2257) in target.overlaps
+    from taktik.core.social_media.x.services.browsing.navigation import (
+        XError,
+        scroll_region,
+    )
+
+    with pytest.raises(XError, match="recognized feed viewport"):
+        scroll_region(screen)
+    _, _, exclusions = scroll_region(underlying)
+    assert (27, 1938, 608, 2257) in exclusions
+
+
+@pytest.mark.parametrize(
+    "attribute,value",
+    [
+        ("text", "Unknown"),
+        ("resource-id", "other"),
+        ("content-desc", "Unknown"),
+        ("class", "android.view.View"),
+        ("clickable", "true"),
+        ("focusable", "true"),
+        ("enabled", "false"),
+        ("visible-to-user", "false"),
+    ],
+)
+def test_only_inert_empty_windows_expose_underlying_evidence(attribute, value):
+    root = etree.fromstring(link_document("dismissal-empty").encode())
+    root[0].set(attribute, value)
+    screen = read_screen(etree.tostring(root), SIZE)
+    assert screen.kind == "unsupported"
+    assert screen.clipboard_text is None
+    assert screen.obscured_screen is None
+
+
+def test_empty_window_alongside_a_receipt_is_ambiguous():
+    root = etree.fromstring(link_document("dismissal-receipt").encode())
+    root.insert(0, etree.fromstring(link_document("dismissal-empty").encode())[0])
+    screen = read_screen(etree.tostring(root), SIZE)
+    assert screen.kind == "unsupported"
+    assert screen.reason == "Ambiguous clipboard receipts."
+    assert screen.obscured_screen is None and screen.clipboard_text is None

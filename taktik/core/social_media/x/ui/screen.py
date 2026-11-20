@@ -273,6 +273,9 @@ class Screen:
     post_options: "PostOptions | None" = None
     removal_notices: tuple["RemovalNotice", ...] = ()
     clipboard_text: str | None = None
+    clipboard_bounds: Rect | None = None
+    # Unverified underlying evidence is only for checking a bounded dismissal wait.
+    obscured_screen: "Screen | None" = None
 
     @property
     def observable_posts(self):
@@ -3491,6 +3494,7 @@ def _read(root, area):
     if any(n.get("package") != PACKAGE for n in window.iter()):
         raise _Unsupported("Unexpected package inside X window.")
     keyboard, system_bars, receipts, clipboard_overlays = [], [], [], []
+    empty_window = False
     for other in root:
         if other is window:
             continue
@@ -3502,25 +3506,41 @@ def _read(root, area):
         elif other.get("package") != "com.android.systemui":
             raise _Unsupported("Unrecognized external window.")
         elif _rect(other)[1] != 0:
-            from .links import read_clipboard
+            from .links import empty_system_window, read_clipboard
 
-            receipts.append(read_clipboard(other, area))
+            if empty_system_window(other, area):
+                empty_window = True
+            else:
+                receipts.append(read_clipboard(other, area))
             clipboard_overlays.append(_rect(other))
         else:
             system_bars.append(_rect(other))
     external = (*keyboard, *system_bars, *clipboard_overlays)
-    if len(receipts) > 1:
+    if len(clipboard_overlays) > 1:
         raise _Unsupported("Ambiguous clipboard receipts.")
+    screen = replace(
+        _read_window(window, area, external, keyboard, system_bars),
+        clipboard_text=receipts[0] if receipts else None,
+        clipboard_bounds=clipboard_overlays[0] if clipboard_overlays else None,
+    )
+    if empty_window:
+        return Screen(
+            "unsupported",
+            reason="Unidentified empty Android System UI window.",
+            overlaps=external,
+            obscured_screen=screen,
+        )
+    return screen
+
+
+def _read_window(window, area, external, keyboard, system_bars):
     if _desc(window, "Close sheet"):
         if _desc(window, "Close navigation menu"):
             raise _Unsupported("Conflicting X overlays.")
         if window.xpath('.//*[@text="Copy link" or @text="Share via…"]'):
             from .links import read_share
 
-            return replace(
-                read_share(window, area, external),
-                clipboard_text=receipts[0] if receipts else None,
-            )
+            return read_share(window, area, external)
         return _post_options(window, area, external)
     landings = window.xpath('.//*[@resource-id="MainLanding"]')
     standalone = not landings
@@ -3887,7 +3907,6 @@ def _read(root, area):
         removal_notices=read_notices(scope, viewport, tuple(overlays))
         if kind in {"home", "search_results"}
         else (),
-        clipboard_text=receipts[0] if receipts else None,
     )
 
 

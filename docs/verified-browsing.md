@@ -118,6 +118,10 @@ If that preview covers the selected source, Copy link retains the validated rece
 Receipt disappearance does not discard the captured URL; a changed URL or source/context rejects the operation.
 Success still requires an independently observable source and a final reread of the original occurrence.
 The wait uses Phone cancellation and deadlines; timeout invalidates browsing and preserves single-attempt, exception-preserving cleanup.
+After an observed receipt, a stationary refresh can wait through its captured empty-window dismissal shape for up to eight reads with 0.3-second readiness intervals.
+Every read checks the original source and browsing context; the empty window keeps its occlusion and supplies no receipt, observation, or action target.
+The refresh succeeds only after an independent read establishes that the window is gone and the selected post is observable.
+Unknown windows, changed evidence, and exhausted bounds invalidate browsing, while unsupported hierarchies retain their reader diagnostics.
 The [native link validation record](validation/2026-11-19-x-links.md) documents the successful repeated-copy phone run, supported device/version, regression checks, and completed human review of all nine presented screenshots.
 
 `X.visit_profile()` visits the selected author's verified profile and returns header text and observable profile posts separately from the source post.

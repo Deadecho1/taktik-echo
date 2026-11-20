@@ -2461,6 +2461,8 @@ class X:
             raise XError("Start X and verify its account before browsing.")
 
     def _check_timeline(self, screen, before=None, *, scrolling=False):
+        if screen.kind == "unsupported":
+            raise XError(f"Cannot read X browsing screen: {screen.reason}.")
         if self.timeline == "search":
             if (
                 before is not None
@@ -2719,9 +2721,11 @@ class X:
 
     def observe(self):
         """Refresh the selected occurrence without silently selecting a new post."""
+        from .links import wait_for_clipboard_dismissal
+
         with self._operation():
             self._require_started()
-            screen = self._snapshot()
+            screen = wait_for_clipboard_dismissal(self, self._snapshot())
             self._check_timeline(screen, self._screen)
             if self._screen.empty and screen.empty:
                 return self._select(screen, None)

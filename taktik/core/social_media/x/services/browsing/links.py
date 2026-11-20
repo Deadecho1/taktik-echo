@@ -1,11 +1,12 @@
 """Bind a fresh native Copy link receipt to the selected browsing occurrence."""
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, fields, is_dataclass, replace
 from urllib.parse import urlsplit
 
 from taktik.core.shared.post_urls import canonicalize
 
-from .navigation import XError, _alignment
+from ...ui.screen import Visibility
+from .navigation import READ_ATTEMPTS, XError, _alignment
 from .selection import _control, _post, _source, _tap
 
 
@@ -15,6 +16,67 @@ class PostLink:
     author: str
     post_id: str
     url: str
+
+
+def _rectangles(value):
+    """Keep all native bounds while allowing coverage and readability to change."""
+    if isinstance(value, Visibility):
+        yield value.bounds
+    elif is_dataclass(value):
+        for field in fields(value):
+            yield from _rectangles(getattr(value, field.name))
+    elif isinstance(value, tuple):
+        for item in value:
+            yield from _rectangles(item)
+
+
+def _verify_source(before, source, screen):
+    candidates = [p for p in screen.posts if p.content_key == source.content_key]
+    if (
+        len(candidates) != 1
+        or candidates[0].author != source.author
+        or tuple(_rectangles(candidates[0])) != tuple(_rectangles(source))
+    ):
+        raise XError("The selected X source changed during clipboard verification.")
+    _alignment(
+        replace(before, posts=(source,), fragments=()),
+        replace(screen, posts=(candidates[0],), fragments=()),
+    )
+
+
+def wait_for_clipboard_dismissal(app, screen):
+    before = app._screen
+    if (
+        screen.obscured_screen is None
+        or before.clipboard_text is None
+        or before.clipboard_bounds is None
+        or app._index is None
+    ):
+        return screen
+    source = before.posts[app._index]
+    for attempt in range(READ_ATTEMPTS):
+        current = screen.obscured_screen or screen
+        if screen.obscured_screen is not None:
+            previous, retained = before.clipboard_bounds, current.clipboard_bounds
+            # The captured dismissal only retracts the window's left edge.
+            if (
+                retained is None
+                or retained[1:] != previous[1:]
+                or not previous[0] <= retained[0] < previous[2]
+            ):
+                raise XError("Unrecognized window during X clipboard dismissal.")
+        app._check_timeline(current, before)
+        if current.active_account not in {None, app.verified_account}:
+            raise XError("X account changed during clipboard dismissal.")
+        if current.clipboard_text not in {None, before.clipboard_text}:
+            raise XError("The clipboard receipt changed during dismissal.")
+        _verify_source(before, source, current)
+        if current.clipboard_bounds is None:
+            return current
+        if attempt < READ_ATTEMPTS - 1:
+            app.phone.wait(0.3, purpose="readiness")
+            screen = app._snapshot()
+    raise XError("Cannot verify X clipboard dismissal within the read limit.")
 
 
 def _link(source, value):
@@ -51,17 +113,7 @@ def _returned(app, source, link, screen):
     ):
         raise XError("The native copied link changed during verification.")
     app._check_timeline(screen, app._screen)
-    candidates = [p for p in screen.posts if p.content_key == source.content_key]
-    if (
-        len(candidates) != 1
-        or candidates[0].author != source.author
-        or candidates[0].visibility.bounds != source.visibility.bounds
-    ):
-        raise XError("Copy link did not return to the selected X occurrence.")
-    _alignment(
-        replace(app._screen, posts=(source,), fragments=()),
-        replace(screen, posts=(candidates[0],), fragments=()),
-    )
+    _verify_source(app._screen, source, screen)
     return _post(app, source, screen) is not None
 
 

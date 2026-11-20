@@ -15,6 +15,36 @@ from .screen import (
 SYSTEM_UI = "com.android.systemui"
 
 
+def empty_system_window(window, area):
+    """Identify an inert empty window, without claiming it is a clipboard receipt."""
+    return (
+        window.get("package") == SYSTEM_UI
+        and window.get("class") == "android.widget.FrameLayout"
+        and not len(window)
+        and all(
+            not window.get(key)
+            for key in ("text", "resource-id", "content-desc", "hint")
+        )
+        and all(
+            window.get(flag) == "false"
+            for flag in (
+                "checkable",
+                "checked",
+                "clickable",
+                "focusable",
+                "focused",
+                "scrollable",
+                "long-clickable",
+                "password",
+                "selected",
+            )
+        )
+        and window.get("enabled") == "true"
+        and window.get("visible-to-user") == "true"
+        and _visibility(window, area).unobscured
+    )
+
+
 def read_share(root, area, overlays):
     close = _one(_desc(root, "Close sheet"), "Share dismissal")
     copy = _one(root.xpath('.//*[@text="Copy link"]'), "Copy link label")

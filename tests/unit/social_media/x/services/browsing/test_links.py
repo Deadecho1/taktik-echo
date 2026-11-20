@@ -26,7 +26,7 @@ from taktik.core.shared.phone_interaction import (
     Status,
 )
 from taktik.core.social_media.x.services.browsing.browser import XBrowser
-from taktik.core.social_media.x.services.browsing.navigation import X
+from taktik.core.social_media.x.services.browsing.navigation import X, XError
 from taktik.core.social_media.x.ui.screen import read_screen
 
 
@@ -544,3 +544,368 @@ def test_changed_receipt_error_is_preserved_when_restoration_fails():
     assert "restoration response lost" in str(caught.value.__cause__)
     assert replay.events.count(("link", "copy")) == 1
     assert not browser.browsing_valid
+
+
+def dismissal_document(name):
+    return document("dismissal-" + name)
+
+
+def dismissal_started():
+    replay = CoveredLinkReplay()
+    replay.xml = replay.results = dismissal_document("source")
+    replay.sheet = dismissal_document("share")
+    replay.copied = dismissal_document("receipt")
+    replay.returns = [replay.copied] * 5 + [
+        dismissal_document("empty"),
+        dismissal_document("return"),
+    ]
+    browser = XBrowser(replay.phone, {"for_you"})
+    app = browser.browser
+    app.timeline = "for_you"
+    app.verified_account = app._expected = "@fixture_owner"
+    screen = read_screen(replay.xml, SIZE)
+    app._select(screen, next(i for i, p in enumerate(screen.posts) if p.observable))
+    browser.workflow = "for_you"
+    browser._username, browser._valid = "fixture_owner", True
+    return replay, browser
+
+
+def dismissal_copied():
+    replay, browser = dismissal_started()
+    source = browser.observe()
+    link = browser.copy_link(source)
+    assert browser.observe(previous=source).post_url == link.url
+    current = browser.observe(previous=source)
+    assert not browser.act("skip", current).advanced
+    assert replay.receipt_reads == 5
+    return replay, browser, source, link
+
+
+@pytest.mark.parametrize("transients", [1, 7])
+def test_captured_dismissal_preserves_occurrence_and_link(transients):
+    replay, browser, source, link = dismissal_copied()
+    replay.returns = [dismissal_document("empty")] * transients + [
+        dismissal_document("return")
+    ]
+    events = list(replay.events)
+    after = browser.observe(previous=source)
+    assert after.identity == source.identity
+    assert after.source_key == source.source_key == link.source_key
+    assert after.post_url == link.url
+    assert browser.browser._screen.clipboard_text is None
+    assert replay.receipt_reads == 5 + transients + 1
+    assert replay.now == pytest.approx(transients * 0.3)
+    assert replay.events == events
+    assert replay.events.count(("link", "copy")) == 1
+    assert browser.browsing_valid
+
+
+@pytest.mark.parametrize("action", ["observe", "advance", "like", "copy_link"])
+def test_persistent_dismissal_stops_before_any_action(action):
+    replay, browser, source, _ = dismissal_copied()
+    replay.returns = [dismissal_document("empty")]
+    events = list(replay.events)
+    with pytest.raises(XError, match="clipboard dismissal within the read limit"):
+        if action == "like":
+            browser.act(action, source)
+        elif action == "copy_link":
+            browser.copy_link(source)
+        else:
+            getattr(browser, action)()
+    assert replay.receipt_reads == 13
+    assert replay.now == pytest.approx(2.1)
+    assert replay.events == events
+    assert not browser.browsing_valid
+
+
+def changed(xml, problem):
+    root = etree.fromstring(xml.encode())
+    author = root.xpath('.//*[@text="@BlaireWhite"]')[0]
+    header = author.getparent()
+    post = header.getparent()
+    if problem == "author":
+        author.set("text", "@Other")
+    elif problem == "body":
+        post.xpath('.//*[@bounds="[176,1499][1047,1644]"]')[0].set("text", "Changed.")
+    elif problem == "body_bounds":
+        post.xpath('.//*[@bounds="[176,1499][1047,1644]"]')[0].set(
+            "bounds", "[176,1500][1047,1644]"
+        )
+    elif problem in {"body_left", "body_bottom"}:
+        post.xpath('.//*[@bounds="[176,1499][1047,1644]"]')[0].set(
+            "bounds",
+            "[177,1499][1047,1644]"
+            if problem == "body_left"
+            else "[176,1499][1047,1645]",
+        )
+    elif problem == "header_bounds":
+        header.set("bounds", "[176,1444][876,1492]")
+    elif problem == "header_right":
+        header.set("bounds", "[176,1443][877,1492]")
+    elif problem == "post_bounds":
+        post.set("bounds", "[0,1411][1080,1762]")
+    elif problem == "duplicate":
+        post.addnext(deepcopy(post))
+    elif problem == "missing":
+        post.getparent().remove(post)
+    elif problem == "context":
+        return document("top-source")
+    elif problem == "account":
+        from unit.social_media.x.services.browsing.test_search import document as search
+
+        return search("account-drawer").replace("@fixture_owner", "@Other")
+    else:
+        raise AssertionError(problem)
+    return etree.tostring(root, encoding="unicode")
+
+
+@pytest.mark.parametrize("stage", ["empty", "return"])
+@pytest.mark.parametrize(
+    "problem",
+    [
+        "author",
+        "body",
+        "body_bounds",
+        "body_left",
+        "body_bottom",
+        "header_bounds",
+        "header_right",
+        "post_bounds",
+        "duplicate",
+        "missing",
+        "context",
+        "account",
+    ],
+)
+def test_changed_source_or_context_is_not_waited_through(stage, problem):
+    replay, browser, source, _ = dismissal_copied()
+    replay.returns = [
+        dismissal_document("empty"),
+        changed(dismissal_document(stage), problem),
+        dismissal_document("return"),
+    ]
+    events = list(replay.events)
+    with pytest.raises(InteractionError):
+        browser.observe(previous=source)
+    assert replay.receipt_reads == 7
+    assert replay.events == events
+    assert not browser.browsing_valid
+
+
+@pytest.mark.parametrize(
+    "problem", ["no_prior_receipt", "bounds", "interactive", "package", "multiple"]
+)
+def test_unknown_window_is_not_treated_as_dismissal(problem):
+    replay, browser, source, _ = dismissal_copied()
+    root = etree.fromstring(dismissal_document("empty").encode())
+    window = root[0]
+    if problem == "no_prior_receipt":
+        browser.browser._screen = read_screen(dismissal_document("source"), SIZE)
+    elif problem == "bounds":
+        window.set("bounds", "[27,1937][608,2257]")
+    elif problem == "interactive":
+        window.set("clickable", "true")
+    elif problem == "package":
+        window.set("package", "other.app")
+    else:
+        root.insert(0, deepcopy(window))
+    replay.returns = [
+        etree.tostring(root, encoding="unicode"),
+        dismissal_document("return"),
+    ]
+    events = list(replay.events)
+    with pytest.raises(InteractionError) as caught:
+        browser.observe(previous=source)
+    assert "Home controls changed" not in str(caught.value)
+    assert replay.receipt_reads == 6
+    assert replay.now == 0
+    assert replay.events == events
+
+
+def test_empty_window_cannot_provide_a_fresh_link():
+    replay, browser = dismissal_started()
+    replay.returns = [dismissal_document("empty"), dismissal_document("return")]
+    with pytest.raises(InteractionError, match="fresh native Copy link receipt"):
+        browser.copy_link(browser.observe())
+    assert browser._post_link is None
+    assert replay.events.count(("link", "copy")) == 1
+    assert not browser.browsing_valid
+
+
+@pytest.mark.parametrize("change", ["receipt", "foreground"])
+def test_changed_receipt_or_foreground_during_reread_invalidates_browsing(change):
+    replay, browser, source, _ = dismissal_copied()
+    replay.returns = [
+        dismissal_document("empty"),
+        dismissal_document("receipt").replace(
+            "2123555038706663930", "2123555038706663931"
+        ),
+        dismissal_document("return"),
+    ]
+    if change == "foreground":
+        original_read = replay.read
+
+        def read(what):
+            if replay.now and what == "app":
+                return {"package": "other.app"}
+            return original_read(what)
+
+        replay.read = read
+    events = list(replay.events)
+    with pytest.raises(InteractionError, match="receipt changed|foreground"):
+        browser.observe(previous=source)
+    assert replay.events == events
+    assert not browser.browsing_valid
+
+
+@pytest.mark.parametrize("expired", [False, True])
+def test_cancellation_or_deadline_interrupts_dismissal_wait(expired):
+    replay, browser, source, _ = dismissal_copied()
+    if expired:
+        replay.phone.configure(deadline=0.1)
+    else:
+        replay.phone.configure(cancelled=lambda: replay.now >= 0.1)
+    events = list(replay.events)
+    with pytest.raises(SessionExpired if expired else InteractionCancelled):
+        browser.observe(previous=source)
+    assert replay.now == pytest.approx(0.1)
+    assert replay.receipt_reads == 6
+    assert replay.events == events
+    assert not browser.browsing_valid
+
+
+@pytest.mark.parametrize(
+    "error",
+    [OSError("read lost"), InteractionCancelled("stop"), SessionExpired("expired")],
+)
+def test_dismissal_reread_error_survives_failed_copy_cleanup(error):
+    replay, browser = dismissal_started()
+    replay.returns = [
+        replay.copied,
+        dismissal_document("empty"),
+        dismissal_document("return"),
+    ]
+    replay.cleanup_error = OSError("cleanup read lost")
+    original_read = replay.read
+
+    def read(what):
+        if (
+            what == "hierarchy"
+            and replay.receipt_reads == 2
+            and not replay.phone._cleaning
+        ):
+            raise error
+        return original_read(what)
+
+    replay.read = read
+    expected = InteractionError if isinstance(error, OSError) else type(error)
+    with pytest.raises(expected) as caught:
+        browser.copy_link(browser.observe())
+    if isinstance(error, OSError):
+        assert caught.value.result.status == Status.UNCERTAIN
+        assert "read lost" in str(caught.value)
+    else:
+        assert caught.value is error
+    assert isinstance(caught.value.__cause__, InteractionError)
+    assert "cleanup read lost" in str(caught.value.__cause__)
+    assert replay.events.count(("link", "copy")) == 1
+    assert not browser.browsing_valid
+
+
+@pytest.mark.parametrize("problem", [None, "query", "tab"])
+def test_search_dismissal_still_requires_query_and_tab(problem):
+    replay, browser = started(browser=True)
+    source = browser.observe()
+    link = browser.copy_link(source)
+    root = etree.fromstring(replay.copied.encode())
+    window = next(
+        w
+        for w in root
+        if w.get("package") == "com.android.systemui"
+        and w.get("bounds") != "[0,0][1080,136]"
+    )
+    for child in list(window):
+        window.remove(child)
+    if problem == "query":
+        xml = etree.tostring(root, encoding="unicode").replace(
+            "from:NASA", "from:Other"
+        )
+    elif problem == "tab":
+        for node in root.xpath('.//*[@content-desc="Top" or @content-desc="Latest"]'):
+            node.getparent().set(
+                "selected", "true" if node.get("content-desc") == "Latest" else "false"
+            )
+        xml = etree.tostring(root, encoding="unicode")
+    else:
+        xml = etree.tostring(root, encoding="unicode")
+    replay.after = xml
+    original_sleep = replay.sleep
+
+    def sleep(seconds):
+        original_sleep(seconds)
+        replay.after = document("top-source")
+
+    replay.phone._sleep = sleep
+    if problem:
+        with pytest.raises(InteractionError):
+            browser.observe(previous=source)
+        assert replay.now == 0
+    else:
+        after = browser.observe(previous=source)
+        assert after.post_url == link.url
+        assert after.identity == source.identity
+        assert browser.browser._screen.clipboard_bounds is None
+        assert replay.now == pytest.approx(0.3)
+
+
+@pytest.mark.parametrize("timeline", ["for_you", "search"])
+def test_unsupported_reason_precedes_header_transition_diagnostics(timeline):
+    _, browser, _, _ = dismissal_copied()
+    app = browser.browser
+    app.timeline = timeline
+    before = replace(
+        app._screen,
+        kind="search_results" if timeline == "search" else "home",
+        collapsed=True,
+    )
+    invalid = read_screen("<invalid/>", SIZE)
+    with pytest.raises(XError, match="Expected a hierarchy"):
+        app._check_timeline(invalid, before)
+    with pytest.raises(XError, match="controls changed outside adapter scrolling"):
+        app._check_timeline(replace(before, collapsed=False), before)
+
+
+def test_advancement_resumes_after_dismissal_using_existing_search_scroll_evidence():
+    from unit.social_media.x.services.browsing.test_search import (
+        SearchReplay,
+        shifted_results,
+    )
+    from unit.social_media.x.services.browsing.test_search import document as search
+
+    replay = SearchReplay()
+    replay.latest = shifted_results(350)
+    replay.scrolls = [search("search-latest")]
+    app = XBrowser(replay.phone, {"search"}).browser
+    app.start("fixture_owner", "search", query="astronomy", result_tab="latest")
+    assert app.advance().author == "@SzandraDMLLP"
+    source = app.observe()
+    root = etree.fromstring(replay.xml.encode())
+    receipt = etree.fromstring(dismissal_document("receipt").encode())[0]
+    root.insert(0, receipt)
+    replay.xml = etree.tostring(root, encoding="unicode")
+    assert app.observe().content_key == source.content_key
+    root.replace(receipt, etree.fromstring(dismissal_document("empty").encode())[0])
+    replay.xml = etree.tostring(root, encoding="unicode")
+    original_sleep = replay.phone._sleep
+
+    def sleep(seconds):
+        original_sleep(seconds)
+        replay.xml = replay.latest
+        replay.phone._sleep = original_sleep
+
+    replay.phone._sleep = sleep
+    assert app.advance().author == "@Astronomy1world"
+    assert app.observe().author == "@Astronomy1world"
+    gestures = [e for e in replay.events if e[0] == "gesture"]
+    assert len(gestures) == 1
+    assert gestures[0][1:3] == ("scroll", "up")
