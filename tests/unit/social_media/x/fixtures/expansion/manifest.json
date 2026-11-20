@@ -75,6 +75,41 @@
       "source_sha256": "4ffb10ee54ff47b324643c0acd72c5afc39295a94d968b4e33f4c3cab6922763",
       "sha256": "82ece1bb719deea4245da1a0b908ce2e9c9bc55397298e1c9f9f70ef1274101a",
       "visual_review": "not_presented"
+    },
+    {
+      "file": "crop-edge-source.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T201433.889306Z/snapshot-000375-hierarchy.xml",
+      "source_sha256": "4cec9b158ed90201606d8456b6e5a136d139efcfff7efc22bab6cb7795e3ad23",
+      "sha256": "d733b4c6373de064317770e136cc2cc48d33e44e97130dc92d118c912a5580dc",
+      "visual_review": "not_presented"
+    },
+    {
+      "file": "crop-edge-body.tsv",
+      "source": "tests/smoke/x-soak-runs/20261120T201433.889306Z/show-more-body-ocr.tsv",
+      "source_sha256": "365cf113e80c7f18cc06b1993fbf409375e14051a0a4e0debd996b3e045a1911",
+      "sha256": "06caac1f3d8bf167e035a62f0949fd621528bc16c2511274a9ebcf75916e144a",
+      "visual_review": "not_presented"
+    },
+    {
+      "file": "crop-edge-context.tsv",
+      "source": "tests/smoke/x-soak-runs/20261120T201433.889306Z/show-more-context-11-ocr.tsv",
+      "source_sha256": "c8c49cc27289645fc61d7fd4797cb4cb8ea606b6c5482352d1916f8909ce16f6",
+      "sha256": "66fb8a9fc330f7aa34f3a9e49bbfc7730269c2a8b7072dcd1c670cc78eb62b0d",
+      "visual_review": "not_presented"
+    },
+    {
+      "file": "same-height-source.xml",
+      "source": "tests/smoke/x-show-more-crop-checks/20261120T203903.698494Z/source.xml",
+      "source_sha256": "0401483c4d44b9df2b1ef8d73c91a806d69ba69da2fed005369c31b54d392039",
+      "sha256": "f0d1c1f53a7a7de034af374bc7b2211b47eadd2d41485509ad5c1270c65a6c59",
+      "visual_review": "not_presented"
+    },
+    {
+      "file": "same-height-expanded.xml",
+      "source": "tests/smoke/x-show-more-crop-checks/20261120T203903.698494Z/snapshot-017.xml",
+      "source_sha256": "dc8275827bee1fa6dbc48f840edf13e485f14ce64854792a4fcc522918a0b898",
+      "sha256": "fbf629b54f5b1d9bafec94790c677fd86a0d136e1f45fb0408ea8138860b4c14",
+      "visual_review": "not_presented"
     }
   ]
 }

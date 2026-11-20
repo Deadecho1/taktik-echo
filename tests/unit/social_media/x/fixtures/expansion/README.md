@@ -1,9 +1,23 @@
 # Native inline expansion captures
 
-These ten hierarchies were captured on Nir's Pixel 4a, X `12.42.0-prod.01`, Android 13, English UI, at 1080 × 2340.
-`manifest.json` records source paths and SHA-256 hashes for the raw and sanitized XML.
+These thirteen hierarchies were captured on Nir's Pixel 4a, X `12.42.0-prod.01`, Android 13, English UI, at 1080 × 2340.
+`manifest.json` records source paths and SHA-256 hashes for the raw and sanitized XML and selected OCR rows.
 Public post text is preserved; external windows retain only their root geometry and empty content.
 Screenshots remain local.
+`crop-edge-source` preserves snapshot 375 from `20261120T201433.889306Z`, whose translated 288-character caption ends in Show more at body bounds `[176,1636,1047,2001]`.
+`crop-edge-body.tsv` and `crop-edge-context.tsv` retain only the Show/more rows from the existing Tesseract reader on the saved failure frame, with crop-relative coordinates.
+The body-only crop has height 365 and word confidences 66.541107/89.471870; the lower-context crop has height 376 and confidences 96.177139/96.734894.
+The latter boxes end at y=2005 while the safe target ends at y=2001.
+The eleven-pixel context comes from rounding up 1% of the 1080-pixel shorter screen side; it is a recognition budget, not a universal device calibration or permission to tap outside the body.
+Both TSV crops start at `[176,1636]` and retain the existing confidence-70 filtering in maintained caller tests.
+The raw image SHA-256 is `a426d5869a8c3f214e497a0ac4110b78a14d1a5687403d70aa13528752a0ef5e`.
+It was saved roughly one second after localization failed, with no intervening tap or scroll; original-image equality and a physical expansion are not established by this fixture.
+The unchanged post-tap XML in the replay deliberately fails outcome verification and earns no coverage.
+`same-height-source` and `same-height-expanded` come from bounded physical check `20261120T203903.698494Z`, using the original source in Top search for `from:damsizcimcime -filter:replies`.
+The native Show more tap reveals nine characters while replacing the ten-character control suffix, reducing the complete body from 288 to 287 characters without changing bounds `[176,605,1047,970]`.
+The original verifier rejected this stable-height result, while the captured identity, context, media, and action fields remain unchanged.
+Maintained workflow tests use the earlier crop-relative TSV rows with these equivalent word positions; the separate local shared-reader replay processes the physical source image directly.
+Both images remain local and have not received visual approval.
 `soak-source` and `soak-expanded` retain the 20 November run's 288-character Show more source and 3,143-character clipped expansion.
 They correspond to snapshots 449 and 450 from `20261120T110248.963317Z`, with the single recorded tap at `[568,1647,660,1669]`.
 Their companion screenshots have not received visual review.

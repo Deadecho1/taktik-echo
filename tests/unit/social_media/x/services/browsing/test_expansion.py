@@ -1,10 +1,13 @@
 """Captured inline expansion through the same Phone interface used on Android."""
 
 import json
+import subprocess
 from dataclasses import replace
+from types import SimpleNamespace
 
 import pytest
 from lxml import etree
+from PIL import Image
 from unit.paths import CORE
 from unit.social_media.x.services.browsing.test_inspection_visits import (
     InspectionReplay,
@@ -13,6 +16,7 @@ from unit.social_media.x.services.browsing.test_search import (
     document as search_document,
 )
 
+from scripts.eval.x_caption_validation import check_caption
 from taktik.core.shared.behavior.tap import free_tap_zone
 from taktik.core.shared.phone_interaction import (
     InteractionCancelled,
@@ -24,7 +28,7 @@ from taktik.core.shared.vision.ocr import OcrService, TextMatch
 from taktik.core.social_media.x.services.browsing import expansion
 from taktik.core.social_media.x.services.browsing.browser import XBrowser
 from taktik.core.social_media.x.services.browsing.navigation import X, XError
-from taktik.core.social_media.x.ui.screen import read_screen
+from taktik.core.social_media.x.ui.screen import _intersect, read_screen
 
 FIXTURES = CORE / "tests/unit/social_media/x/fixtures/expansion"
 SIZE = (1080, 2340)
@@ -70,7 +74,7 @@ def started(monkeypatch, wrapper=False):
     ]
 
     def locate(image, queries, **kwargs):
-        assert image.size == SIZE and kwargs["region"] == (176, 533, 1047, 974)
+        assert image.size == SIZE and kwargs["region"] == (176, 533, 1047, 985)
         return words
 
     monkeypatch.setattr(OcrService, "locate", locate)
@@ -455,3 +459,307 @@ def test_clipped_expansion_with_changed_visible_media_remains_unclassified(monke
     with pytest.raises(XError) as raised:
         app.read_more()
     assert not isinstance(raised.value, expansion.XInlineExpansionLimit)
+
+
+AREA = (176, 1636, 1047, 2001)
+TARGET = (532, 1983, 625, 2001)
+WORDS = [
+    TextMatch("Show", 96.177139, 416, 1974, 103, 31),
+    TextMatch("more", 96.734894, 532, 1983, 93, 22),
+]
+
+
+class CropReplay(InspectionReplay):
+    def __init__(
+        self, *, source="crop-edge-source", area=AREA, target=TARGET, expanded=None
+    ):
+        super().__init__()
+        self.xml = document(source)
+        self.area, self.target, self.expanded = area, target, expanded
+        self.error = None
+
+    def tap(self, target, exclude, kind):
+        assert target == self.target
+        assert _intersect(target, self.area) == target
+        assert free_tap_zone(target, exclude) == target
+        self.events.append(("expand", target))
+        if self.error:
+            raise self.error
+        # Without captured post-tap evidence, unchanged XML must fail verification.
+        if self.expanded:
+            self.xml = self.expanded
+
+
+def selected(replay=None):
+    replay = replay or CropReplay()
+    screen = read_screen(replay.xml, SIZE)
+    workflow = "search" if screen.kind == "search_results" else "for_you"
+    browser = XBrowser(replay.phone, {workflow})
+    app = browser.browser
+    app.timeline = workflow
+    if workflow == "search":
+        app.query, app.result_tab = screen.query, screen.tab.lower()
+        browser.target = screen.query
+    app.verified_account = app._expected = "@fixture_owner"
+    app._select(
+        screen,
+        next(
+            i
+            for i, p in enumerate(screen.posts)
+            if p.body_visibility.bounds == replay.area
+        ),
+    )
+    browser.workflow, browser._username, browser._valid = (
+        workflow,
+        "fixture_owner",
+        True,
+    )
+    return replay, browser
+
+
+def captured_ocr(monkeypatch):
+    calls = []
+    monkeypatch.setattr(OcrService, "_resolve_tesseract_cmd", lambda: "tesseract")
+
+    def tsv(command, image, **kwargs):
+        calls.append(image.size)
+        assert kwargs["timeout_seconds"] == 5.0
+        name = "body" if image.height == 365 else "context"
+        assert image.size in {(871, 365), (871, 376)}
+        return (FIXTURES / f"crop-edge-{name}.tsv").read_text()
+
+    monkeypatch.setattr(OcrService, "_image_to_tsv", tsv)
+    return calls
+
+
+def test_captured_translated_caption_locates_safe_target_without_inventing_expansion(
+    monkeypatch,
+):
+    calls = captured_ocr(monkeypatch)
+    replay, browser = selected()
+    source = browser.observe()
+    coverage = []
+    with pytest.raises(XError):
+        check_caption(
+            browser, source, features={}, covered=lambda *args: coverage.append(args)
+        )
+    assert replay.events == [("expand", TARGET)]
+    assert calls == [(871, 376)]
+    assert not coverage and not browser.browsing_valid
+
+
+def locate(monkeypatch, words=WORDS, area=AREA, size=SIZE):
+    regions = []
+
+    def ocr(image, queries, **kwargs):
+        assert kwargs["min_confidence"] == 70
+        regions.append(kwargs["region"])
+        return words
+
+    monkeypatch.setattr(OcrService, "locate", ocr)
+    source = SimpleNamespace(body_visibility=SimpleNamespace(bounds=area))
+    return expansion._target(source, Image.new("RGB", size)), regions
+
+
+@pytest.mark.parametrize("scale", [0.5, 1, 2])
+def test_context_scales_with_screen_but_target_stays_inside_body(monkeypatch, scale):
+    def scaled(values):
+        return tuple(int(value * scale) for value in values)
+
+    words = [
+        TextMatch(w.text, w.confidence, *scaled((w.left, w.top, w.width, w.height)))
+        for w in WORDS
+    ]
+    target, regions = locate(monkeypatch, words, scaled(AREA), scaled(SIZE))
+    assert _intersect(target, scaled(AREA)) == target
+    assert target == _intersect(words[1].bbox, scaled(AREA))
+    assert regions[0][:3] == scaled(AREA)[:3]
+    assert 0 < regions[0][3] - scaled(AREA)[3] <= (min(scaled(SIZE)) + 99) // 100
+
+
+@pytest.mark.parametrize(
+    "words",
+    [
+        [],
+        WORDS[:1],
+        [replace(WORDS[0], confidence=66.541107), WORDS[1]],
+        [replace(WORDS[0], confidence=float("nan")), WORDS[1]],
+        [WORDS[0], replace(WORDS[1], confidence=float("inf"))],
+        [replace(WORDS[0], text="Sho"), WORDS[1]],
+        [WORDS[0], replace(WORDS[1], text="more…")],
+        [*WORDS, WORDS[1]],
+        [*WORDS, *(replace(w, left=w.left + 250) for w in WORDS)],
+        [replace(w, top=w.top + 15) for w in WORDS],
+        [replace(w, top=w.top + 4) for w in WORDS],
+        [replace(w, top=w.top - 150) for w in WORDS],
+        [replace(WORDS[0], width=0), WORDS[1]],
+        [WORDS[0], replace(WORDS[1], height=-1)],
+        [replace(WORDS[0], left=175), WORDS[1]],
+        [WORDS[0], replace(WORDS[1], width=600)],
+        [WORDS[0], replace(WORDS[1], top=1970)],
+        [WORDS[0], replace(WORDS[1], left=560)],
+        [replace(WORDS[0], height=100), WORDS[1]],
+    ],
+)
+def test_ambiguous_incomplete_or_unowned_words_reject(monkeypatch, words):
+    with pytest.raises(XError, match="one visible native"):
+        locate(monkeypatch, words)
+
+
+@pytest.mark.parametrize("bottom,accepted", [(2005, False), (2006, True), (2340, True)])
+def test_screen_edge_caps_context_and_rejects_cut_glyphs(monkeypatch, bottom, accepted):
+    if not accepted:
+        with pytest.raises(XError):
+            locate(monkeypatch, size=(1080, bottom))
+    else:
+        target, regions = locate(monkeypatch, size=(1080, bottom))
+        assert target == TARGET and regions[0][3] <= bottom
+
+
+def test_neighboring_pair_in_context_cannot_replace_the_owned_pair(monkeypatch):
+    neighbors = [replace(w, top=2002, height=8) for w in WORDS]
+    target, _ = locate(monkeypatch, [*WORDS, *neighbors])
+    assert target == TARGET
+    with pytest.raises(XError):
+        locate(monkeypatch, neighbors)
+
+
+@pytest.mark.parametrize("overflow,accepted", [(5, True), (6, False)])
+def test_at_least_three_quarters_of_each_word_must_be_inside_body(
+    monkeypatch, overflow, accepted
+):
+    words = [replace(w, top=AREA[3] - 20 + overflow, height=20) for w in WORDS]
+    if accepted:
+        target, _ = locate(monkeypatch, words)
+        assert target == (532, AREA[3] - 20 + overflow, 625, AREA[3])
+    else:
+        with pytest.raises(XError):
+            locate(monkeypatch, words)
+
+
+@pytest.mark.parametrize("change", ["body", "author", "control"])
+def test_fresh_source_and_exclusions_still_guard_crop_target(monkeypatch, change):
+    captured_ocr(monkeypatch)
+    replay, browser = selected()
+    changes = {
+        "body": (
+            './/*[@bounds="[176,1636][1047,2001]"]',
+            "bounds",
+            "[176,1636][1047,2002]",
+        ),
+        "author": ('.//*[@text="@damsizcimcime"]', "text", "@someone_else"),
+        "control": (
+            './/*[@content-desc="Post options"]',
+            "bounds",
+            "[532,1983][625,2001]",
+        ),
+    }
+    replay.after_capture = lambda: setattr(
+        replay, "xml", mutate(replay.xml, *changes[change])
+    )
+    with pytest.raises(XError):
+        browser.read_more(browser.observe())
+    assert not replay.events and not browser.browsing_valid
+
+
+@pytest.mark.parametrize("failure", ["missing", "timeout", "cancel", "deadline"])
+def test_ocr_failure_or_interruption_never_injects(monkeypatch, failure):
+    captured_ocr(monkeypatch)
+    replay, browser = selected()
+    if failure == "missing":
+        monkeypatch.setattr(OcrService, "_resolve_tesseract_cmd", lambda: None)
+    elif failure == "timeout":
+
+        def timeout(*args, **kwargs):
+            raise subprocess.TimeoutExpired("tesseract", 5)
+
+        monkeypatch.setattr(OcrService, "_image_to_tsv", timeout)
+    else:
+
+        def interrupt(*args, **kwargs):
+            if failure == "cancel":
+                raise InteractionCancelled("cancelled")
+            replay.phone.configure(deadline=replay.now)
+            return WORDS
+
+        monkeypatch.setattr(OcrService, "locate", interrupt)
+    with pytest.raises(
+        InteractionCancelled if failure in {"cancel", "deadline"} else XError
+    ):
+        browser.read_more(browser.observe())
+    assert not replay.events and not browser.browsing_valid
+
+
+def test_uncertain_crop_target_injection_is_not_retried(monkeypatch):
+    captured_ocr(monkeypatch)
+    replay, browser = selected()
+    replay.error = OSError("tap response lost")
+    coverage = []
+    with pytest.raises(InteractionError):
+        check_caption(
+            browser,
+            browser.observe(),
+            features={},
+            covered=lambda *a: coverage.append(a),
+        )
+    assert replay.events == [("expand", TARGET)]
+    assert not coverage and not browser.browsing_valid
+
+
+def same_height_selected(monkeypatch, expanded=None):
+    captured_ocr(monkeypatch)
+    return selected(
+        CropReplay(
+            source="same-height-source",
+            area=(176, 605, 1047, 970),
+            target=(532, 952, 625, 970),
+            expanded=expanded or document("same-height-expanded"),
+        )
+    )
+
+
+def test_captured_same_height_completion_verifies_added_text_and_keeps_occurrence(
+    monkeypatch,
+):
+    replay, browser = same_height_selected(monkeypatch)
+    source = browser.observe()
+    coverage = []
+    result = check_caption(
+        browser, source, features={}, covered=lambda *args: coverage.append(args)
+    )
+    assert result.identity == source.identity and result.source_key != source.source_key
+    assert result.caption == expansion.MORE.sub("", source.caption) + ' Monday?"'
+    assert result.caption_expanded and result.caption_type == "full"
+    assert browser.browser.observe().body_visibility.bounds == replay.area
+    assert replay.events == [("expand", replay.target)]
+    assert [name for name, _ in coverage] == ["inline_caption_attempt", "read_more"]
+
+
+@pytest.mark.parametrize("change", ["shrunk", "author", "no_added_text", "prefix"])
+def test_same_height_completion_still_requires_stable_source_and_new_text(
+    monkeypatch, change
+):
+    xml = document("same-height-expanded")
+    body = './/*[@bounds="[176,605][1047,970]" and @text!=""]'
+    source = next(
+        p
+        for p in read_screen(document("same-height-source"), SIZE).posts
+        if p.body_visibility.bounds == (176, 605, 1047, 970)
+    )
+    changes = {
+        "shrunk": (body, "bounds", "[176,605][1047,969]"),
+        "author": ('.//*[@text="@damsizcimcime"]', "text", "@another_author"),
+        "no_added_text": (body, "text", expansion.MORE.sub("", source.body)),
+        "prefix": (body, "text", "Changed " + source.body),
+    }
+    replay, browser = same_height_selected(monkeypatch, mutate(xml, *changes[change]))
+    coverage = []
+    with pytest.raises(XError):
+        check_caption(
+            browser,
+            browser.observe(),
+            features={},
+            covered=lambda *args: coverage.append(args),
+        )
+    assert replay.events == [("expand", replay.target)]
+    assert not coverage and not browser.browsing_valid

@@ -153,7 +153,11 @@ The [native detail validation record](validation/2026-11-17-x-detail-evidence.md
 `XBrowser.read_more(observation)` and `act("read_more", observation)` retain the observation identity across the verified text change and mark the next caption expanded.
 The content key changes with the expanded text, and previously captured media frames are discarded because their geometry may have changed.
 Local Tesseract OCR locates the inline control; authored text and attribution still come from native XML.
+Recognition includes lower context capped at 1% of the screenshot's shorter side, rounded up and clipped to the image.
+Each confident word must retain at least three quarters of its height inside the native body, with full horizontal and upper containment, consistent line geometry, and clearance from the recognition crop's lower edge.
+The unique pair must belong near the body's lower edge; only the intersection of `more` with the unchanged native body is actionable, subject to fresh control exclusions.
 The source is reverified after OCR and the expanded result is read again before success.
+Verified added text may replace the Show more label without increasing body height; a shrinking body, changed prefix, or absence of added text still fails verification.
 Support requires an unquoted source, unchanged author/header position and media content, and an unobscured expanded body entirely inside the viewport.
 Missing or ambiguous OCR targets are not tapped; clipped expansion, changed context, and uncertain execution invalidate browsing for explicit recovery.
 `XInlineExpansionLimit`, exported with `XBrowser`, identifies the narrower case where the source header, prefix, body origin, context, controls, and overlays remain verified while the expanded body extends below the viewport.

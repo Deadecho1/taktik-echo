@@ -15,12 +15,29 @@ class XInlineExpansionLimit(XError):
     """Verified source expansion exceeded the viewport; explicit recovery is required."""
 
 
+def _body_word(word, area, context):
+    return (
+        70 <= word.confidence <= 100
+        and word.width > 0
+        and word.height > 0
+        and area[0] <= word.left < word.bbox[2] <= area[2]
+        and area[1] <= word.top < word.bbox[3] < context[3]
+        # Only a lower glyph fringe may extend beyond the native text rectangle.
+        and max(0, word.bbox[3] - area[3]) <= word.height / 4
+    )
+
+
 def _target(source, screenshot):
     area = source.body_visibility.bounds
+    if _intersect(area, (0, 0, *screenshot.size)) != area:
+        raise XError("Cannot locate one visible native Show more control.")
+    # Scale the recognition budget, not the actionable native body.
+    padding = (min(screenshot.size) + 99) // 100
+    context = (*area[:3], min(screenshot.height, area[3] + padding))
     words = OcrService.locate(
         screenshot,
         ["Show", "more"],
-        region=area,
+        region=context,
         min_confidence=70,
         timeout_seconds=5.0,
     )
@@ -30,20 +47,16 @@ def _target(source, screenshot):
         for more in words
         if show.text.lower() == "show"
         and more.text.lower() == "more"
-        and min(show.confidence, more.confidence) >= 70
-        and show.height > 0
-        and more.height > 0
-        and show.width > 0
-        and more.width > 0
-        and _intersect(show.bbox, area) == show.bbox
-        and _intersect(more.bbox, area) == more.bbox
+        and _body_word(show, area, context)
+        and _body_word(more, area, context)
         and 0 <= more.left - show.bbox[2] < show.height
         and abs(show.top - more.top) < max(show.height, more.height) * 0.4
+        and abs(show.bbox[3] - more.bbox[3]) < max(show.height, more.height) * 0.4
         and area[3] - more.bbox[3] < more.height * 2
     ]
     if len(pairs) != 1:
         raise XError("Cannot locate one visible native Show more control.")
-    return pairs[0][1].bbox
+    return _intersect(pairs[0][1].bbox, area)
 
 
 def _exclusions(source, target):
@@ -73,7 +86,8 @@ def _verify(source, post, *, viewport_limit=False):
     if (
         stable != post
         or source.body_visibility.bounds[:3] != post.body_visibility.bounds[:3]
-        or post.body_visibility.bounds[3] <= source.body_visibility.bounds[3]
+        # Added text can replace Show more without adding another rendered line.
+        or post.body_visibility.bounds[3] < source.body_visibility.bounds[3]
     ):
         raise XError("The expanded X post changed identity, content, or geometry.")
     if not post.observable or not post.body_complete:
