@@ -5,6 +5,13 @@ Instagram and TikTok readers live in their respective `ui/posts.py` modules, wit
 The readers reuse the existing selector catalogs, snapshot infrastructure, bounds parser, and Instagram framed-post interpretation.
 Additional supported layouts and attribution checks are maintained in these platform modules.
 
+TikTok 47.7.3 single-photo posts expose an `x0u` image inside the `rbj` pager,
+without pagination controls. Feed advancement recognizes that image and keeps the
+swipe inside its bounds, clear of the action rail. Missing or ambiguous image
+geometry still stops the action. The minimized screen capture and regression tests
+are in `tests/unit/social_media/tiktok/fixtures/tt4773_en_for_you_single_photo.xml`
+and `tests/unit/social_media/tiktok/services/test_browsing_photo_advance.py`.
+
 `taktik.core.shared.browsing.PostObservation` carries the observed author, text, identity, media metadata, and optional frames.
 Its elapsed time is supplied by the consumer that tracks time spent viewing the post.
 The module also exposes supported workflows and actions so consumers can reject unavailable operations before execution.

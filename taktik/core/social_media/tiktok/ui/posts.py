@@ -15,7 +15,11 @@ from taktik.core.shared.ui.post_time import tiktok_post_time_utc
 UTC = timezone.utc
 
 PACKAGE = "com.zhiliaoapp.musically"
-PHOTO_LAYOUT_IDS = (("r__", "wu8", "r9k"), ("r_y", "wv8", "r_j"))
+PHOTO_LAYOUT_IDS = (
+    ("r__", "wu8", "r9k"),
+    ("r_y", "wv8", "r_j"),
+    ("rbj", "x0u", None),  # 47.7.3 single photo, without pagination controls.
+)
 
 
 @dataclass(frozen=True)
@@ -57,9 +61,10 @@ def photo_layout(root, area):
         images.extend(
             nodes(root, [pager + f'//*[@resource-id="{PACKAGE}:id/{image_id}"]'], area)
         )
-        controls.extend(
-            nodes(root, [f'//*[@resource-id="{PACKAGE}:id/{controls_id}"]'], area)
-        )
+        if controls_id is not None:
+            controls.extend(
+                nodes(root, [f'//*[@resource-id="{PACKAGE}:id/{controls_id}"]'], area)
+            )
     creator, _, media, *_ = catalogs()
     content = set(
         nodes(root, creator.author_username, area)

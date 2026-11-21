@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Minimized from TikTok 47.7.3 on 2026-11-21. No account or post text retained. -->
+<hierarchy rotation="0">
+  <node class="android.widget.FrameLayout" package="com.zhiliaoapp.musically" bounds="[0,0][1440,3216]">
+    <node resource-id="com.zhiliaoapp.musically:id/long_press_layout" class="android.view.View" package="com.zhiliaoapp.musically" content-desc="Video" enabled="true" bounds="[0,0][1440,2844]"/>
+    <node resource-id="com.zhiliaoapp.musically:id/rbj" class="X.06v5" package="com.zhiliaoapp.musically" enabled="true" bounds="[0,160][1440,2844]">
+      <node resource-id="com.zhiliaoapp.musically:id/rbb" class="android.view.ViewGroup" package="com.zhiliaoapp.musically" enabled="true" bounds="[0,160][1440,2844]">
+        <node resource-id="com.zhiliaoapp.musically:id/rb8" class="android.widget.FrameLayout" package="com.zhiliaoapp.musically" enabled="true" bounds="[0,160][1440,2000]">
+          <node resource-id="com.zhiliaoapp.musically:id/x0u" class="android.widget.ImageView" package="com.zhiliaoapp.musically" enabled="true" bounds="[0,160][1440,2000]"/>
+        </node>
+      </node>
+    </node>
+    <node text="Photo" resource-id="com.zhiliaoapp.musically:id/tv_label" class="android.widget.TextView" package="com.zhiliaoapp.musically" enabled="true" bounds="[567,2112][707,2192]"/>
+  </node>
+</hierarchy>
