@@ -3580,17 +3580,34 @@ def _search_empty(scope, query, viewport, overlays):
 
 
 def _read(root, area):
+    from .drawer import tip_bounds
     from .links import empty_system_window, read_clipboard
 
     windows = [n for n in root if n.get("package") == PACKAGE]
-    window = _one(windows, "X window")
+    tip, tips = None, ()
+    if len(windows) == 2:
+        window = _one(
+            [
+                n
+                for n in windows
+                if n.get("class") == "android.widget.FrameLayout"
+                and _rect(n) == area
+                and len(n.xpath('.//*[@resource-id="MainLanding"]')) == 1
+                and len(_desc(n, "Close navigation menu")) == 1
+            ],
+            "primary X drawer window",
+        )
+        tip = _one([n for n in windows if n is not window], "X drawer tip window")
+        tips = (tip_bounds(tip, area),)
+    else:
+        window = _one(windows, "X window")
     if any(n.get("package") != PACKAGE for n in window.iter()):
         raise _Unsupported("Unexpected package inside X window.")
     keyboard, system_bars, receipts, clipboard_overlays = [], [], [], []
     empty_window = False
     fullscreen_window = False
     for other in root:
-        if other is window:
+        if other is window or other is tip:
             continue
         if other.get("package") in {
             "com.google.android.inputmethod.latin",
@@ -3610,7 +3627,9 @@ def _read(root, area):
             clipboard_overlays.append(_rect(other))
         else:
             system_bars.append(_rect(other))
-    external = (*keyboard, *system_bars, *clipboard_overlays)
+    if tip is not None and (keyboard or clipboard_overlays):
+        raise _Unsupported("Conflicting X drawer overlays.")
+    external = (*keyboard, *system_bars, *clipboard_overlays, *tips)
     if len(clipboard_overlays) > 1:
         raise _Unsupported("Ambiguous clipboard receipts.")
     screen = replace(
@@ -3618,6 +3637,8 @@ def _read(root, area):
         clipboard_text=receipts[0] if receipts else None,
         clipboard_bounds=clipboard_overlays[0] if clipboard_overlays else None,
     )
+    if tip is not None and screen.kind != "drawer":
+        raise _Unsupported("X drawer tip requires a recognized drawer.")
     if empty_window:
         return Screen(
             "unsupported",

@@ -38,6 +38,7 @@ holds more than 40 test files directly (the ones above it today are listed in
 
 The X suite keeps reader-focused cases under `social_media/x/ui`, navigation-focused cases under `social_media/x/services/browsing`, and mixed reader/navigation cases at `social_media/x`.
 These cases share captures under `social_media/x/fixtures`.
+The drawer reader has its own `social_media/x/ui/drawer` group, including public startup regressions through Phone and TaktikDevice.
 
 ## Local diagnostics
 

@@ -21,3 +21,12 @@ Repeated frames, wrong accounts/tabs, interruptions, and failed resets in tests 
 It records the unobservable source whose partly visible media/footer needs a 103.5-pixel framing scroll in the safe region `[0,598,137,2004]`.
 The real shared Phone/backend replay exercises sampling, exact-reach checks, exclusions, and transport injection for that captured X request.
 The screenshot remains local and visually unreviewed.
+
+## Synthetic drawer-tip startup
+
+`drawer-tip.xml` models the native drawer migration tip as a second X window over the account drawer.
+`drawer-tip-home.xml` provides a reduced Home layout with a fictional post and synthetic account, author, list, and count text.
+Native control labels and layout geometry are retained; the System UI window contains only root geometry.
+`drawer-tip-manifest.json` records only these synthetic fixture hashes.
+The tests model a successful return to Home after closing the drawer; this continuation is synthetic and does not establish how a physical tip routes an outside touch.
+Caller regressions use the real Phone and TaktikDevice with fake raw transport to verify account checking, tip exclusions, source selection, and conservative failure outcomes.

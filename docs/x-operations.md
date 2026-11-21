@@ -42,6 +42,10 @@ next_observation = browser.observe()
 ```
 
 `start` verifies the account through the drawer and establishes a new browsing occurrence.
+The reader supports the native "Bookmarks, Likes, and Offline videos moved here" drawer tip as a separately owned X window with narrowly validated structure and content.
+The tip remains an exclusion for underlying visibility and tap geometry; unknown extra windows and conflicting overlays remain unsupported.
+Startup verifies the unobscured account, uses the current native drawer-close target, and requires a verified return to Home before source selection.
+A persistent tip or uncertain close outcome does not trigger another tap.
 Home startup may reset its timeline once after exhausting four initial framing attempts, using only revealed native Home controls and independently reverified timeline/post evidence.
 The second framing search has the same bound; failed or uncertain reset actions are not repeated.
 The resulting `home_reset` navigation gap does not establish continuity through the abandoned content.
