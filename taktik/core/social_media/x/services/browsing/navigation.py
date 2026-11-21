@@ -202,6 +202,28 @@ def _position(post):
     )
 
 
+def _retained_source(before, after, index, new_index, selected_key):
+    if not (0 <= index < len(before.posts) and 0 <= new_index < len(after.posts)):
+        return False
+    return (
+        before.posts[index].content_key
+        == after.posts[new_index].content_key
+        == selected_key
+        and sum(p.content_key == selected_key for p in before.posts) == 1
+        and sum(p.content_key == selected_key for p in after.posts) == 1
+    )
+
+
+def _source_framing_progress(before, after):
+    # Ordered alignment already proved content and coherent forward motion.
+    # Visible source headers exclude clamped edges and movement in a media tail.
+    return (
+        before.observable
+        and after.observable
+        and after.header_visibility.bounds[1] < before.header_visibility.bounds[1] - 2
+    )
+
+
 def _fragment_media_content(media):
     return [
         (m.kind, m.description, m.source_label, m.preview_text)
@@ -3017,9 +3039,6 @@ class X:
                 self._gesture(screen, "up")
                 total_scrolls += 1
                 after, offset, moved = self._advance_snapshot(screen, pending)
-                # Count traversal past other posts, retaining exact source
-                # alignment when the passed post precedes the selection.
-                # Losing only the selected post or moving within it is not.
                 if offset is None:
                     geometric_cursor = True
                     self.navigation_gaps.append(dict(self.last_scroll_evidence))
@@ -3037,20 +3056,20 @@ class X:
                     progressed = moved is True
                 else:
                     new_index = index - offset
-                    passed_preceding = (
-                        not pending
-                        and 0 < offset <= index
-                        and index < len(screen.posts)
-                        and 0 <= new_index < len(after.posts)
-                        and screen.posts[index].content_key
-                        == after.posts[new_index].content_key
-                        == selected_key
-                        and sum(p.content_key == selected_key for p in screen.posts)
-                        == 1
-                        and sum(p.content_key == selected_key for p in after.posts) == 1
+                    retained = not pending and _retained_source(
+                        screen, after, index, new_index, selected_key
+                    )
+                    passed_preceding = retained and 0 < offset <= index
+                    framed_source = (
+                        retained
+                        and not geometric_cursor
+                        and offset == 0
+                        and _source_framing_progress(
+                            screen.posts[index], after.posts[new_index]
+                        )
                     )
                     progressed = moved is True and (
-                        passed_preceding or offset > max(index + 1, 0)
+                        passed_preceding or framed_source or offset > max(index + 1, 0)
                     )
                 if moved is None and not pending:
                     # The preceding approach must not consume the clipped-text

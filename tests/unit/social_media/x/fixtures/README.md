@@ -101,6 +101,12 @@ These fixtures preserve native control semantics and geometry; all personalized 
 `navigation/manifest.json` contains only synthetic fixture integrity hashes.
 Private source provenance remains in ignored local diagnostics.
 
+The `navigation/successor-approach-*.xml` fixtures isolate a unique selected source approaching a successor covered by a floating control, with no change in post index.
+All identities, captions, image descriptions, counts, ages, and system labels are synthetic.
+The stopped sequence has no observable successor; its separate 114-pixel continuation is explicitly synthetic.
+The public browser regression retains real Phone/TaktikDevice execution and verifies the unchanged stationary and total gesture bounds, visibility, continuity, interruption, and exclusion checks.
+`navigation/successor-approach-manifest.json` contains only synthetic fixture integrity hashes.
+
 The `links/fullscreen-dismissal-*.xml` fixtures use synthetic identities, post text, clipboard URLs, counts, ages, and system labels while preserving native window geometry and required control semantics.
 The sequence covers Share, Copy link, the receipt, an inert empty full-screen System UI window, and its disappearance with unchanged X content.
 The empty window contributes full occlusion and no actionable or observable evidence.
