@@ -107,11 +107,15 @@ Mutations are issued once, followed by bounded rereads and a final verification.
 Temporary animation and confirmation overlays do not prove success.
 
 On X `12.42.0-prod.01`, Unfollow and Not interested replace the selected post with a native receipt and an Undo control.
-The receipt must identify the selected author at the original header position, and the selected post must be absent.
+The receipt must match the requested action at the original header position, and the selected post must be absent.
+Its acknowledgment and Undo control must be clear; any author shown on the receipt must match the selected author.
 The service rereads that evidence before selecting another independently observable post, recording an engagement removal in `navigation_gaps`.
 `ActionResult.advanced` is then true; callers must not advance again for the completed action, and the old observation cannot authorize another engagement.
 Successor framing can scroll the receipt out of view, so callers cannot assume Undo remains available after this action returns.
-The maintained evaluation helper `check_feedback_roundtrip` shares native feedback confirmation, verifies a fresh unique Undo receipt, and restores the original occurrence before successor framing.
+The maintained evaluation helper `check_feedback_roundtrip` applies feedback once, finds Undo in a unique native feedback card, and restores the original post before successor framing.
+Clipped cards may omit the optional author refinement; an explicitly conflicting author is rejected.
+It uses a clear Undo control immediately, even when another part of the card is obscured.
+If Undo is obscured, it makes up to four small scrolls and locates the control again from the current screen, without requiring the card or restored post to stay at its original coordinates.
 It credits only a verified feedback/Undo round trip; it does not change the public action's advancement contract.
 Not interested is offered by the captured For you menu; the captured search menu does not offer it.
 The service dismisses an unavailable menu without engaging and reports `Status.UNSUPPORTED`.

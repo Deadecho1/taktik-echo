@@ -221,50 +221,23 @@ def test_invalid_removal_confirmation_never_attempts_undo(problem):
     assert not browser.browsing_valid
 
 
-@pytest.mark.parametrize("problem", ["missing", "geometry", "source_present"])
-def test_fresh_receipt_change_rejects_before_undo(problem, monkeypatch):
+def test_clear_undo_is_used_from_first_receipt_snapshot(monkeypatch):
     replay, browser = selected()
     source = browser.observe()
     read = replay.dump_hierarchy
     reads = 0
 
-    def changed():
+    def count():
         nonlocal reads
         if replay.stage == "receipt":
             reads += 1
-            if reads == 3:
-                if problem == "missing":
-                    replay.xml = replay.xml.replace('text="Undo"', 'text="Unavailable"')
-                elif problem == "geometry":
-                    replay.xml = replay.xml.replace(
-                        "[853,988][1047,1120]", "[854,988][1047,1120]"
-                    )
-                else:
-                    root = etree.fromstring(replay.xml.encode())
-                    initial = etree.fromstring(replay.documents["source"].encode())
-                    author = initial.xpath('.//*[@text="@fixture_author"]')[0]
-                    post = next(
-                        n
-                        for n in author.iterancestors()
-                        if n.get("bounds") == "[0,924][1080,2340]"
-                    )
-                    ack = root.xpath(
-                        './/*[@text="Thanks. X will use this to make your timeline better."]'
-                    )[0]
-                    feed = next(
-                        n for n in ack.iterancestors() if n.get("scrollable") == "true"
-                    )
-                    feed.append(deepcopy(post))
-                    replay.xml = etree.tostring(root, encoding="unicode")
         return read()
 
-    monkeypatch.setattr(replay, "dump_hierarchy", changed)
-    with pytest.raises(InteractionError) as raised:
-        check_feedback_roundtrip(browser, source)
-    assert raised.value.result.status == Status.UNCERTAIN
-    assert isinstance(raised.value.__cause__, XError)
-    assert replay.actions == [("tap", "source"), ("tap", "options")]
-    assert not browser.browsing_valid
+    monkeypatch.setattr(replay, "dump_hierarchy", count)
+    assert check_feedback_roundtrip(browser, source)["restored"]
+    assert reads == 1
+    assert replay.actions == [("tap", "source"), ("tap", "options"), ("tap", "receipt")]
+    replay.phone.close(home=False).require()
 
 
 @pytest.mark.parametrize(

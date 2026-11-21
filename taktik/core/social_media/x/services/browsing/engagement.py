@@ -114,6 +114,7 @@ def _removal_confirmation(app, source, action):
             n
             for n in screen.removal_notices
             if n.action == action
+            and n.confirmation_visible
             and (n.author is None or n.author.lower() == source.author.lower())
             and n.visibility.bounds[1] == source.header_visibility.bounds[1]
         ]
@@ -180,7 +181,7 @@ def set_following(app, selected):
         return EngagementResult(action, source.content_key, True, selected)
 
 
-def _apply_feedback_and_confirm(app, source):
+def _apply_feedback(app, source):
     screen = _open_menu(app, source)
     state = _menu_author(source, screen)
     if state.feedback_label != "Not interested in Post":
@@ -192,6 +193,13 @@ def _apply_feedback_and_confirm(app, source):
     _control(current.controls, state.feedback_label)
     try:
         _tap(app, current.controls, state.feedback_label)
+    except InteractionError as error:
+        _uncertain("not_interested", error)
+
+
+def _apply_feedback_and_confirm(app, source):
+    _apply_feedback(app, source)
+    try:
         return _removal_confirmation(app, source, "not_interested")
     except InteractionError as error:
         _uncertain("not_interested", error)

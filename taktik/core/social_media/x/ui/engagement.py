@@ -31,6 +31,11 @@ class RemovalNotice:
     author: str | None
     visibility: Visibility
     undo: Target
+    message_visibility: Visibility
+
+    @property
+    def confirmation_visible(self):
+        return self.message_visibility.unobscured and self.undo.visibility.unobscured
 
 
 def read_notices(scope, viewport, overlays):
@@ -39,10 +44,10 @@ def read_notices(scope, viewport, overlays):
         text = node.get("text", "")
         if text.startswith("You unfollowed "):
             action, author = "unfollow", text.removeprefix("You unfollowed ")
-            expected_count = 2
+            expected_counts = (2,)
         elif text == "Thanks. X will use this to make your timeline better.":
             action, author = "not_interested", None
-            expected_count = 4
+            expected_counts = (2, 3, 4)
         else:
             continue
         if author is not None and not HANDLE.fullmatch(author):
@@ -58,32 +63,44 @@ def read_notices(scope, viewport, overlays):
         texts = row.xpath('.//*[@text!=""]')
         undo = row.xpath('.//*[@text="Undo"]')
         if (
-            len(row) != expected_count
-            or len(texts) != expected_count
+            len(row) not in expected_counts
+            or len(texts) != len(row)
             or len(undo) != 1
             or texts[0] is not node
         ):
             continue
         if action == "not_interested":
-            fewer = texts[2].get("text", "")
-            author = "@" + fewer.removeprefix("Show fewer posts from ")
-            if not fewer.startswith("Show fewer posts from ") or not HANDLE.fullmatch(
-                author
-            ):
-                continue
-            if texts[3].get("text") != "This post isn’t relevant":
+            if len(texts) > 2:
+                fewer = texts[2].get("text", "")
+                author = "@" + fewer.removeprefix("Show fewer posts from ")
+                if not fewer.startswith(
+                    "Show fewer posts from "
+                ) or not HANDLE.fullmatch(author):
+                    continue
+            if len(texts) > 3 and texts[3].get("text") != "This post isn’t relevant":
                 continue
             for extra in texts[2:]:
                 _target(extra, extra.get("text"), row, viewport, overlays)
         target = _target(undo[0], "Undo", row, viewport, overlays)
         visibility = _visibility(row, viewport, overlays)
-        if not all(
+        if not _visibility(undo[0], viewport, overlays).accessible:
+            continue
+        if action == "unfollow" and not all(
             _visibility(n, viewport, overlays).unobscured for n in (row, *texts)
         ):
             continue
         if _rect(node)[2] > target.visibility.bounds[0]:
             continue
-        notices.append(RemovalNotice(action, text, author, visibility, target))
+        notices.append(
+            RemovalNotice(
+                action,
+                text,
+                author,
+                visibility,
+                target,
+                _visibility(node, viewport, overlays),
+            )
+        )
     return tuple(notices)
 
 
