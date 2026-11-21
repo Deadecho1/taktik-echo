@@ -107,3 +107,18 @@ def test_unbadged_partial_handle_still_requires_exact_native_cover(mutation):
         )
     after = read_screen(etree.tostring(root), (1080, 2340))
     assert not after.fragments
+
+
+def test_padding_does_not_erase_native_offscreen_translation():
+    before, after = (
+        read_screen(document(f"quote-padding-translation-{stage}"), (1080, 2340))
+        for stage in ("before", "after")
+    )
+    assert not after.rejected_posts
+    quote = after.posts[0].quoted_post
+    assert quote.visibility.visible_bounds is not None
+    assert quote.header_visibility.visible_bounds is None
+    assert quote.translation_visibility.visible_bounds is None
+    assert quote.translation == "Translated from Arabic"
+    assert quote.body is None and not quote.observable
+    assert _alignment(before, after, scrolling=True)[1]

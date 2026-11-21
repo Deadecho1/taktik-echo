@@ -20,7 +20,7 @@ from taktik.core.social_media.x.services.browsing.browser import XBrowser
 from taktik.core.social_media.x.services.browsing.navigation import XError
 from taktik.core.social_media.x.ui.screen import PACKAGE, read_screen
 
-FIXTURES = Path(__file__).parents[1] / "fixtures/links"
+FIXTURES = Path(__file__).parent / "fixtures/links"
 SIZE = (1080, 2340)
 
 
