@@ -1,0 +1,21 @@
+{
+  "kind": "synthetic_native_layout",
+  "size": [
+    1080,
+    2340
+  ],
+  "fixtures": [
+    {
+      "file": "wrapped-source.xml",
+      "sha256": "f53f9dcf67353eec2521581f2085e3315698af42492cedfa2efe8d8d27500e8f"
+    },
+    {
+      "file": "wrapped-expanded.xml",
+      "sha256": "1f2a889302e918373569cb6ba85382f06fcd0205d3c944ec7328d93c97d96e28"
+    },
+    {
+      "file": "wrapped-words.tsv",
+      "sha256": "a4f88f36d10842d428be2209d508c6f6e095ad9653e0b1ef2b73146189b7a42b"
+    }
+  ]
+}

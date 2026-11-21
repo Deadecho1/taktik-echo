@@ -67,6 +67,10 @@ The eight-attempt pending/no-progress bounds and 32-gesture advance limit also r
 
 The maintained caption-validation workflow is `scripts/eval/x_caption_validation.py`.
 Call `check_caption(browser, observation, features=features, covered=covered)` on an observable, unquoted Show more source within the already-owned Phone session.
+The locator accepts a unique same-line label or a label wrapped from the right edge onto the next line's left edge near the caption bottom.
+Wrapped pairs require nonoverlapping lines, a bottom-to-bottom distance between one and two word heights, and edge proximity measured from the recognized words.
+Both layouts retain the confidence-70 threshold, native-body ownership, bounded lower OCR context, fresh source/exclusion checks, and post-tap completion verification.
+The tap stays within the intersection of the recognized `more` word and the native body.
 The `features` mapping holds successful evidence-event counts, and `covered(name, details)` increments that mapping and persists the supplied evidence.
 The helper alternates inline attempts with bounded native-detail attempts until the corresponding coverage is established.
 After a verified inline viewport limit it explicitly recovers, records both occurrence identities, and retains `original_text_complete=false` for the abandoned source.

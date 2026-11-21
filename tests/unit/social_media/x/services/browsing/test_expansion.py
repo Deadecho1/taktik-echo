@@ -1,5 +1,6 @@
 """Captured inline expansion through the same Phone interface used on Android."""
 
+import hashlib
 import json
 import subprocess
 from dataclasses import replace
@@ -15,15 +16,18 @@ from unit.social_media.x.services.browsing.test_inspection_visits import (
 from unit.social_media.x.services.browsing.test_search import (
     document as search_document,
 )
+from unit.social_media.x.ui.drawer.test_tip_startup import RawStartup
 
 from scripts.eval.x_caption_validation import check_caption
 from taktik.core.shared.behavior.tap import free_tap_zone
 from taktik.core.shared.phone_interaction import (
     InteractionCancelled,
     InteractionError,
+    Phone,
     Result,
     Status,
 )
+from taktik.core.shared.phone_interaction._device import TaktikDevice
 from taktik.core.shared.vision.ocr import OcrService, TextMatch
 from taktik.core.social_media.x.services.browsing import expansion
 from taktik.core.social_media.x.services.browsing.browser import XBrowser
@@ -763,3 +767,219 @@ def test_same_height_completion_still_requires_stable_source_and_new_text(
         )
     assert replay.events == [("expand", replay.target)]
     assert not coverage and not browser.browsing_valid
+
+
+class WrappedReplay(RawStartup):
+    def __init__(self):
+        super().__init__()
+        self.home = document("wrapped-source")
+        self.expanded = document("wrapped-expanded")
+        self.after_capture = lambda: None
+        self.expansion_error = None
+
+    def screenshot(self):
+        self.after_capture()
+        return Image.new("RGB", SIZE, "white")
+
+    def long_click(self, x, y, duration):
+        if self.stage == "home" and 180 <= x < 271 and 979 <= y < 997:
+            self.actions.append("expand")
+            self.home = self.expanded
+            if self.expansion_error:
+                raise self.expansion_error
+        else:
+            super().long_click(x, y, duration)
+
+
+@pytest.fixture
+def wrapped(monkeypatch):
+    raw = WrappedReplay()
+    phone = Phone(
+        TaktikDevice(raw, "fixture"), seed=0, clock=lambda: raw.now, sleep=raw.sleep
+    )
+    browser = XBrowser(phone, {"for_you"})
+    calls = []
+    monkeypatch.setattr(OcrService, "_resolve_tesseract_cmd", lambda: "tesseract")
+
+    def tsv(command, image, **kwargs):
+        calls.append(image.size)
+        assert image.size == (871, 486) and kwargs["timeout_seconds"] == 5.0
+        return (FIXTURES / "wrapped-words.tsv").read_text()
+
+    monkeypatch.setattr(OcrService, "_image_to_tsv", tsv)
+    try:
+        browser.start("fixture_owner", "for_you")
+        raw.actions.clear()
+        yield raw, browser, calls
+    finally:
+        phone.close(home=False).require()
+
+
+def test_wrapped_control_completes_caption_through_raw_device(wrapped):
+    raw, browser, calls = wrapped
+    source = browser.observe()
+    coverage = []
+    result = check_caption(
+        browser, source, features={}, covered=lambda *args: coverage.append(args)
+    )
+    assert result.identity == source.identity and result.source_key != source.source_key
+    assert result.caption == expansion.MORE.sub("", source.caption) + (
+        " The last case contains a handmade compass."
+    )
+    assert result.caption_expanded and result.caption_type == "full"
+    assert raw.actions == ["expand"] and calls == [(871, 486)]
+    assert [name for name, _ in coverage] == ["inline_caption_attempt", "read_more"]
+
+
+WRAPPED_WORDS = [
+    TextMatch("Show", 96, 841, 915, 103, 31),
+    TextMatch("more", 96, 180, 979, 91, 22),
+]
+
+
+@pytest.mark.parametrize(
+    "words",
+    [
+        [],
+        WRAPPED_WORDS[:1],
+        WRAPPED_WORDS[1:],
+        [replace(WRAPPED_WORDS[0], confidence=69), WRAPPED_WORDS[1]],
+        [WRAPPED_WORDS[0], replace(WRAPPED_WORDS[1], confidence=float("nan"))],
+        [replace(WRAPPED_WORDS[0], text="Sho"), WRAPPED_WORDS[1]],
+        [WRAPPED_WORDS[0], replace(WRAPPED_WORDS[1], text="more…")],
+        [*WRAPPED_WORDS, WRAPPED_WORDS[0]],
+        [*WRAPPED_WORDS, replace(WRAPPED_WORDS[0], left=830)],
+        [*WRAPPED_WORDS, WRAPPED_WORDS[1]],
+        [
+            *WRAPPED_WORDS,
+            TextMatch("Show", 96, 720, 970, 103, 31),
+            TextMatch("more", 96, 836, 979, 91, 22),
+        ],
+        [replace(WRAPPED_WORDS[0], left=700), WRAPPED_WORDS[1]],
+        [WRAPPED_WORDS[0], replace(WRAPPED_WORDS[1], left=210)],
+        [replace(WRAPPED_WORDS[0], top=850), WRAPPED_WORDS[1]],
+        [replace(WRAPPED_WORDS[0], top=951), WRAPPED_WORDS[1]],
+        [replace(WRAPPED_WORDS[0], top=970), WRAPPED_WORDS[1]],
+        [replace(WRAPPED_WORDS[0], left=1048), WRAPPED_WORDS[1]],
+        [WRAPPED_WORDS[0], replace(WRAPPED_WORDS[1], left=175)],
+        [WRAPPED_WORDS[0], replace(WRAPPED_WORDS[1], top=984)],
+        [WRAPPED_WORDS[0], replace(WRAPPED_WORDS[1], top=997)],
+        [replace(WRAPPED_WORDS[0], height=0), WRAPPED_WORDS[1]],
+    ],
+)
+def test_wrapped_words_need_unique_owned_adjacent_lines(wrapped, monkeypatch, words):
+    raw, browser, _ = wrapped
+    monkeypatch.setattr(OcrService, "locate", lambda *args, **kwargs: words)
+    coverage = []
+    with pytest.raises(XError, match="one visible native"):
+        check_caption(
+            browser,
+            browser.observe(),
+            features={},
+            covered=lambda *args: coverage.append(args),
+        )
+    assert not raw.actions and not coverage and not browser.browsing_valid
+
+
+@pytest.mark.parametrize("change", ["author", "body", "overlap", "cancel", "deadline"])
+def test_wrapped_control_rechecks_source_and_session_before_tap(wrapped, change):
+    raw, browser, _ = wrapped
+    source = browser.observe()
+
+    def changed():
+        if change == "cancel":
+            raise InteractionCancelled("cancelled")
+        if change == "deadline":
+            browser.phone.configure(deadline=raw.now)
+            return
+        changes = {
+            "author": ('.//*[@text="@fixture_author"]', "text", "@another_author"),
+            "body": (
+                './/*[@bounds="[176,522][1047,997]"]',
+                "bounds",
+                "[176,523][1047,997]",
+            ),
+            "overlap": (
+                './/*[@content-desc="Post options"]',
+                "bounds",
+                "[180,979][271,997]",
+            ),
+        }
+        raw.home = mutate(raw.home, *changes[change])
+
+    raw.after_capture = changed
+    with pytest.raises(
+        InteractionCancelled if change in {"cancel", "deadline"} else XError
+    ):
+        browser.read_more(source)
+    assert not raw.actions and not browser.browsing_valid
+
+
+@pytest.mark.parametrize("outcome", ["unchanged", "wrong_author", "uncertain"])
+def test_wrapped_tap_alone_does_not_credit_expansion(wrapped, outcome):
+    raw, browser, _ = wrapped
+    if outcome == "unchanged":
+        raw.expanded = raw.home
+    elif outcome == "wrong_author":
+        raw.expanded = mutate(
+            raw.expanded, './/*[@text="@fixture_author"]', "text", "@another_author"
+        )
+    else:
+        raw.expansion_error = OSError("tap response lost")
+    coverage = []
+    with pytest.raises(InteractionError if outcome == "uncertain" else XError):
+        check_caption(
+            browser,
+            browser.observe(),
+            features={},
+            covered=lambda *args: coverage.append(args),
+        )
+    assert raw.actions == ["expand"]
+    assert not coverage and not browser.browsing_valid
+
+
+def test_wrapped_control_does_not_enable_quoted_expansion(wrapped):
+    raw, browser, calls = wrapped
+    raw.home = (FIXTURES.parent / "nested-quote-tail-after.xml").read_text()
+    raw.home = mutate(
+        raw.home,
+        './/*[@bounds="[176,916][1047,1405]" and @text!=""]',
+        "text",
+        "A synthetic outer caption with enough text to expand.\xa0Show more",
+    )
+    screen = read_screen(raw.home, SIZE)
+    index = next(
+        i for i, p in enumerate(screen.posts) if p.quoted_post and p.observable
+    )
+    browser.browser._select(screen, index)
+    with pytest.raises(XError, match="quoted"):
+        browser.read_more(browser.observe())
+    assert not raw.actions and not calls and not browser.browsing_valid
+
+
+@pytest.mark.parametrize("scale", [0.5, 1, 2])
+def test_wrapped_geometry_scales_with_words_and_body(monkeypatch, scale):
+    words = [
+        replace(
+            word,
+            **{
+                name: int(getattr(word, name) * scale)
+                for name in ("left", "top", "width", "height")
+            },
+        )
+        for word in WRAPPED_WORDS
+    ]
+    area = tuple(int(value * scale) for value in (176, 522, 1047, 997))
+    size = tuple(int(value * scale) for value in SIZE)
+    target, _ = locate(monkeypatch, words, area, size)
+    assert target == _intersect(words[1].bbox, area)
+
+
+def test_wrapped_synthetic_fixture_integrity():
+    manifest = json.loads((FIXTURES / "wrapped-manifest.json").read_text())
+    assert manifest["kind"] == "synthetic_native_layout"
+    for item in manifest["fixtures"]:
+        assert (
+            hashlib.sha256((FIXTURES / item["file"]).read_bytes()).hexdigest()
+            == item["sha256"]
+        )

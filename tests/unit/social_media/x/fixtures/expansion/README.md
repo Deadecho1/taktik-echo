@@ -1,5 +1,10 @@
 # Native inline expansion captures
 
+`wrapped-source.xml`, `wrapped-expanded.xml`, and `wrapped-words.tsv` are synthetic fixtures with fictional text and a two-line Show more layout.
+The source places Show at the right of the penultimate line and more at the left of the final line, with a lower glyph fringe inside the existing recognition context.
+The expanded fixture supplies a synthetic successful continuation, not a historical phone outcome.
+`wrapped-manifest.json` contains only synthetic fixture hashes; raw evidence and provenance remain local.
+
 These thirteen hierarchies were captured on Nir's Pixel 4a, X `12.42.0-prod.01`, Android 13, English UI, at 1080 × 2340.
 `manifest.json` records source paths and SHA-256 hashes for the raw and sanitized XML and selected OCR rows.
 Public post text is preserved; external windows retain only their root geometry and empty content.

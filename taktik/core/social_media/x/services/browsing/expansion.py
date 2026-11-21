@@ -27,6 +27,23 @@ def _body_word(word, area, context):
     )
 
 
+def _control_pair(show, more, area):
+    height = max(show.height, more.height)
+    if (
+        0 <= more.left - show.bbox[2] < show.height
+        and abs(show.top - more.top) < height * 0.4
+        and abs(show.bbox[3] - more.bbox[3]) < height * 0.4
+    ):
+        return True
+    # A wrapped label ends one line at the right edge and starts the next at the left.
+    return (
+        area[2] - show.bbox[2] < more.width + show.height
+        and more.left - area[0] < height * 0.4
+        and show.bbox[3] < more.top
+        and height < more.bbox[3] - show.bbox[3] <= height * 2
+    )
+
+
 def _target(source, screenshot):
     area = source.body_visibility.bounds
     if _intersect(area, (0, 0, *screenshot.size)) != area:
@@ -49,9 +66,7 @@ def _target(source, screenshot):
         and more.text.lower() == "more"
         and _body_word(show, area, context)
         and _body_word(more, area, context)
-        and 0 <= more.left - show.bbox[2] < show.height
-        and abs(show.top - more.top) < max(show.height, more.height) * 0.4
-        and abs(show.bbox[3] - more.bbox[3]) < max(show.height, more.height) * 0.4
+        and _control_pair(show, more, area)
         and area[3] - more.bbox[3] < more.height * 2
     ]
     if len(pairs) != 1:
