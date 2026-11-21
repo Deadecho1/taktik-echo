@@ -52,7 +52,7 @@ class Android13Phone:
         self.commands = []
         self.sent = []   # broadcasts the phone's shell ran (a keyboard check may hold one back)
 
-    def __call__(self, device_id, command):
+    def __call__(self, device_id, command, *, strict=False):
         self.commands.append(command)
         return self._run(command)
 

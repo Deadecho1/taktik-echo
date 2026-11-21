@@ -88,6 +88,15 @@ class TikTok:
             raise PlatformError("The TikTok control is missing or ambiguous.")
         return choices[0]
 
+    def _wait_one(self, selectors):
+        # Search submission finishes before TikTok draws its results tabs.
+        for _ in range(20):
+            root = self.snapshot()
+            if nodes(root, selectors, (0, 0, self.width, self.height)):
+                return self._one(root, selectors)
+            self.sleep(0.5)
+        raise PlatformError("The TikTok search control did not become ready.")
+
     def _position(self, view):
         previous = getattr(self, "photo_position", None)
         if view.media_type == "photo":
@@ -239,7 +248,7 @@ class TikTok:
                     SEARCH_SELECTORS,
                 )
 
-                self.tap(self._one(self.snapshot(), SEARCH_SELECTORS.top_tab))
+                self.tap(self._wait_one(SEARCH_SELECTORS.top_tab))
                 selectors = (
                     SEARCH_SELECTORS.video_result_cell
                     + SEARCH_SELECTORS.video_result_container
@@ -270,7 +279,7 @@ class TikTok:
                 )
 
                 self._search_results(target)
-                self.tap(self._one(self.snapshot(), SEARCH_SELECTORS.users_tab))
+                self.tap(self._wait_one(SEARCH_SELECTORS.users_tab))
                 self._open_result(
                     SEARCH_SELECTORS.user_result_selectors_for_username(target)
                 )
@@ -319,7 +328,7 @@ class TikTok:
         ).require()
 
     def _open_result(self, selectors):
-        for _ in range(8):
+        for _ in range(40):
             results = nodes(self.snapshot(), selectors, (0, 0, self.width, self.height))
             if results:
                 self.tap(results[0])

@@ -154,6 +154,23 @@ def test_focus_loss_after_final_character_prevents_submission():
     raw.press.assert_not_called()
 
 
+def test_an_already_focused_field_is_not_retapped_over_its_voice_search_button():
+    phone, raw, _ = session()
+    raw.info["focused"] = True
+
+    def voice_search(*_):
+        raw.info["focused"] = False
+        raw.info["className"] = "android.widget.TextView"
+
+    raw.long_click.side_effect = voice_search
+    result = phone.enter_text("search", "heel pain", submit="enter")
+
+    assert result.status == Status.SUCCESS
+    raw.long_click.assert_not_called()
+    assert raw.info["text"] == "heel pain"
+    raw.press.assert_called_once_with("enter")
+
+
 def test_cancelled_before_action_is_diagnosed_and_cleanup_remains_available():
     phone, raw, _ = session()
     events = []
@@ -274,7 +291,7 @@ def test_seeds_replay_without_sharing_behavior_between_devices():
     assert len(first._behavior.gesture_history) == 2
     assert len(second._behavior.gesture_history) == 1
     first.enter_text("search", "hi").require()
-    assert len(first._behavior.gesture_history) == 3  # The field focus tap.
+    assert len(first._behavior.gesture_history) == 2  # The field is already focused.
     assert len(second._behavior.gesture_history) == 1
 
 

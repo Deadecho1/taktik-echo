@@ -94,10 +94,13 @@ class Keyboard:
                 "Text submission must be Enter or a control resolver."
             )
         self.prepare()
-        rect = self._field(resource_id)["bounds"]
-        self.backend.tap(
-            tuple(rect[k] for k in ("left", "top", "right", "bottom")), (), "tap"
-        )
+        info = self._field(resource_id)
+        if not info.get("focused"):
+            # A focused search field may overlap a voice-search or clear button.
+            rect = info["bounds"]
+            self.backend.tap(
+                tuple(rect[k] for k in ("left", "top", "right", "bottom")), (), "tap"
+            )
         for _ in range(30):
             if self._field(resource_id).get("focused"):
                 break
