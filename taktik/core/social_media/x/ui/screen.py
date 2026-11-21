@@ -3580,12 +3580,15 @@ def _search_empty(scope, query, viewport, overlays):
 
 
 def _read(root, area):
+    from .links import empty_system_window, read_clipboard
+
     windows = [n for n in root if n.get("package") == PACKAGE]
     window = _one(windows, "X window")
     if any(n.get("package") != PACKAGE for n in window.iter()):
         raise _Unsupported("Unexpected package inside X window.")
     keyboard, system_bars, receipts, clipboard_overlays = [], [], [], []
     empty_window = False
+    fullscreen_window = False
     for other in root:
         if other is window:
             continue
@@ -3596,11 +3599,12 @@ def _read(root, area):
             keyboard.append(_rect(other))
         elif other.get("package") != "com.android.systemui":
             raise _Unsupported("Unrecognized external window.")
-        elif _rect(other)[1] != 0:
-            from .links import empty_system_window, read_clipboard
-
+        elif _rect(other)[1] != 0 or (
+            _rect(other) == area and empty_system_window(other, area)
+        ):
             if empty_system_window(other, area):
                 empty_window = True
+                fullscreen_window = _rect(other) == area
             else:
                 receipts.append(read_clipboard(other, area))
             clipboard_overlays.append(_rect(other))
@@ -3620,6 +3624,7 @@ def _read(root, area):
             reason="Unidentified empty Android System UI window.",
             overlaps=external,
             obscured_screen=screen,
+            waiting_for="fullscreen_system_window" if fullscreen_window else None,
         )
     return screen
 

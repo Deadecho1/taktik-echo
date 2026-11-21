@@ -58,14 +58,22 @@ def wait_for_clipboard_dismissal(app, screen):
         current = screen.obscured_screen or screen
         if screen.obscured_screen is not None:
             previous, retained = before.clipboard_bounds, current.clipboard_bounds
-            # The captured dismissal only retracts the window's left edge.
-            if (
-                retained is None
-                or retained[1:] != previous[1:]
-                or not previous[0] <= retained[0] < previous[2]
-            ):
+            retracting = (
+                retained is not None
+                and retained[1:] == previous[1:]
+                and previous[0] <= retained[0] < previous[2]
+            )
+            fullscreen = (
+                screen.waiting_for == "fullscreen_system_window"
+                and before.kind == current.kind == "home"
+                and before.collapsed
+                and current.collapsed
+            )
+            if not (retracting or fullscreen):
                 raise XError("Unrecognized window during X clipboard dismissal.")
         app._check_timeline(current, before)
+        if current.content_viewport != before.content_viewport:
+            raise XError("X viewport changed during clipboard dismissal.")
         if current.active_account not in {None, app.verified_account}:
             raise XError("X account changed during clipboard dismissal.")
         if current.clipboard_text not in {None, before.clipboard_text}:

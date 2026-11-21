@@ -1,0 +1,57 @@
+{
+  "size": [
+    1080,
+    2340
+  ],
+  "kind": "synthetic_native_layout",
+  "fixtures": [
+    {
+      "file": "fullscreen-dismissal-0.xml",
+      "sha256": "99761f8e09fd7b52474853426ac0e52871b9973612a1aaa85d27f9d7bba0f1c3"
+    },
+    {
+      "file": "fullscreen-dismissal-1.xml",
+      "sha256": "99761f8e09fd7b52474853426ac0e52871b9973612a1aaa85d27f9d7bba0f1c3"
+    },
+    {
+      "file": "fullscreen-dismissal-2.xml",
+      "sha256": "99761f8e09fd7b52474853426ac0e52871b9973612a1aaa85d27f9d7bba0f1c3"
+    },
+    {
+      "file": "fullscreen-dismissal-3.xml",
+      "sha256": "59990093afb8dc2641af044425b2e915f741cb081e274dda71e14f1ca4a5abf8"
+    },
+    {
+      "file": "fullscreen-dismissal-4.xml",
+      "sha256": "59990093afb8dc2641af044425b2e915f741cb081e274dda71e14f1ca4a5abf8"
+    },
+    {
+      "file": "fullscreen-dismissal-5.xml",
+      "sha256": "61bb24a5b7bf758ed8a324a229aa30bcf5cb3c4fac74d2c5b078acfbd4bb6aeb"
+    },
+    {
+      "file": "fullscreen-dismissal-6.xml",
+      "sha256": "f57e8eab960e60402f956da8a453501276793bdeca7c70a34b2a63b5e965daa8"
+    },
+    {
+      "file": "fullscreen-dismissal-7.xml",
+      "sha256": "f57e8eab960e60402f956da8a453501276793bdeca7c70a34b2a63b5e965daa8"
+    },
+    {
+      "file": "fullscreen-dismissal-8.xml",
+      "sha256": "f57e8eab960e60402f956da8a453501276793bdeca7c70a34b2a63b5e965daa8"
+    },
+    {
+      "file": "fullscreen-dismissal-9.xml",
+      "sha256": "f57e8eab960e60402f956da8a453501276793bdeca7c70a34b2a63b5e965daa8"
+    },
+    {
+      "file": "fullscreen-dismissal-10.xml",
+      "sha256": "1bcf305f30acd88662fc752ef58fdc104c63187e4fe58fc88f4c6b6cb20832eb"
+    },
+    {
+      "file": "fullscreen-dismissal-11.xml",
+      "sha256": "99761f8e09fd7b52474853426ac0e52871b9973612a1aaa85d27f9d7bba0f1c3"
+    }
+  ]
+}

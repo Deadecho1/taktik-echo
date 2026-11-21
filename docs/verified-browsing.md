@@ -137,7 +137,9 @@ Receipt disappearance does not discard the captured URL; a changed URL or source
 Success still requires an independently observable source and a final reread of the original occurrence.
 The wait uses Phone cancellation and deadlines; timeout invalidates browsing and preserves single-attempt, exception-preserving cleanup.
 After an observed receipt, a stationary refresh can wait through its captured empty-window dismissal shape for up to eight reads with 0.3-second readiness intervals.
-Every read checks the original source and browsing context; the empty window keeps its occlusion and supplies no receipt, observation, or action target.
+The supported collapsed Home dismissal also includes an inert, empty System UI window whose bounds exactly match the screen.
+It remains an unsupported screen with full occlusion and is never treated as an additional status bar.
+Every read checks the original source, viewport, account, and browsing context; the empty window supplies no receipt, observation, or action target.
 The refresh succeeds only after an independent read establishes that the window is gone and the selected post is observable.
 Unknown windows, changed evidence, and exhausted bounds invalidate browsing, while unsupported hierarchies retain their reader diagnostics.
 The [native link validation record](validation/2026-11-19-x-links.md) documents the successful repeated-copy phone run, supported device/version, regression checks, and completed human review of all nine presented screenshots.

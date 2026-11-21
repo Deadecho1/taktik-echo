@@ -100,3 +100,10 @@ The `navigation/preceding-complete-*.xml` fixtures provide a complete native lay
 These fixtures preserve native control semantics and geometry; all personalized text, counts, ages, custom labels, and system labels are synthetic.
 `navigation/manifest.json` contains only synthetic fixture integrity hashes.
 Private source provenance remains in ignored local diagnostics.
+
+The `links/fullscreen-dismissal-*.xml` fixtures use synthetic identities, post text, clipboard URLs, counts, ages, and system labels while preserving native window geometry and required control semantics.
+The sequence covers Share, Copy link, the receipt, an inert empty full-screen System UI window, and its disappearance with unchanged X content.
+The empty window contributes full occlusion and no actionable or observable evidence.
+It is not itself a clipboard receipt; only a preceding observed receipt permits the bounded stationary verification path.
+No next-post capture is present, and the separate unchanged-frame test preserves the existing advance limit without inventing a successor.
+`links/fullscreen-dismissal-manifest.json` records only synthetic fixture hashes; private source provenance remains in ignored local diagnostics.
