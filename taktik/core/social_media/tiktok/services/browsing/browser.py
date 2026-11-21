@@ -1,7 +1,12 @@
 import io
 import re
 
-from taktik.core.shared.browsing import ActionResult, PlatformError, PostObservation
+from taktik.core.shared.browsing import (
+    ActionResult,
+    EmptySearchResults,
+    PlatformError,
+    PostObservation,
+)
 from taktik.core.shared.phone_interaction import Phone, Result, Status
 from taktik.core.shared.ui.geometry import bounds, nodes, text_of
 from taktik.core.social_media.tiktok.ui.posts import (
@@ -328,12 +333,25 @@ class TikTok:
         ).require()
 
     def _open_result(self, selectors):
+        from taktik.core.social_media.tiktok.ui.selectors.surfaces.search import (
+            SEARCH_SELECTORS,
+        )
+
+        empty_reads = 0
         for _ in range(40):
-            results = nodes(self.snapshot(), selectors, (0, 0, self.width, self.height))
+            root = self.snapshot()
+            results = nodes(root, selectors, (0, 0, self.width, self.height))
             if results:
                 self.tap(results[0])
                 self._prime_photo()
                 return
+            empty_reads = (
+                empty_reads + 1
+                if nodes(root, SEARCH_SELECTORS.empty_results)
+                else 0
+            )
+            if empty_reads >= 2:
+                raise EmptySearchResults("TikTok confirmed no results for this search.")
             self.sleep(0.5)
         raise PlatformError("No TikTok search result could be opened.")
 

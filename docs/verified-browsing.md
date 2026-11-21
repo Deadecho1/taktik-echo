@@ -9,6 +9,9 @@ Additional supported layouts and attribution checks are maintained in these plat
 Its elapsed time is supplied by the consumer that tracks time spent viewing the post.
 The module also exposes supported workflows and actions so consumers can reject unavailable operations before execution.
 It contains no model policy, learning, persona configuration, or retained history.
+`EmptySearchResults` identifies an explicit, stable empty-results screen during search navigation.
+It is distinct from an unreadable screen, unavailable result controls, or uncertain phone execution.
+Consumers may choose a different query after that outcome; Taktik does not choose search interests.
 
 `taktik.core.shared.phone_interaction.Phone` owns a single device session and uses the existing Taktik device, gesture, and keyboard helpers.
 Mutations return a result that must be checked, and uncertain execution must not be blindly retried.

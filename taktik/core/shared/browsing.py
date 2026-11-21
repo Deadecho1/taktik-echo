@@ -51,3 +51,7 @@ class ActionResult:
 
 
 PlatformError = InteractionError
+
+
+class EmptySearchResults(PlatformError):
+    """The app explicitly confirmed that a search has no results."""

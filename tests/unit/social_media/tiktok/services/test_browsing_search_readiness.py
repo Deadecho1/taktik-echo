@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from taktik.core.shared.browsing import PlatformError
+from taktik.core.shared.browsing import EmptySearchResults, PlatformError
 from taktik.core.shared.phone_interaction import InteractionCancelled, Result, Status
 from taktik.core.social_media.tiktok.services.browsing.browser import TikTok
 
@@ -16,7 +16,7 @@ def screen(contents=""):
     return (
         f'<hierarchy><android.widget.FrameLayout package="{PACKAGE}" '
         f'bounds="[0,0][1440,3216]" enabled="true">{contents}'
-        '</android.widget.FrameLayout></hierarchy>'
+        "</android.widget.FrameLayout></hierarchy>"
     )
 
 
@@ -27,6 +27,11 @@ TOP = (
 TILE = (
     f'<android.widget.Button package="{PACKAGE}" content-desc="Video by Creator" '
     'bounds="[68,792][804,1968]" enabled="true"/>'
+)
+EMPTY = (
+    f'<android.widget.TextView package="{PACKAGE}" '
+    f'resource-id="{PACKAGE}:id/ze3" text="No results found" '
+    'bounds="[456,1786][984,1874]" enabled="true"/>'
 )
 
 
@@ -41,7 +46,10 @@ def delayed_search(*, tab_after=1.5, result_after=8, ambiguous=False):
         body = TOP
         if ambiguous:
             body += TOP.replace("[104,368][232,528]", "[400,368][600,528]")
-        if state.selected_at is not None and state.now - state.selected_at >= result_after:
+        if (
+            state.selected_at is not None
+            and state.now - state.selected_at >= result_after
+        ):
             body += TILE
         return screen(body)
 
@@ -119,3 +127,26 @@ def test_cancellation_interrupts_search_readiness():
     with pytest.raises(InteractionCancelled):
         browser.transition("search", "herbal remedy shop")
     assert state.taps == []
+
+
+def test_confirmed_empty_results_are_distinct_from_a_navigation_failure():
+    browser, state = delayed_search(tab_after=0)
+    browser.phone.read = lambda _: screen(TOP + EMPTY)
+
+    with pytest.raises(EmptySearchResults, match="no results"):
+        browser.transition("search", "itchy scalp oil")
+
+    assert len(state.taps) == 1
+    assert 0.5 <= state.now < 20
+
+
+def test_a_transient_empty_label_does_not_hide_results_that_arrive():
+    browser, state = delayed_search(tab_after=0, result_after=0.5)
+    original = browser.phone.read
+    browser.phone.read = lambda kind: (
+        screen(TOP + EMPTY) if state.now == 0 else original(kind)
+    )
+
+    browser.transition("search", "herbal remedy shop")
+
+    assert state.opened

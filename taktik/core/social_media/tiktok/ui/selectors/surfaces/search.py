@@ -107,6 +107,11 @@ class SearchSelectors:
         '//*[contains(@resource-id, ":id/zpl")]',
     ])
 
+    # Confirmed on the English 47.0.3 results page.
+    empty_results: List[str] = field(default_factory=lambda: [
+        '//*[@resource-id="com.zhiliaoapp.musically:id/ze3" and @text="No results found"]',
+    ])
+
     # === Filtres de recherche (tabs on results page) ===
     top_tab: List[str] = field(default_factory=lambda: [
         '//android.widget.TextView[@text="Top"]',
