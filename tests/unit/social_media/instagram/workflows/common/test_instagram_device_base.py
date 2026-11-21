@@ -69,6 +69,9 @@ class _App:
         self.calls.append("version")
         return _App.version
 
+    def require_pinned_version(self):
+        return _App.version
+
 
 @pytest.fixture
 def phone(monkeypatch):

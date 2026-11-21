@@ -118,6 +118,9 @@ class _AppService:
     def get_installed_version(self):
         return None
 
+    def require_pinned_version(self):
+        return "447.0.0.55.81"
+
     def restart(self):
         self.calls.append("restart")
         self._conn.device_manager.stop_app(self.package)

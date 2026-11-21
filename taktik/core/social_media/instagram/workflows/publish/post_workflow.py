@@ -38,6 +38,7 @@ from typing import Callable, List, Optional
 from loguru import logger
 
 from taktik.core.clone import get_active_package
+from taktik.core.shared.device.app_versions import require_pinned_app_version
 from taktik.core.database.account_health import witness_for
 from taktik.core.shared.diagnostics import run_halt
 from taktik.core.shared.diagnostics.action_block import look_for_action_block
@@ -94,13 +95,14 @@ class InstagramPostWorkflow:
         story_via_feed: bool = False,
         account_username: Optional[str] = None,
     ):
+        self.package_name = package_name or get_active_package()
+        require_pinned_app_version(device_id, self.package_name, "instagram")
         self.device = device
         # The operated account: a refused publication is filed in its health history.
         self.account_username = (account_username or "").strip().lstrip("@") or None
         self.device_id = device_id
         self._log = log or _default_log
         self._status = status or _default_status
-        self.package_name = package_name or get_active_package()
         # post | reel | carousel | story. post and reel share the same composer flow
         # (a video auto-routes to the reel composer); carousel adds multi-select; story
         # uses a distinct tail (no Next/caption screen, "Your story" button).
@@ -657,6 +659,7 @@ class InstagramPostWorkflow:
     def _launch_app(self) -> None:
         """Launch Instagram (clone-aware), mirroring AppManagementMixin._open_instagram."""
         pkg = self.package_name
+        require_pinned_app_version(self.device_id, pkg, "instagram")
         try:
             if pkg.startswith("com.taktik."):
                 self.device.shell(

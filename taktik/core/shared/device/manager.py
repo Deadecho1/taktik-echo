@@ -321,7 +321,12 @@ class DeviceManager:
         if not self.device:
             if not self.connect():
                 return False
-                
+
+        from taktik.core.shared.device.app_versions import require_pinned_app_version
+
+        # Outside the transport catch: report the refusal, not a generic launch failure.
+        require_pinned_app_version(self.device_id, package_name)
+
         try:
             if stop_first:
                 self.device.app_stop(package_name)

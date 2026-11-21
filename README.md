@@ -47,6 +47,28 @@ The maintained branch does not imply that every installed X layout is supported.
 
 ## Installation
 
+### App version policy
+
+Automation requires an exact pinned app version, checked on the selected phone at startup and relaunch.
+The supported pins are TikTok `43.1.4` and `47.0.3`, and Instagram `410.0.0.53.71` and `447.0.0.55.81`.
+Gmail, YouTube, Threads, and any other app without an explicit pin refuse automation.
+An unsupported or unreadable version produces an error naming the app and allowed versions before app automation starts.
+Stop and cleanup remain available.
+
+Install one of the pinned builds and disable its automatic updates on the phone.
+Taktik does not change the phone's update settings or adapt automatically to a newer app version.
+Maintainers declare exact pins in `taktik/core/shared/device/apps.py` after validating the build.
+The historical selector families in [COMPATIBILITY.md](COMPATIBILITY.md) do not authorize other builds.
+
+### Tested on
+
+Recorded validation covers real Pixel 3a and Pixel 6a phones.
+The pinned reference builds are TikTok `43.1.4` and Instagram `410.0.0.53.71`; the newer validated builds are TikTok `47.0.3` and Instagram `447.0.0.55.81`.
+See [COMPATIBILITY.md](COMPATIBILITY.md) for each build's recorded phone, ABI, language, evidence, and known limits.
+Emulators are not tested.
+
+### Setup
+
 For Persona Engine, run its `scripts/install_taktik.py` and install the resulting pinned checkout into that workspace's environment.
 The checkout lives at `vendor/taktik-echo`.
 

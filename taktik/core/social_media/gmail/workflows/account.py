@@ -43,8 +43,8 @@ from taktik.core.shared.device.screen import screen_size_of
 from taktik.core.social_media.gmail.workflows._notifier import (
     GmailWorkflowNotifier,
     _NULL_NOTIFIER,
-    _NullNotifier,
-    _CURRENT_NOTIFIER,
+    _NullNotifier as _NullNotifier,
+    _CURRENT_NOTIFIER as _CURRENT_NOTIFIER,
     _with_bound_notifier,
     _ipc,
 )
@@ -55,8 +55,6 @@ from taktik.core.social_media.gmail.ui.selectors import (
     GOOGLE_SIGNIN_SELECTORS,
     GOOGLE_VERIFY_SELECTORS,
     GOOGLE_RECOVERY_SELECTORS,
-    GMAIL_INBOX_SELECTORS,
-    GOOGLE_RECAPTCHA_SELECTORS,
 )
 
 
@@ -98,6 +96,9 @@ class GmailWorkflow(GmailOtpReadingMixin):
         device_id: str,
         notifier: Optional[GmailWorkflowNotifier] = None,
     ):
+        from taktik.core.shared.device.app_versions import require_pinned_app_version
+
+        require_pinned_app_version(device_id, _GMAIL_PACKAGE, "gmail")
         self.device    = device
         self.device_id = device_id
         self.logger    = logger.bind(device=device_id)

@@ -1,9 +1,23 @@
 # App compatibility
 
 <!-- GENERATED - do not edit. Sources: taktik/core/compat/data/app_builds.json and
-     taktik/core/compat/data/overrides/<app>.yaml. Regenerate: python scripts/audits/audit_compatibility_file.py --write -->
+     taktik/core/compat/data/overrides/<app>.yaml and taktik/core/shared/device/apps.py.
+     Regenerate: python scripts/audits/audit_compatibility_file.py --write -->
 
-The Instagram and TikTok versions TAKTIK supports. Install the **original, unmodified** APK
+## Exact runtime pins
+
+Only these exact app versions may run; selector families below do not authorize other builds:
+
+- Instagram: `410.0.0.53.71`, `447.0.0.55.81`.
+- Tiktok: `43.1.4`, `47.0.3`.
+
+Apps without an explicit pin refuse automation, including Gmail, YouTube, and Threads.
+An unreadable or mismatched installed version is refused before app automation starts.
+Disable automatic updates on the phone; Taktik does not change update settings.
+
+## Historical selector compatibility
+
+The tables record selector coverage and validation evidence. Install the **original, unmodified** APK
 of a listed version; the download column opens a search for that exact version on
 [APKMirror](https://www.apkmirror.com), a public mirror of the original packages.
 
@@ -14,7 +28,7 @@ Status:
   and the known limits are listed under each table.
 - **Supported**: the bot carries selector adjustments for this version
   (`taktik/core/compat/data/overrides/<app>.yaml`) and a validated build of it runs on one of our
-  phones. A version written `447.x` covers every build of that family.
+  phones. A version written `447.x` describes selector coverage for that family, not runtime permission.
 - **Under validation**: being tested end to end; expect gaps.
 - **Adjusted, not validated**: the bot carries selector adjustments for this version, but none of
   our phones runs it and no validation is planned; expect gaps.

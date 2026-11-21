@@ -1,4 +1,13 @@
+import pytest
+
+from taktik.core.shared.device import app_inspection, apps
 from taktik.core.social_media.gmail.workflows.account import GmailWorkflow
+
+
+@pytest.fixture(autouse=True)
+def pinned_test_build(monkeypatch):
+    monkeypatch.setitem(apps.PINNED_VERSIONS, "gmail", ("test-build",))
+    monkeypatch.setattr(app_inspection, "get_installed_app_version", lambda *_: "test-build")
 
 
 class _FakeNotifier:

@@ -83,9 +83,12 @@ class TaktikDevice:
         if name == "enter":
             return self._call("press", name)
         if name in {"launch", "stop"}:
+            if name == "launch":
+                self._require_pinned_app(value)
             return self._call("app_start" if name == "launch" else "app_stop", value)
         if name == "open_url":
             package, url = value
+            self._require_pinned_app(package)
             return self.shell(
                 [
                     "am",
@@ -100,6 +103,18 @@ class TaktikDevice:
             )
         raise NotImplementedError(f"Unknown Android command: {name}")
 
+    def _require_pinned_app(self, package):
+        from taktik.core.shared.device.app_versions import (
+            AppVersionRefused,
+            require_pinned_app_version,
+        )
+
+        try:
+            require_pinned_app_version(self.serial, package)
+        except AppVersionRefused as error:
+            # A preflight refusal means no mutation ran, not uncertain execution.
+            raise InteractionError(str(error)) from error
+
     def shell(self, args):
         reply = self._call("shell", args, timeout=10)
         if reply.exit_code != 0:
@@ -108,8 +123,8 @@ class TaktikDevice:
 
     def zone(self, bounds, exclude=()):
         w, h = self.read("size")
-        l, t, r, b = bounds
-        clipped = (max(0, int(l)), max(0, int(t)), min(w, int(r)), min(h, int(b)))
+        left, top, right, bottom = bounds
+        clipped = (max(0, int(left)), max(0, int(top)), min(w, int(right)), min(h, int(bottom)))
         if clipped[0] >= clipped[2] or clipped[1] >= clipped[3]:
             raise InteractionError("Target has no usable on-screen area.")
         zone = free_tap_zone(clipped, exclude)

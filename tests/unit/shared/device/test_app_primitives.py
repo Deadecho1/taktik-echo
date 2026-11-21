@@ -281,6 +281,9 @@ class _Manager:
 
 @pytest.fixture
 def slept(monkeypatch):
+    from taktik.core.shared.device import app_inspection
+
+    monkeypatch.setattr(app_inspection, "get_installed_app_version", lambda *_: "447.0.0.55.81")
     pauses = []
     monkeypatch.setattr(app_manager.time, "sleep", pauses.append)
     return pauses

@@ -6,6 +6,7 @@ import subprocess
 import time
 from typing import Callable
 
+from taktik.core.shared.device.app_versions import require_pinned_app_version
 
 LogFn = Callable[[str, str], None]
 RunFn = Callable[..., subprocess.CompletedProcess]
@@ -22,6 +23,7 @@ def launch_app_non_blocking(
     log: LogFn | None = None,
 ) -> bool:
     """Launch a TikTok package without waiting for an activity to become ready."""
+    require_pinned_app_version(device_id, package_name, "tiktok")
     try:
         run(
             [
@@ -75,6 +77,7 @@ def restart_tiktok_package(
     log: LogFn | None = None,
 ) -> bool:
     """Force-stop and relaunch a TikTok package through the shared runtime path."""
+    require_pinned_app_version(device_id, package_name, "tiktok")
     try:
         device.app_start(package_name, TIKTOK_SPLASH_ACTIVITY, stop=True)
         return True

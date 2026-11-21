@@ -94,6 +94,8 @@ def is_package_installed(device_id: str, package_name: str) -> bool:
             text=True,
             timeout=10,
         )
+        if result.returncode != 0:
+            return False
         installed = {
             line.strip().replace("package:", "").strip()
             for line in (result.stdout or "").splitlines()
@@ -126,6 +128,8 @@ def get_installed_app_version(device_id: str, package_name: str, platform: str) 
             text=True,
             timeout=10,
         )
+        if result.returncode != 0:
+            return None
         for line in result.stdout.splitlines():
             line = line.strip()
             if line.startswith("versionName="):

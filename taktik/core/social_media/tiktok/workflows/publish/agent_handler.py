@@ -86,7 +86,9 @@ def _publish_text(request: PublishRequest, device, device_id: str, notifier: Any
         from taktik.core.social_media.tiktok.services.publish import text_post
 
         _step(step_hook, "00_before")
-        result = text_post.publish_text_post(device, device_id, request.text, to_story=request.to_story)
+        result = text_post.publish_text_post(
+            device, device_id, request.text, to_story=request.to_story, package_name=request.package_name
+        )
         _step(step_hook, "99_after")
     except Exception as exc:
         return _fail(notifier, f"Text post failed: {exc}")

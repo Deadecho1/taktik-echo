@@ -13,6 +13,8 @@ from typing import Any, Callable, Protocol
 
 from loguru import logger
 
+from taktik.core.shared.device.app_versions import require_pinned_app_version
+
 from taktik.core.social_media.youtube.ui.selectors.account import (
     ACCOUNT_SELECTORS,
     YOUTUBE_HOME_ACTIVITY,
@@ -43,6 +45,7 @@ class YouTubeAccountWorkflow:
         account_repository: AccountRepository | None = None,
         sleeper: Callable[[float], None] = time.sleep,
     ):
+        require_pinned_app_version(device_id, YOUTUBE_PACKAGE, "youtube")
         self.device = device
         self.device_id = device_id
         self._notifier = notifier

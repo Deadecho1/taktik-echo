@@ -11,7 +11,7 @@ from typing import Optional
 
 from loguru import logger
 
-from taktik.core.shared.device.app_control import force_stop_app
+from taktik.core.shared.device.app_control import force_stop_app as force_stop_app
 from taktik.core.shared.device.app_inspection import (
     get_installed_app_version,
     is_app_running,
@@ -62,6 +62,7 @@ class AppService:
             logger.error("Cannot launch: not connected")
             return False
 
+        self.require_pinned_version()
         logger.info(f"Launching {self._platform}...")
         result = device_manager.launch_app(self.package, self.activity)
         if result:
@@ -85,6 +86,7 @@ class AppService:
 
     def restart(self) -> bool:
         """Force-stop then relaunch the app for a clean state."""
+        self.require_pinned_version()
         logger.info(f"Restarting {self._platform} (force-stop + launch)...")
         self.stop()
         return self.launch()
@@ -96,3 +98,9 @@ class AppService:
     def get_installed_version(self) -> Optional[str]:
         """Return the installed app version reported by ADB."""
         return get_installed_app_version(self._conn.device_id, self.package, self._platform)
+
+    def require_pinned_version(self) -> str:
+        """Refuse before app startup or platform-specific connection work."""
+        from taktik.core.shared.device.app_versions import require_pinned_app_version
+
+        return require_pinned_app_version(self._conn.device_id, self.package, self._platform)

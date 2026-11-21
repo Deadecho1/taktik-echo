@@ -12,6 +12,14 @@ import pytest
 
 
 def _recorder(monkeypatch, module, push_name):
+    from taktik.core.shared.device import app_inspection, apps
+
+    # These cleanup scenarios use a declared synthetic YouTube build.
+    monkeypatch.setitem(apps.PINNED_VERSIONS, "youtube", ("test-build",))
+    monkeypatch.setattr(
+        app_inspection, "get_installed_app_version",
+        lambda serial, package, platform: apps.PINNED_VERSIONS[platform][0],
+    )
     calls = []
 
     def purge(device_id, **_kwargs):

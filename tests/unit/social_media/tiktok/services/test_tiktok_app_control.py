@@ -1,11 +1,20 @@
 import subprocess
 
+import pytest
+
+from taktik.core.shared.device import app_inspection
+
 from taktik.core.social_media.tiktok.services.runtime.app_control import (
     TIKTOK_SPLASH_ACTIVITY,
     force_stop_app_package,
     launch_app_non_blocking,
     restart_tiktok_package,
 )
+
+
+@pytest.fixture(autouse=True)
+def pinned_build(monkeypatch):
+    monkeypatch.setattr(app_inspection, "get_installed_app_version", lambda *_: "47.0.3")
 
 
 def completed() -> subprocess.CompletedProcess:

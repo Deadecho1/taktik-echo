@@ -40,6 +40,7 @@ from taktik.core.social_media.tiktok.services.runtime.app_control import (
     restart_tiktok_package,
 )
 from taktik.core.social_media.tiktok.services.runtime.package_resolver import resolve_tiktok_package
+from taktik.core.shared.device.app_versions import require_pinned_app_version
 from taktik.core.social_media.tiktok.services.publish.dialogs import (
     dismiss_post_popups,
     handle_permission_dialog,
@@ -172,6 +173,9 @@ class TikTokUploadWorkflow:
             if not os.path.isfile(local_path):
                 return self._error("file_not_found", f"File not found: {local_path}")
 
+            tiktok_pkg = package_name or resolve_tiktok_package(self.device_id)
+            require_pinned_app_version(self.device_id, tiktok_pkg, "tiktok")
+
             # Reclaim what earlier runs pushed, as the Instagram post does: a phone that only
             # publishes here would otherwise keep every medium, legacy names included.
             try:
@@ -181,7 +185,6 @@ class TikTokUploadWorkflow:
 
             # What TikTok already saved in the camera folder, read before it can save its copy of
             # this video: the copy is what appears after, under TikTok's package.
-            tiktok_pkg = package_name or resolve_tiktok_package(self.device_id)
             saved_before = list_media_saved_by(self.device_id, tiktok_pkg)
             if saved_before is None:
                 _ipc.log("warning", "[gallery] the media TikTok saved could not be listed: "

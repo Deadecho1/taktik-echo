@@ -22,7 +22,9 @@ def _filed(monkeypatch):
 
 def test_an_instagram_refusal_is_filed_under_the_account_the_app_names(monkeypatch):
     from taktik.core.social_media.instagram.workflows.publish.post_workflow import InstagramPostWorkflow
+    from taktik.core.shared.device import app_inspection
 
+    monkeypatch.setattr(app_inspection, "get_installed_app_version", lambda *_: "447.0.0.55.81")
     filed = _filed(monkeypatch)
     monkeypatch.setattr(InstagramPostWorkflow, "_build_actions", lambda self, device: {})
     workflow = InstagramPostWorkflow(object(), "device-1", package_name="com.instagram.android",

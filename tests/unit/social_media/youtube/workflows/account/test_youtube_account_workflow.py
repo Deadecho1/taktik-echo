@@ -1,6 +1,15 @@
+import pytest
+
+from taktik.core.shared.device import app_inspection, apps
 from taktik.core.social_media.youtube.workflows.account.account_workflow import (
     YouTubeAccountWorkflow,
 )
+
+
+@pytest.fixture(autouse=True)
+def pinned_test_build(monkeypatch):
+    monkeypatch.setitem(apps.PINNED_VERSIONS, "youtube", ("test-build",))
+    monkeypatch.setattr(app_inspection, "get_installed_app_version", lambda *_: "test-build")
 
 
 class FakeElement:

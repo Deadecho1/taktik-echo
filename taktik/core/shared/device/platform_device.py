@@ -64,6 +64,7 @@ class PlatformDeviceBase:
             package_override=override,
         )
 
+        self._app.require_pinned_version()
         self._after_connect()
         # Facade LAST, on purpose: `_after_connect` may swap the device for a proxy (the
         # Instagram clone rewriter does), and the facade has to wrap whatever ends up in play

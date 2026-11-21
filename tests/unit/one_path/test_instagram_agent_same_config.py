@@ -38,6 +38,26 @@ def test_the_cli_restarts_instagram_like_the_bridge(iga_rig):
     assert f"stop {INSTAGRAM}" in bridge
 
 
+def test_unpinned_version_is_reported_before_automation_from_both_hosts(iga_rig, monkeypatch):
+    from taktik.core.shared.device import app_inspection
+
+    monkeypatch.setattr(app_inspection, "get_installed_app_version", lambda *_: "456.1.0.56.78")
+    assert iga_rig.run_agent_bridge(agent_config()) == 1
+    errors = [payload for kind, payload in iga_rig.events if kind == "error"]
+    assert errors and errors[-1]["error_code"] == "APP_VERSION_REFUSED"
+    assert "456.1.0.56.78" in errors[-1]["error"]
+    assert iga_rig.workflows == []
+    assert not any(call.startswith(("launch ", "stop ")) for call in iga_rig.calls)
+
+    iga_rig.reset()
+    result = iga_rig.run_agent_cli(_params(agent_config()))
+    assert result.exit_code == 1
+    assert "456.1.0.56.78" in result.output
+    assert "447.0.0.55.81" in result.output
+    assert iga_rig.workflows == []
+    assert not any(call.startswith(("launch ", "stop ")) for call in iga_rig.calls)
+
+
 def test_the_cli_starts_a_clone_on_its_package(iga_rig):
     result = iga_rig.run_agent_cli(_params(agent_config(packageName=CLONE)))
 

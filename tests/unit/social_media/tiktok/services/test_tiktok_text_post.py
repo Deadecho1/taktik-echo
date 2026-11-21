@@ -15,10 +15,18 @@ placeholder n'est pas du texte, et publier là-dessus mettrait un post vide sur 
 
 import pytest
 
+from taktik.core.shared.device import app_inspection
+
+
 from taktik.core.social_media.tiktok.services.publish.text_post import (
     _looks_written,
     publish_text_post,
 )
+
+
+@pytest.fixture(autouse=True)
+def installed_pinned_build(monkeypatch):
+    monkeypatch.setattr(app_inspection, "get_installed_app_version", lambda *_: "47.0.3")
 
 
 class _Screen:

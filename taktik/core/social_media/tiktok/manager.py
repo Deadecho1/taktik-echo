@@ -4,6 +4,7 @@ from loguru import logger
 
 from taktik.core.clone.packages.package_map import get_package_variants
 from taktik.core.shared.device.app_inspection import is_platform_foreground
+from taktik.core.shared.device.app_versions import require_pinned_app_version
 from taktik.core.shared.device.manager import DeviceManager
 from taktik.core.shared.platform.social_media_base import SocialMediaBase
 
@@ -100,6 +101,7 @@ class TikTokManager(SocialMediaBase):
             self.logger.error("Cannot restart: no TikTok package found on device.")
             return False
 
+        require_pinned_app_version(self.device_manager.device_id, pkg, "tiktok")
         self.stop()
         time.sleep(1.5)
 

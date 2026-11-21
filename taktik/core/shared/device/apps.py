@@ -37,6 +37,13 @@ APPS = {
     },
 }
 
+# Exact supported builds. An app absent from this table is not authorized for
+# automation, even when its package and workflow are present in the catalog.
+PINNED_VERSIONS = {
+    "instagram": ("410.0.0.53.71", "447.0.0.55.81"),
+    "tiktok": ("43.1.4", "47.0.3"),
+}
+
 
 PLATFORM_ALTERNATIVES = {
     "tiktok": [
@@ -74,3 +81,13 @@ def packages_for_platform(platform: str) -> List[str]:
 def alternatives_for_platform(platform: str) -> List[str]:
     """Return known package alternatives for a platform."""
     return list(PLATFORM_ALTERNATIVES.get(platform, []))
+
+
+def platform_for_package(package: str) -> str | None:
+    """Resolve the actual app package, including maintained variants and clones."""
+    from taktik.core.clone.packages.package_map import belongs_to_platform
+
+    for platform in APPS:
+        if package in packages_for_platform(platform) or belongs_to_platform(package, platform):
+            return platform
+    return None

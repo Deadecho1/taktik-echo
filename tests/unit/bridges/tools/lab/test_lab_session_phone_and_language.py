@@ -76,8 +76,10 @@ def no_adb(monkeypatch):
 @pytest.fixture
 def no_sleep(monkeypatch):
     import time
+    from taktik.core.shared.device import app_inspection
 
     monkeypatch.setattr(time, "sleep", lambda seconds: None)
+    monkeypatch.setattr(app_inspection, "get_installed_app_version", lambda *_: "47.0.3")
 
 
 @pytest.fixture

@@ -29,6 +29,9 @@ from typing import Any, Dict, Optional
 
 from loguru import logger
 
+from taktik.core.shared.device.app_versions import require_pinned_app_version
+from taktik.core.social_media.tiktok.services.runtime.package_resolver import resolve_tiktok_package
+
 from taktik.core.shared.input.taktik_keyboard import type_text_checked
 from taktik.core.social_media.tiktok.actions.base.utils import first_matching, first_text
 from taktik.core.social_media.tiktok.ui.selectors.flows.publish import (
@@ -51,6 +54,7 @@ def publish_text_post(
     *,
     to_story: bool = False,
     click: Optional[Any] = None,
+    package_name: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Write and publish one text post. Returns what happened, step by step.
 
@@ -72,6 +76,8 @@ def publish_text_post(
         result["error"] = "empty text"
         return result
 
+    package = package_name or resolve_tiktok_package(device_id)
+    require_pinned_app_version(device_id, package, "tiktok")
     tap = click or (lambda selectors, timeout=4: _tap(device, selectors, timeout))
 
     result["step"] = "open_create"

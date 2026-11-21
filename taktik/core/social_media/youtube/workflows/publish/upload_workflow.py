@@ -25,11 +25,10 @@ from typing import Optional
 from loguru import logger
 
 from taktik.core.shared.device.media_store import purge_pushed_media, push_and_scan
-from taktik.core.shared.device.permissions import PermissionHandler, ALLOW_SELECTORS, DENY_SELECTORS
+from taktik.core.shared.device.permissions import PermissionHandler
 from taktik.core.shared.device.wait import wait_for_any as _wait_for_any_shared, try_tap as _try_tap_shared
 from taktik.core.shared.input.taktik_keyboard import (
     type_with_taktik_keyboard,
-    clear_text_with_taktik_keyboard,
 )
 from taktik.core.social_media.youtube.ui.selectors import UPLOAD_SELECTORS, YOUTUBE_PACKAGE
 
@@ -112,6 +111,9 @@ class YouTubeUploadWorkflow:
     """
 
     def __init__(self, device, device_id: str):
+        from taktik.core.shared.device.app_versions import require_pinned_app_version
+
+        require_pinned_app_version(device_id, YOUTUBE_PACKAGE, "youtube")
         self.device = device
         self.device_id = device_id
         self._perms = PermissionHandler(device, device_id)

@@ -16,6 +16,20 @@ from one_path_seams import RigNetwork, give_the_cli_a_connected_phone, patch_sea
 DEVICE_ID = "emulator-5554"
 
 
+@pytest.fixture(autouse=True)
+def installed_pinned_build(monkeypatch):
+    import importlib
+
+    from taktik.core.shared.device import app_inspection, apps
+
+    # Load the reader's re-export before replacing its source for this test.
+    importlib.import_module("taktik.core.shared.device.app_manager")
+    monkeypatch.setattr(
+        app_inspection, "get_installed_app_version",
+        lambda serial, package, platform: apps.PINNED_VERSIONS[platform][-1],
+    )
+
+
 class Rig:
     DEVICE_ID = DEVICE_ID
 
@@ -500,7 +514,7 @@ class Rig:
 
         from taktik.core.social_media.tiktok.services.publish import text_post
 
-        def fake_publish_text_post(device, device_id, text, *, to_story=False, click=None):
+        def fake_publish_text_post(device, device_id, text, *, to_story=False, click=None, package_name=None):
             rig.calls.append(f"text_post {device_id} {text!r} to_story={to_story}")
             if rig.text_post_raises:
                 raise RuntimeError("the composer vanished")

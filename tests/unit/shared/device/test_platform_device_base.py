@@ -60,6 +60,9 @@ class _App:
         self.calls.append("restart")
         return True
 
+    def require_pinned_version(self):
+        self.version_checked = True
+
     def stop(self):
         self.calls.append("stop")
         if isinstance(self.stopped, Exception):
@@ -130,6 +133,7 @@ def test_the_facade_wraps_what_the_platform_mounted_after_the_connection():
 
     class _Mounting(_Platform):
         def _after_connect(self):
+            assert self._app.version_checked
             self.device = mounted
 
     base = _Mounting("SERIAL")

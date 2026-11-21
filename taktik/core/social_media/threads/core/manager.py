@@ -12,6 +12,7 @@ from loguru import logger
 from taktik.core.shared.platform.social_media_base import SocialMediaBase
 from taktik.core.shared.device.manager import DeviceManager
 from taktik.core.shared.device.app_inspection import is_app_running
+from taktik.core.shared.device.app_versions import require_pinned_app_version
 
 
 class ThreadsManager(SocialMediaBase):
@@ -38,6 +39,7 @@ class ThreadsManager(SocialMediaBase):
         return is_app_running(self.device_manager.device, self.PACKAGE_NAME, "threads")
 
     def launch(self) -> bool:
+        require_pinned_app_version(self.device_manager.device_id, self.PACKAGE_NAME, "threads")
         self.logger.info("Launching Threads...")
         if not self.is_installed():
             self.logger.error("Threads is not installed on this device.")
@@ -69,6 +71,7 @@ class ThreadsManager(SocialMediaBase):
         """Force stop and relaunch Threads for a clean state."""
         import time
 
+        require_pinned_app_version(self.device_manager.device_id, self.PACKAGE_NAME, "threads")
         self.logger.info("Restarting Threads (force stop + launch)...")
         self.stop()
         time.sleep(1.5)
