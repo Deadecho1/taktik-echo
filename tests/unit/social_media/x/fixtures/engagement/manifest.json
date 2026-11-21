@@ -1,0 +1,119 @@
+{
+  "size": [
+    1080,
+    2340
+  ],
+  "version": "12.42.0-prod.01",
+  "android": "13",
+  "visual_review": "pending",
+  "fixtures": [
+    {
+      "file": "source.xml",
+      "source": "tests/smoke/x-engagement-probes/20261119T130541.305786Z/source.xml",
+      "source_sha256": "68ebc1cba24a9d438664ffeeec55599f564720dbdea02ebc829ce85290071f33",
+      "sha256": "3c3b42c3c1e5e3c7d939caaf813715e72899140a1a91f45fcc1fd2a46fb392f4"
+    },
+    {
+      "file": "liked.xml",
+      "source": "tests/smoke/x-engagement-probes/20261119T130541.305786Z/failure.xml",
+      "source_sha256": "575567b944d763416d676e1ef5159cecbd95312e985d907491d63b6a4ebe4955",
+      "sha256": "3e11bd9d9b8e55180c67c137ed26510bdf6f58f54aaf8eae6341790fde985fba"
+    },
+    {
+      "file": "like-animation.xml",
+      "source": "tests/smoke/x-engagement-probes/20261119T130541.305786Z/after-like.xml",
+      "source_sha256": "25c01f7c9c84d2704b1a461129d28895c0fabe7e83d4493a1ed96923cf10a69e",
+      "sha256": "8bd3ea7b1993e5b6e73cc74c03c6c9fba2b3046cb91efd43c37d22c976d86fff"
+    },
+    {
+      "file": "bookmarked.xml",
+      "source": "tests/smoke/x-engagement-probes/20261119T130713.107177Z/failure.xml",
+      "source_sha256": "4ef48c21e68e79b5ea1cb670a210e3827d9886d54bb82e9d01f870b8ed903528",
+      "sha256": "00277b1790b3efd795c56998e8ecbf5d47a4e489ff899c28d61bf8d9739676ed"
+    },
+    {
+      "file": "bookmark-toast.xml",
+      "source": "tests/smoke/x-engagement-probes/20261119T130713.107177Z/after-save.xml",
+      "source_sha256": "59fa051300243946561af2ba1d4cc67000e186d5c4783a3ddcb68da9bc36ecc4",
+      "sha256": "36a07cb918f1156f9732d246b358473fb5164068232e2118460f49cc8ede757a"
+    },
+    {
+      "file": "search-options.xml",
+      "source": "tests/smoke/x-engagement-probes/20261119T130432.701754Z/options.xml",
+      "source_sha256": "223d986853ca94a9584cb2931fa1260a88e1428afc1fa2a3044e539aca17dfdc",
+      "sha256": "b2916e70624cf70c8d69f699d9b29c77fb83016c396047f75fb02abd454a79d6"
+    },
+    {
+      "file": "followed-options.xml",
+      "source": "tests/smoke/x-engagement-probes/20261119T131238.865880Z/options.xml",
+      "source_sha256": "02bc4e898b716525312689ad703d2467aa023abca5ff7a539a49ffc772681286",
+      "sha256": "2d713391a52f2ba678db3b064868295b499a192a62852e4cbe9cf8ba093c4aa7"
+    },
+    {
+      "file": "unfollowed.xml",
+      "source": "tests/smoke/x-engagement-probes/20261119T131238.865880Z/after-unfollow-stable.xml",
+      "source_sha256": "00aadfb91ade61c4410b5e77a3747c7b824fc672cb23ff9e62d010e43c510046",
+      "sha256": "b7e226b38b8ffc5a56629edc2f0e264a8356b23a88af99a36eb21a1b17eff5a5"
+    },
+    {
+      "file": "follow-toast.xml",
+      "source": "tests/smoke/x-engagement-probes/20261119T131023.557694Z/after-follow.xml",
+      "source_sha256": "3ff9df40502f0a91f467c2947605a5fdeb635b658c8057ee49db5d92a7995813",
+      "sha256": "ca62f87df42a7a1a44d4bfe4a0f351910dc2f500e5ea01ec29a95b113b298339"
+    },
+    {
+      "file": "home-source.xml",
+      "source": "tests/smoke/x-engagement-probes/20261119T131459.946659Z/source.xml",
+      "source_sha256": "614e01d03edf5fb1e684e1f0292f863a5ecc42dab1133a2f528f1c95c9ea2847",
+      "sha256": "53e52498fa6c4cf6a5595abe7bd1060b7c03dc07db204535f0728e1dfb10ee63"
+    },
+    {
+      "file": "home-options.xml",
+      "source": "tests/smoke/x-engagement-probes/20261119T131459.946659Z/options.xml",
+      "source_sha256": "72d33f1f708bc852a1526d2ef4287b68c63ae7536a5e2d932902a696012d06e7",
+      "sha256": "76de7fadcd7b7d4d586e9b7fdec7a8ddbe47868a45de1fbafc50d2bcce871e55"
+    },
+    {
+      "file": "feedback.xml",
+      "source": "tests/smoke/x-engagement-probes/20261119T131557.158636Z/feedback-stable.xml",
+      "source_sha256": "f1ed5c62dad35b497e3fbd826f9c0f08cb118caa57b68c601f041ad5aff5292e",
+      "sha256": "cd673e54b11dfb72f2ed73e579bcfb1d99be58babf454f2f8a16c14371b50c87"
+    },
+    {
+      "file": "full-screen-dismissal.xml",
+      "source": "tests/smoke/x-engagement-runs/20261119T132223.584466Z/snapshot-051.xml",
+      "source_sha256": "706ed54950a790399889e9ebb8d926b773f7d068b4796296ca58ed64f59c2023",
+      "sha256": "998408b1919a14fae6494c7da5ebf41d641263244b74f815469c2b2752d1f542"
+    },
+    {
+      "file": "feedback-scrolling-source.xml",
+      "source": "tests/smoke/x-engagement-runs/20261119T132553.964392Z/source.xml",
+      "source_sha256": "00091bd9718c8d1a63050673b7bc73f78f99e70730ec70caa8bd77ff80e21d8e",
+      "sha256": "65dd6ba1231f0dc60066006ffd45da69f9cbf21a396c960d501836244af7eb2a"
+    },
+    {
+      "file": "feedback-scrolling-receipt.xml",
+      "source": "tests/smoke/x-engagement-runs/20261119T132553.964392Z/snapshot-020.xml",
+      "source_sha256": "2c69ff1c06d8330fe57a656cc509ebc389fc166a976b454499823c6704fc1edf",
+      "sha256": "8277107473541f253e2bd648dc10e7573488488c46c666c75789cc627b9645d5"
+    },
+    {
+      "file": "feedback-scroll-1.xml",
+      "source": "tests/smoke/x-engagement-runs/20261119T132553.964392Z/snapshot-022.xml",
+      "source_sha256": "27df3af5065508cdb5d6b3691c1d1dd8283f5a6144eb838f7297495d0886b65e",
+      "sha256": "49553565ea8fa8f1bd2da81c0fcd2a40dd78c5aa025f6463409d8754ea1ff6b1"
+    },
+    {
+      "file": "feedback-scroll-2.xml",
+      "source": "tests/smoke/x-engagement-runs/20261119T132553.964392Z/snapshot-023.xml",
+      "source_sha256": "f063186c05c439472d861c3fb84284fc59c88cf7721f4e554771aa7827593c72",
+      "sha256": "1c80dc17eb0def8de5c927ebb9e84cf320337980f01c46321f29af11932a5e76"
+    },
+    {
+      "file": "feedback-scroll-3.xml",
+      "source": "tests/smoke/x-engagement-runs/20261119T132553.964392Z/snapshot-024.xml",
+      "source_sha256": "a34568c1d3aae6ad4a5f4df7a5e3a7fea37fb9440802c50aea7f661411bde279",
+      "sha256": "6bf975d712bc59c7b501edb8f74c4f1302e79895a703270292157f94f8bb73b1"
+    }
+  ]
+}

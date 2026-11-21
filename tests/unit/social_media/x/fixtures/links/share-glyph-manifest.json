@@ -1,0 +1,29 @@
+{
+  "size": [
+    1080,
+    2340
+  ],
+  "kind": "synthetic_native_layout",
+  "fixtures": [
+    {
+      "file": "share-glyph-source.xml",
+      "kind": "synthetic_native_layout",
+      "sha256": "4fabb46af4df9244088b2058166a11e270a544f969faa531a79c4adda5a0e290"
+    },
+    {
+      "file": "share-glyph-complete-source.xml",
+      "kind": "synthetic_native_layout",
+      "sha256": "29f72c4fa6ada700697b97d88cb9e85d2fe56d2e7adb7ff75db4939565e6af5e"
+    },
+    {
+      "file": "share-glyph-sheet.xml",
+      "kind": "synthetic_native_layout",
+      "sha256": "0a31361863461a0ee6f132f76d7e69825e24b29c54c916b2b8ef09c04f486a4b"
+    },
+    {
+      "file": "share-glyph-receipt.xml",
+      "kind": "synthetic_native_layout",
+      "sha256": "db0076940ded73809e8232b15397462a1697653d2a56c683c201a612ee53ffb6"
+    }
+  ]
+}

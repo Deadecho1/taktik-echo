@@ -1,0 +1,151 @@
+{
+  "source": "tests/smoke/x-coverage-runs/20261119T215455.763044Z/result.json",
+  "query": "(from:NASA \"stellar merger\") OR (from:Sai60012 \"BHOLE\") OR (from:NASA until:2026-11-15)",
+  "tab": "latest",
+  "files": [
+    "long-text-00.xml",
+    "long-text-01.xml",
+    "long-text-02.xml",
+    "long-text-03.xml",
+    "long-text-04.xml",
+    "long-text-05.xml",
+    "long-text-06.xml",
+    "long-text-07.xml",
+    "long-text-08.xml",
+    "long-text-09.xml",
+    "long-text-10.xml",
+    "long-text-11.xml",
+    "long-text-12.xml",
+    "long-text-13.xml",
+    "long-text-14.xml",
+    "long-text-15.xml",
+    "long-text-16.xml",
+    "long-text-17.xml",
+    "long-text-18.xml",
+    "long-text-19.xml",
+    "long-text-20.xml",
+    "long-text-21.xml",
+    "long-text-22.xml",
+    "long-text-23.xml"
+  ],
+  "source_key": "91cc38950e46a0665763a71833db0d5729d25482beb015e3a040f8b4f9fc9e4b",
+  "successor_key": "b985813b9aef484cdc82172edd51f6523e95f019a2f7af5748be2ae88e110d0c",
+  "outcomes": [
+    {
+      "before_pending": false,
+      "offset": 1,
+      "moved": true
+    },
+    {
+      "before_pending": false,
+      "offset": 0,
+      "moved": true
+    },
+    {
+      "before_pending": false,
+      "offset": 1,
+      "moved": null
+    },
+    {
+      "before_pending": true,
+      "offset": 0,
+      "moved": null
+    },
+    {
+      "before_pending": true,
+      "offset": 0,
+      "moved": null
+    },
+    {
+      "before_pending": true,
+      "offset": 0,
+      "moved": null
+    },
+    {
+      "before_pending": true,
+      "offset": 0,
+      "moved": null
+    },
+    {
+      "before_pending": true,
+      "offset": 0,
+      "moved": true
+    },
+    {
+      "before_pending": false,
+      "offset": 0,
+      "moved": true
+    },
+    {
+      "before_pending": false,
+      "offset": 0,
+      "moved": true
+    },
+    {
+      "before_pending": false,
+      "offset": 0,
+      "moved": true
+    },
+    {
+      "before_pending": false,
+      "offset": 0,
+      "moved": true
+    },
+    {
+      "before_pending": false,
+      "offset": 0,
+      "moved": true
+    },
+    {
+      "before_pending": false,
+      "offset": 1,
+      "moved": null
+    },
+    {
+      "before_pending": true,
+      "offset": 0,
+      "moved": null
+    },
+    {
+      "before_pending": true,
+      "offset": 0,
+      "moved": null
+    },
+    {
+      "before_pending": true,
+      "offset": 0,
+      "moved": null
+    },
+    {
+      "before_pending": true,
+      "offset": 0,
+      "moved": null
+    },
+    {
+      "before_pending": true,
+      "offset": 0,
+      "moved": null
+    },
+    {
+      "before_pending": true,
+      "offset": 0,
+      "moved": null
+    },
+    {
+      "before_pending": true,
+      "offset": 0,
+      "moved": true
+    },
+    {
+      "before_pending": false,
+      "offset": 0,
+      "moved": true
+    },
+    {
+      "before_pending": false,
+      "offset": 0,
+      "moved": true
+    }
+  ],
+  "source_sha256": "87a1d4735c0f3270a9d1698c18ff5e4a0c6645f7809b6566364be4bd7a069bdb"
+}

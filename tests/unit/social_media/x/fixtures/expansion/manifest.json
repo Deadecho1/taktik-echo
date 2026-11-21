@@ -1,0 +1,115 @@
+{
+  "size": [
+    1080,
+    2340
+  ],
+  "x_version": "12.42.0-prod.01",
+  "visual_review": "partial: Lunar source/expanded approved; OpenAI discovery/detail companions not presented",
+  "fixtures": [
+    {
+      "file": "source.xml",
+      "source": "tests/smoke/x-expansion-probes/20261117T133437.381266Z/source.xml",
+      "source_sha256": "eeeabe41465d856269301253256ab2be74f8f3e58efa64e6b054151937e0cebd",
+      "sha256": "14fb8b85f4b36020379a536711bd7f8f1da8501cfca285a7ec56dbc7f3325398",
+      "visual_review": "not_presented"
+    },
+    {
+      "file": "expanded.xml",
+      "source": "tests/smoke/x-expansion-probes/20261117T133437.381266Z/expanded.xml",
+      "source_sha256": "b6a092585a0edbd594773fac0151c9ca259d9e6de98cd096e635fd0d5ec3361e",
+      "sha256": "a7d8dd27cf31f84919ee11031c6a9f83ed4f1a8f24bf6bf0af14410142b77fc5",
+      "visual_review": "not_presented"
+    },
+    {
+      "file": "expanded-reread.xml",
+      "source": "tests/smoke/x-expansion-probes/20261117T133437.381266Z/expanded-reread.xml",
+      "source_sha256": "b6a092585a0edbd594773fac0151c9ca259d9e6de98cd096e635fd0d5ec3361e",
+      "sha256": "a7d8dd27cf31f84919ee11031c6a9f83ed4f1a8f24bf6bf0af14410142b77fc5",
+      "visual_review": "not_presented"
+    },
+    {
+      "file": "detail.xml",
+      "source": "tests/smoke/x-expansion-probes/20261117T133437.381266Z/detail.xml",
+      "source_sha256": "f301c54813f85e1bccbdc5d56bb668a241a5121e0d786c47df7f41a8d996c7ae",
+      "sha256": "1f2d821215a1388af1a7bc9138dc3f3adbcbff8d8e3b2bf205f07771f60c89f2",
+      "visual_review": "not_presented"
+    },
+    {
+      "file": "detail-depth-100.xml",
+      "source": "tests/smoke/x-expansion-probes/20261117T133437.381266Z/detail-depth-100.xml",
+      "source_sha256": "f99c530e5312ed0281fd27baad0fb63adeaf5f838d4197847131be736b48e86f",
+      "sha256": "521b5cc8049284f391e7bdafdece8230918dd2f19d995801dbb8ca827689db63",
+      "visual_review": "not_presented"
+    },
+    {
+      "file": "return.xml",
+      "source": "tests/smoke/x-expansion-probes/20261117T133437.381266Z/return.xml",
+      "source_sha256": "b6a092585a0edbd594773fac0151c9ca259d9e6de98cd096e635fd0d5ec3361e",
+      "sha256": "a7d8dd27cf31f84919ee11031c6a9f83ed4f1a8f24bf6bf0af14410142b77fc5",
+      "visual_review": "not_presented"
+    },
+    {
+      "file": "long-source.xml",
+      "source": "tests/smoke/x-expansion-probes/20261117T133144.571820Z/source.xml",
+      "source_sha256": "15ce6a104e15b0504bf579ec8058a475b1a27966a79e2d1beec0077a1da24ebd",
+      "sha256": "579820b142846cce1e05b67bb193a7bcd378ef836c0e6ab27e306cb8e28f97b4",
+      "visual_review": "approved"
+    },
+    {
+      "file": "long-expanded.xml",
+      "source": "tests/smoke/x-expansion-probes/20261117T133144.571820Z/expanded.xml",
+      "source_sha256": "65f20a6760df2dc08120dfb54900a9a075776f7d3b5d3ffebffc13fb7899b17f",
+      "sha256": "da514e8881c6784ae69104bc9defb30094a9db0709748f9b8cca80fd86682d72",
+      "visual_review": "approved"
+    },
+    {
+      "file": "soak-source.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T110248.963317Z/snapshot-000449-hierarchy.xml",
+      "source_sha256": "41bd1253cbf493a8bddd7b6050a36e1b4d82f21e32045e0c2246c902bbca454d",
+      "sha256": "90cd48bbd375b5dddf9a882779d9772e7ffb391599060ffb0796548b6a1dd5fd",
+      "visual_review": "not_presented"
+    },
+    {
+      "file": "soak-expanded.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T110248.963317Z/snapshot-000450-hierarchy.xml",
+      "source_sha256": "4ffb10ee54ff47b324643c0acd72c5afc39295a94d968b4e33f4c3cab6922763",
+      "sha256": "82ece1bb719deea4245da1a0b908ce2e9c9bc55397298e1c9f9f70ef1274101a",
+      "visual_review": "not_presented"
+    },
+    {
+      "file": "crop-edge-source.xml",
+      "source": "tests/smoke/x-soak-runs/20261120T201433.889306Z/snapshot-000375-hierarchy.xml",
+      "source_sha256": "4cec9b158ed90201606d8456b6e5a136d139efcfff7efc22bab6cb7795e3ad23",
+      "sha256": "d733b4c6373de064317770e136cc2cc48d33e44e97130dc92d118c912a5580dc",
+      "visual_review": "not_presented"
+    },
+    {
+      "file": "crop-edge-body.tsv",
+      "source": "tests/smoke/x-soak-runs/20261120T201433.889306Z/show-more-body-ocr.tsv",
+      "source_sha256": "365cf113e80c7f18cc06b1993fbf409375e14051a0a4e0debd996b3e045a1911",
+      "sha256": "06caac1f3d8bf167e035a62f0949fd621528bc16c2511274a9ebcf75916e144a",
+      "visual_review": "not_presented"
+    },
+    {
+      "file": "crop-edge-context.tsv",
+      "source": "tests/smoke/x-soak-runs/20261120T201433.889306Z/show-more-context-11-ocr.tsv",
+      "source_sha256": "c8c49cc27289645fc61d7fd4797cb4cb8ea606b6c5482352d1916f8909ce16f6",
+      "sha256": "66fb8a9fc330f7aa34f3a9e49bbfc7730269c2a8b7072dcd1c670cc78eb62b0d",
+      "visual_review": "not_presented"
+    },
+    {
+      "file": "same-height-source.xml",
+      "source": "tests/smoke/x-show-more-crop-checks/20261120T203903.698494Z/source.xml",
+      "source_sha256": "0401483c4d44b9df2b1ef8d73c91a806d69ba69da2fed005369c31b54d392039",
+      "sha256": "f0d1c1f53a7a7de034af374bc7b2211b47eadd2d41485509ad5c1270c65a6c59",
+      "visual_review": "not_presented"
+    },
+    {
+      "file": "same-height-expanded.xml",
+      "source": "tests/smoke/x-show-more-crop-checks/20261120T203903.698494Z/snapshot-017.xml",
+      "source_sha256": "dc8275827bee1fa6dbc48f840edf13e485f14ce64854792a4fcc522918a0b898",
+      "sha256": "fbf629b54f5b1d9bafec94790c677fd86a0d136e1f45fb0408ea8138860b4c14",
+      "visual_review": "not_presented"
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "kind": "synthetic_native_layout",
+  "size": [
+    1080,
+    2340
+  ],
+  "fixtures": [
+    {
+      "file": "successor-approach-0.xml",
+      "sha256": "9094a19ceb9d8992feb92e666fdf26c3aaeadfc69721bae34b99146728f2669a"
+    },
+    {
+      "file": "successor-approach-1.xml",
+      "sha256": "a001d51413047b35fa653d9cc04d04524774e9523074f674de5ae83cbd261fa5"
+    },
+    {
+      "file": "successor-approach-2.xml",
+      "sha256": "985be041b226ae96e5934f8600bf6854eeac942bc5fd22f220abedc47065133f"
+    },
+    {
+      "file": "successor-approach-3.xml",
+      "sha256": "cfea2bfd5feaae0d1179e34a30bf0a0fbd71b0af077556accf65d44a0ebf891b"
+    },
+    {
+      "file": "successor-approach-4.xml",
+      "sha256": "c00a9270fb6df4adcbce20052d4fd9b332a2daec70e5f1c0e941249685a51a07"
+    },
+    {
+      "file": "successor-approach-5.xml",
+      "sha256": "b57f349cb4c3afad758b96130e7500fe6378095ca0a5825b0bab4503e3eef143"
+    },
+    {
+      "file": "successor-approach-6.xml",
+      "sha256": "a5e2a283f6f6705ee9da17538e8653d6885ac9f7e5ed989c3abf3a6a22735103"
+    },
+    {
+      "file": "successor-approach-7.xml",
+      "sha256": "a3f0bb82cb7bd999f1308cd188259a474cbc76d8b7c614d5145b424065e702f4"
+    },
+    {
+      "file": "successor-approach-8.xml",
+      "sha256": "dd406734280eadd7c4fdcfc1a8c790a624ad4976d100f47d7ed0739a4ef0d26e"
+    }
+  ]
+}

@@ -7,6 +7,7 @@ no longer trust a name: it deletes only the exact paths recorded when we pushed 
 The failure that matters is deleting or overwriting a user's photo, so every test here pins what
 is NOT touched as much as what is.
 """
+
 import json
 import os
 import pathlib
@@ -44,7 +45,9 @@ class FakePhone:
             return (0, self.clock, "") if self.clock else (1, "", "date: bad format")
         if command == "ls":
             folder = args[-1].rstrip("/") + "/"
-            names = [path[len(folder):] for path in self.files if path.startswith(folder)]
+            names = [
+                path[len(folder) :] for path in self.files if path.startswith(folder)
+            ]
             return 0, "\n".join(names), ""
         if command == "stat":
             path = args[-1]
@@ -79,6 +82,7 @@ def phone(monkeypatch):
         monkeypatch.setattr(media_store, "_adb_shell", fake.shell)
         monkeypatch.setattr(media_store, "_adb_push", fake.push)
         return fake
+
     return _install
 
 
@@ -88,6 +92,7 @@ def media(tmp_path):
         path = tmp_path / name
         path.write_bytes(b"x" * size)
         return str(path)
+
     return _make
 
 
@@ -99,6 +104,7 @@ def _age_registry(device_id, hours):
 
 
 # --- naming -----------------------------------------------------------------------------------
+
 
 def test_a_picture_is_named_like_a_camera_shot(phone, media):
     phone()
@@ -120,7 +126,7 @@ def test_the_name_uses_the_phone_clock(phone, media):
 def test_an_unreadable_phone_clock_still_gives_a_camera_name(phone, media):
     phone(clock=None)
     name = os.path.basename(push_media("dev", media("post.jpg")))
-    stamp = name[len("IMG_"):-len(".jpg")]
+    stamp = name[len("IMG_") : -len(".jpg")]
     assert name.startswith("IMG_") and name.endswith(".jpg")
     assert len(stamp) == 15 and stamp[8] == "_" and (stamp[:8] + stamp[9:]).isdigit()
 
@@ -133,6 +139,7 @@ def test_extensions_are_the_ones_a_camera_writes():
 
 
 # --- no collision -----------------------------------------------------------------------------
+
 
 def test_two_pushes_in_the_same_second_do_not_collide(phone, media):
     fake = phone()
@@ -153,17 +160,24 @@ def test_a_user_shot_of_the_same_second_is_never_overwritten(phone, media):
 
 def test_a_folder_that_cannot_be_listed_is_not_pushed_into(phone, media, monkeypatch):
     fake = phone()
-    monkeypatch.setattr(media_store, "_adb_shell", lambda *a, **k: (1, "", "ls: permission denied"))
+    monkeypatch.setattr(
+        media_store, "_adb_shell", lambda *a, **k: (1, "", "ls: permission denied")
+    )
     assert push_media("dev", media("post.jpg")) is None
     assert fake.files == {}
     assert pushed_media_registry.load("dev") == []
 
 
-@pytest.mark.parametrize("out,err", [
-    ("ls: /sdcard/DCIM/Camera: Permission denied", ""),
-    ("", "ls: /sdcard/DCIM/Camera: Permission denied"),
-])
-def test_a_listing_error_without_an_exit_code_is_not_pushed_into(phone, media, monkeypatch, out, err):
+@pytest.mark.parametrize(
+    "out,err",
+    [
+        ("ls: /sdcard/DCIM/Camera: Permission denied", ""),
+        ("", "ls: /sdcard/DCIM/Camera: Permission denied"),
+    ],
+)
+def test_a_listing_error_without_an_exit_code_is_not_pushed_into(
+    phone, media, monkeypatch, out, err
+):
     """Without the shell v2 protocol `adb shell` exits 0 even when `ls` failed."""
     fake = phone()
 
@@ -178,19 +192,26 @@ def test_a_listing_error_without_an_exit_code_is_not_pushed_into(phone, media, m
     assert pushed_media_registry.load("dev") == []
 
 
-def test_only_media_store_pushes_a_file_to_the_phone():
-    """Every publish goes through `push_media`, so every pushed medium gets a camera name."""
+def test_file_pushes_stay_in_media_store_or_the_scoped_native_reader():
+    """Media uses camera names; the reader owns one private temporary DEX."""
     repo = pathlib.Path(media_store.__file__).resolve().parents[4]
     pushers = sorted(
         str(path.relative_to(repo))
         for root in (repo / "taktik", repo / "bridges")
         for path in root.rglob("*.py")
-        if re.search(r"['\"]push['\"]|\.push\(", path.read_text(encoding="utf-8", errors="ignore"))
+        if re.search(
+            r"['\"]push['\"]|\.push\(",
+            path.read_text(encoding="utf-8", errors="ignore"),
+        )
     )
-    assert pushers == [str(pathlib.Path("taktik/core/shared/device/media_store.py"))]
+    assert pushers == [
+        str(pathlib.Path("taktik/core/shared/device/media_store.py")),
+        str(pathlib.Path("taktik/core/shared/phone_interaction/_accessibility.py")),
+    ]
 
 
 # --- registry ---------------------------------------------------------------------------------
+
 
 def test_every_push_is_recorded_with_its_exact_path_and_size(phone, media):
     phone()
@@ -207,6 +228,7 @@ def test_a_network_serial_gets_its_own_registry_file(phone, media, data_dir):
 
 
 # --- cleanup ----------------------------------------------------------------------------------
+
 
 def test_the_cleanup_deletes_what_we_pushed_and_no_user_shot(phone, media):
     user_shots = {
@@ -225,7 +247,12 @@ def test_the_cleanup_deletes_what_we_pushed_and_no_user_shot(phone, media):
 
 
 def test_camera_named_files_are_never_swept_without_a_record(phone):
-    fake = phone(files={f"{CAMERA}/IMG_20200101_000000.jpg": 10, f"{CAMERA}/VID_20200101_000000.mp4": 10})
+    fake = phone(
+        files={
+            f"{CAMERA}/IMG_20200101_000000.jpg": 10,
+            f"{CAMERA}/VID_20200101_000000.mp4": 10,
+        }
+    )
     assert purge_pushed_media("dev") == 0
     assert fake.removed == []
 
@@ -277,7 +304,10 @@ def test_the_cleanup_forgets_the_mediastore_row_too(phone, media):
 
     purge_pushed_media("dev")
     assert len(fake.deleted_rows) == 2
-    assert all(f"/storage/emulated/0/DCIM/Camera/IMG_{STAMP}.jpg" in row for row in fake.deleted_rows)
+    assert all(
+        f"/storage/emulated/0/DCIM/Camera/IMG_{STAMP}.jpg" in row
+        for row in fake.deleted_rows
+    )
 
 
 def test_legacy_taktik_files_are_still_cleaned_next_to_registered_ones(phone, media):

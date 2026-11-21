@@ -1,5 +1,6 @@
 """The workspace's phone interface. Platform code supplies targets, never devices."""
 
+from ._fields import TextField
 from ._session import (
     InteractionCancelled,
     InteractionError,
@@ -16,4 +17,5 @@ __all__ = [
     "Result",
     "SessionExpired",
     "Status",
+    "TextField",
 ]

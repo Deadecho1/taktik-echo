@@ -4,6 +4,9 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
+from lxml import etree
+from unit.paths import CORE
+
 from taktik.core.shared.input import taktik_keyboard as keyboard
 from taktik.core.shared.input.taktik_keyboard import (
     TAKTIK_KEYBOARD_IME,
@@ -15,6 +18,7 @@ from taktik.core.shared.phone_interaction import (
     Phone,
     SessionExpired,
     Status,
+    TextField,
 )
 from taktik.core.shared.phone_interaction._device import TaktikDevice
 
@@ -140,6 +144,213 @@ def session(seed=17):
     return phone, raw, clock
 
 
+def scoped_session():
+    phone, raw, clock = session()
+    raw.app_current = Mock(return_value={"package": "example.app"})
+    root = etree.fromstring(b"""<hierarchy>
+      <node package="example.app" enabled="true" bounds="[0,0][1080,2340]">
+        <node package="example.app" enabled="true" resource-id="SearchQuery" bounds="[0,0][1080,2340]">
+          <node package="example.app" enabled="true" focusable="true" class="android.widget.EditText" resource-id="" bounds="[100,100][800,200]"/>
+        </node>
+      </node>
+    </hierarchy>""")
+    field = root.xpath('.//*[@class="android.widget.EditText"]')[0]
+
+    def hierarchy():
+        field.set("text", raw.info["text"])
+        field.set("focused", str(raw.info["focused"]).lower())
+        return etree.tostring(root, encoding="unicode")
+
+    raw.dump_hierarchy = Mock(side_effect=hierarchy)
+    return phone, raw, clock, root, field, TextField("example.app", "SearchQuery")
+
+
+@pytest.mark.parametrize("text", ["astronomy", "חתולים cats 🐈", "  two  spaces "])
+def test_scoped_field_types_exactly_without_resource_id_and_restores_keyboard(text):
+    phone, raw, _, _, field, locator = scoped_session()
+    etree.SubElement(
+        field, "node", attrib={"clickable": "true", "bounds": "[700,100][800,200]"}
+    )
+    phone.enter_text(locator, text, submit="enter").require()
+    assert raw.info["text"] == text
+    assert raw.field_reads == 0
+    x, y, _ = raw.long_click.call_args.args
+    assert 100 < x < 700 and 100 < y < 200
+    raw.press.assert_called_once_with("enter")
+    phone.close(home=False).require()
+    assert raw.ime == "user/.Keyboard"
+
+
+@pytest.mark.parametrize(
+    "problem",
+    [
+        "duplicate",
+        "wrong_scope",
+        "missing_scope",
+        "wrong_package",
+        "foreign_child",
+        "disabled",
+        "hidden",
+        "not_focusable",
+        "password",
+        "clipped",
+        "overlay",
+        "app_overlay",
+    ],
+)
+def test_scoped_field_rejects_ambiguity_and_unsafe_targets_before_mutation(problem):
+    from copy import deepcopy
+
+    phone, raw, _, root, field, locator = scoped_session()
+    if problem == "duplicate":
+        field.getparent().append(deepcopy(field))
+    elif problem == "wrong_scope":
+        field.getparent().getparent().append(field)
+    elif problem == "missing_scope":
+        field.getparent().set("resource-id", "DifferentScreen")
+    elif problem == "wrong_package":
+        raw.app_current.return_value = {"package": "other.app"}
+    elif problem == "foreign_child":
+        field.set("package", "other.app")
+    elif problem == "disabled":
+        field.set("enabled", "false")
+    elif problem == "hidden":
+        field.getparent().set("visible-to-user", "false")
+    elif problem == "not_focusable":
+        field.set("focusable", "false")
+    elif problem == "password":
+        field.set("password", "true")
+    elif problem == "clipped":
+        field.set("bounds", "[-1,100][800,200]")
+    elif problem == "overlay":
+        etree.SubElement(root, "node", package="other.app", bounds="[0,0][1080,500]")
+    elif problem == "app_overlay":
+        etree.SubElement(
+            field.getparent(), "node", clickable="true", bounds="[100,100][800,200]"
+        )
+    result = phone.enter_text(locator, "astronomy", submit="enter")
+    assert result.status == Status.FAILED
+    raw.long_click.assert_not_called()
+    raw.press.assert_not_called()
+    raw.shell.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "problem", ["focus", "duplicate", "scope", "foreground", "lost_text"]
+)
+def test_scoped_field_change_during_typing_prevents_submission_and_restores(problem):
+    from copy import deepcopy
+
+    phone, raw, clock, _, field, locator = scoped_session()
+    original = clock.sleep
+    changed = False
+
+    def sleep(seconds):
+        nonlocal changed
+        original(seconds)
+        if not changed and raw.info["text"] == "12345678":
+            changed = True
+            if problem == "focus":
+                raw.info["focused"] = False
+            elif problem == "duplicate":
+                field.getparent().append(deepcopy(field))
+            elif problem == "scope":
+                field.getparent().set("resource-id", "DifferentScreen")
+            elif problem == "foreground":
+                raw.app_current.return_value = {"package": "other.app"}
+            elif problem == "lost_text":
+                raw.lost_text = True
+
+    clock.sleep = sleep
+    result = phone.enter_text(locator, "1234567890123456", submit="enter")
+    assert changed and result.status == Status.FAILED
+    assert raw.info["text"] == "12345678"
+    raw.press.assert_not_called()
+    phone.close(home=False).require()
+    assert raw.ime == "user/.Keyboard"
+
+
+@pytest.mark.parametrize("timing", ["before_focus", "during_typing"])
+@pytest.mark.parametrize("parent_bounds", ["[154,158][200,290]", "[0,0][0,0]"])
+def test_captured_field_ancestor_clipping_prevents_input_and_submission(
+    timing, parent_bounds
+):
+    phone, raw, clock = session()
+    root = etree.fromstring(
+        (
+            CORE / "tests/unit/social_media/x/fixtures/search/search-standalone.xml"
+        ).read_bytes()
+    )
+    field = root.xpath('.//*[@class="android.widget.EditText"]')[0]
+    package = field.get("package")
+    raw.app_current = Mock(return_value={"package": package})
+
+    def hierarchy():
+        field.set("text", raw.info["text"])
+        field.set("focused", str(raw.info["focused"]).lower())
+        return etree.tostring(root, encoding="unicode")
+
+    raw.dump_hierarchy = Mock(side_effect=hierarchy)
+    original_sleep = clock.sleep
+
+    def sleep(seconds):
+        original_sleep(seconds)
+        if raw.info["text"] == "12345678":
+            field.getparent().set("bounds", parent_bounds)
+
+    if timing == "before_focus":
+        field.getparent().set("bounds", parent_bounds)
+    else:
+        clock.sleep = sleep
+    result = phone.enter_text(
+        TextField(package, "SearchQuery"), "1234567890123456", submit="enter"
+    )
+    assert result.status == Status.FAILED
+    raw.press.assert_not_called()
+    if timing == "before_focus":
+        raw.long_click.assert_not_called()
+        raw.shell.assert_not_called()
+    else:
+        assert raw.info["text"] == "12345678"
+    phone.close(home=False).require()
+    assert raw.ime == "user/.Keyboard"
+
+
+@pytest.mark.parametrize("interrupt", ["cancel", "deadline"])
+def test_scoped_typing_interruptions_do_not_submit_and_allow_cleanup(interrupt):
+    phone, raw, _, _, _, locator = scoped_session()
+    if interrupt == "cancel":
+        phone.configure(cancelled=lambda: raw.info["text"] == "12345678")
+    else:
+        phone.configure(deadline=0.1)
+    with pytest.raises(InteractionCancelled):
+        phone.enter_text(locator, "1234567890123456", submit="enter")
+    raw.press.assert_not_called()
+    phone.close(home=False).require()
+    assert raw.ime == "user/.Keyboard"
+
+
+def test_scoped_field_transport_uncertainty_is_not_retried():
+    phone, raw, _, _, _, locator = scoped_session()
+    raw.long_click.side_effect = OSError("reply lost after tap")
+    result = phone.enter_text(locator, "astronomy", submit="enter")
+    assert result.status == Status.UNCERTAIN
+    raw.long_click.assert_called_once()
+    raw.press.assert_not_called()
+    phone.close(home=False).require()
+    assert raw.ime == "user/.Keyboard"
+
+
+def test_foreground_change_during_scoped_field_read_prevents_keyboard_preparation():
+    phone, raw, _, _, _, locator = scoped_session()
+    raw.app_current.side_effect = [{"package": "example.app"}, {"package": "other.app"}]
+    result = phone.enter_text(locator, "astronomy", submit="enter")
+    assert result.status == Status.FAILED
+    raw.long_click.assert_not_called()
+    raw.press.assert_not_called()
+    raw.shell.assert_not_called()
+
+
 def test_focus_loss_after_final_character_prevents_submission():
     phone, raw, clock = session()
     original = clock.sleep
@@ -249,6 +460,52 @@ def test_precise_drag_preserves_requested_displacement_and_does_not_fling():
         assert path[0][1] - path[-1][1] == 300
         assert path[0][0] == path[-1][0]
         assert len(path) >= 3
+    raw.swipe.assert_not_called()
+
+
+@pytest.mark.parametrize("step_cost", [0.0045, 0.012, 0.060])
+@pytest.mark.parametrize("direction", ["up", "down"])
+def test_short_controlled_scroll_stops_before_releasing(
+    monkeypatch, step_cost, direction
+):
+    from taktik.core.shared.behavior import gesture_primitives as gestures
+
+    phone, raw, _ = session()
+    path = [[137, 1485], [100, 856]]
+    if direction == "down":
+        path.reverse()
+    monkeypatch.setattr(
+        gestures,
+        "sample_swipe",
+        lambda *a, **kw: ([[x, y - 567] for x, y in path], 0.2018204323),
+    )
+    phone._backend._transport()._taktik_device_step_s = step_cost
+
+    phone.gesture("scroll", direction, (0, 567, 176, 2230), distance=629).require()
+
+    raw.swipe_points.assert_called_once()
+    points, per_segment = raw.swipe_points.call_args.args
+    assert points[0] == path[0] and points[-1] == path[-1]
+    assert all(0 <= x < 176 and 567 <= y < 2230 for x, y in points)
+    stationary = 0
+    for point in reversed(points[:-1]):
+        if point != points[-1]:
+            break
+        stationary += 1
+    # UiAutomator injects steps - 1 moves and sleeps 5 ms per move.
+    minimum_hold = stationary * (int(per_segment / 0.005) - 1) * 0.005
+    assert minimum_hold >= 0.15, (stationary, minimum_hold)
+    raw.swipe.assert_not_called()
+
+
+def test_uncertain_controlled_scroll_is_never_replayed():
+    phone, raw, _ = session()
+    raw.swipe_points.side_effect = OSError("injected, reply lost")
+
+    result = phone.gesture("scroll", "up", (0, 567, 176, 2230), distance=629)
+
+    assert result.status == Status.UNCERTAIN
+    raw.swipe_points.assert_called_once()
     raw.swipe.assert_not_called()
 
 
