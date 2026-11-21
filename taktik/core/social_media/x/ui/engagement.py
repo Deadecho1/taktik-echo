@@ -5,6 +5,7 @@ from typing import Literal
 
 from .screen import (
     HANDLE,
+    Rect,
     Screen,
     Target,
     Visibility,
@@ -40,6 +41,7 @@ class RemovalNotice:
     undo: Target
     message_visibility: Visibility
     preference: FeedbackPreference | None = None
+    slot_bounds: Rect | None = None
 
     @property
     def confirmation_visible(self):
@@ -111,6 +113,14 @@ def read_notices(scope, viewport, overlays):
             continue
         if _rect(node)[2] > target.visibility.bounds[0]:
             continue
+        slot = (
+            _rect(ancestors[-1])
+            if len(ancestors) > 1
+            and all(len(a) == 1 for a in ancestors[1:])
+            and ancestors[-1].getparent() is not None
+            and ancestors[-1].getparent().get("scrollable") == "true"
+            else None
+        )
         notices.append(
             RemovalNotice(
                 action,
@@ -120,6 +130,7 @@ def read_notices(scope, viewport, overlays):
                 target,
                 _visibility(node, viewport, overlays),
                 preference,
+                slot,
             )
         )
     return tuple(notices)

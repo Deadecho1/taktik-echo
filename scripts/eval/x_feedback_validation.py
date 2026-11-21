@@ -28,8 +28,7 @@ def _receipt(app, source, screen):
     )
 
 
-def _find_undo(app, source):
-    preference = None
+def _find_undo(app, source, *, preference=None):
     for attempt in range(SCROLL_ATTEMPTS + 1):
         screen = app._wait_for(
             lambda s: _receipt(app, source, s) is not None, "feedback Undo"

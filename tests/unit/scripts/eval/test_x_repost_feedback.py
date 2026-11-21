@@ -4,7 +4,10 @@ from copy import deepcopy
 
 import pytest
 from lxml import etree
-from unit.scripts.eval.test_x_feedback_undo_visibility import ObscuredFeedbackReplay
+from unit.scripts.eval.test_x_feedback_undo_visibility import (
+    ObscuredFeedbackReplay,
+    source_document,
+)
 from unit.scripts.eval.test_x_feedback_validation import (
     FIXTURES,
     SIZE,
@@ -13,7 +16,7 @@ from unit.scripts.eval.test_x_feedback_validation import (
     selected,
 )
 
-from scripts.eval.x_feedback_validation import check_feedback_roundtrip
+from scripts.eval.x_feedback_validation import _find_undo, check_feedback_roundtrip
 from taktik.core.shared.phone_interaction import (
     InteractionCancelled,
     InteractionError,
@@ -89,10 +92,24 @@ def test_repost_preference_account_is_not_attributed_to_outer_author():
     replay.phone.close(home=False).require()
 
 
-def test_public_repost_feedback_still_confirms_then_advances():
+@pytest.mark.parametrize("header_offset", [0, 66])
+def test_public_repost_feedback_still_confirms_then_advances(
+    header_offset, monkeypatch
+):
     replay = FeedbackReplay()
-    replay.documents["source"] = repost_source(replay.documents["source"])
+    root = etree.fromstring(source_document(header_offset).encode())
+    post = root.xpath('.//*[@text="@fixture_author"]')[0].getparent().getparent()
+    post.set("bounds", f"[0,924][1080,{2340 + header_offset}]")
+    replay.documents["source"] = repost_source(etree.tostring(root, encoding="unicode"))
     replay.documents["receipt"] = repost_receipt(replay.documents["receipt"])
+    tap = replay.long_click
+    monkeypatch.setattr(
+        replay,
+        "long_click",
+        lambda x, y, duration: tap(
+            x, y - header_offset if replay.stage == "source" else y, duration
+        ),
+    )
     replay.xml = replay.documents["source"]
     replay, browser = selected(replay)
     source = browser.observe()
@@ -104,6 +121,33 @@ def test_public_repost_feedback_still_confirms_then_advances():
         ("scroll", "receipt"),
         ("scroll", "framing"),
     ]
+    replay.phone.close(home=False).require()
+
+
+@pytest.mark.parametrize("problem", ["moved_slot", "extra_sibling", "missing_slot"])
+def test_public_repost_confirmation_requires_original_native_slot(problem):
+    replay = FeedbackReplay()
+    replay.documents["source"] = repost_source(replay.documents["source"])
+    root = etree.fromstring(repost_receipt(replay.documents["receipt"]).encode())
+    row = root.xpath('.//*[@text="Undo"]')[0].getparent().getparent()
+    slot = row.getparent().getparent()
+    if problem == "moved_slot":
+        slot.set("bounds", "[0,925][1080,1456]")
+    elif problem == "extra_sibling":
+        extra = deepcopy(row[-1])
+        extra.remove(extra[0])
+        slot.append(extra)
+    else:
+        slot.getparent().replace(slot, row)
+    replay.documents["receipt"] = etree.tostring(root, encoding="unicode")
+    replay.xml = replay.documents["source"]
+    replay, browser = selected(replay)
+    source = browser.observe()
+    with pytest.raises(InteractionError) as raised:
+        browser.act("not_interested", source)
+    assert raised.value.result.status == Status.UNCERTAIN
+    assert replay.actions == [("tap", "source"), ("tap", "options")]
+    assert not browser.browsing_valid
     replay.phone.close(home=False).require()
 
 
@@ -409,4 +453,19 @@ def test_changed_account_after_feedback_cannot_authorize_undo():
     assert "active X handle" in str(raised.value.__cause__)
     assert replay.actions == [("tap", "source"), ("tap", "options")]
     assert not browser.browsing_valid
+    replay.phone.close(home=False).require()
+
+
+def test_recovery_rechecks_previously_owned_preference_before_undo():
+    replay, browser = selected(RepostFeedbackReplay())
+    app = browser.browser
+    source = app.observe()
+    preference = (
+        read_screen(replay.documents["receipt"], SIZE).removal_notices[0].preference
+    )
+    replay.stage = "receipt"
+    replay.xml = replay.documents["receipt"].replace("fixture_sharer", "different")
+    with pytest.raises(XError, match="preference changed"):
+        _find_undo(app, source, preference=preference)
+    assert replay.actions == []
     replay.phone.close(home=False).require()

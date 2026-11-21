@@ -110,6 +110,7 @@ Temporary animation and confirmation overlays do not prove success.
 
 On X `12.42.0-prod.01`, Unfollow and Not interested replace the selected post with a native receipt and an Undo control.
 The receipt must match the requested action at the original header position, and the selected post must be absent.
+For repost feedback, the native replacement slot must retain the source container's left, top, and right edges; the repost annotation puts the author header below that origin.
 Its acknowledgment and Undo control must be clear; an Unfollow author or ordinary-post preference account must match the selected author.
 Feedback receipts keep the optional preference type (`posts` or `reposts`) and account separate from author attribution.
 On the supported repost layout, `Show fewer reposts from ...` names a preference account, which can differ from the post's outer author.

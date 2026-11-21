@@ -130,11 +130,22 @@ def _removal_confirmation(app, source, action):
         if any(p.content_key == source.content_key for p in screen.posts):
             return False
         notices = [n for n in screen.removal_notices if n.action == action]
+        if len(notices) != 1:
+            return False
+        notice = notices[0]
+        if action == "not_interested" and source.reposted_by is not None:
+            positioned = (
+                notice.slot_bounds is not None
+                and notice.slot_bounds[:3] == source.visibility.bounds[:3]
+            )
+        else:
+            positioned = (
+                notice.visibility.bounds[1] == source.header_visibility.bounds[1]
+            )
         return (
-            len(notices) == 1
-            and _matches_removal_source(notices[0], source)
-            and notices[0].confirmation_visible
-            and notices[0].visibility.bounds[1] == source.header_visibility.bounds[1]
+            positioned
+            and _matches_removal_source(notice, source)
+            and notice.confirmation_visible
         )
 
     screen = app._wait_for(confirmed, f"native {action} confirmation")
