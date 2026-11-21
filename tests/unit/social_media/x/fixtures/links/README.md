@@ -29,3 +29,8 @@ Its entire window remains an occlusion for post extraction and gestures.
 Synthetic mutations test hidden, disabled, nested, ambiguous, and changed controls, unknown overlays, wrong authors, stale receipts, transport uncertainty, cancellation, and explicit recovery.
 The source-return cases also cover changed receipts, source content/identity/geometry, browsing context, bounded occlusion, receipt disappearance, deadlines, and exception-preserving cleanup.
 These mutations do not establish additional physical layout coverage.
+
+`share-opportunity-source.xml` is a minimal synthetic observable post whose Share glyph has only a 10-pixel top strip and an 11-pixel right strip outside a floating control.
+Its separate `share-opportunity-manifest.json` contains synthetic fixture integrity hashes only.
+Maintained dispatch tests use this layout through XBrowser, Phone, and TaktikDevice to defer Copy link without credit or invalidation, then verify a separate synthetic later-source copy and return.
+Synthetic partial and clipped glyph variants retain supported tap regions; these continuations do not establish physical coverage.

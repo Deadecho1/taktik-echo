@@ -133,6 +133,10 @@ Repeated copies of the same URL require a new receipt; a retained clipboard stri
 Share keeps its native clickable wrapper and glyph geometry separately, and uses the owned glyph's uncovered area when it meets the existing minimum tap dimensions.
 The supported horizontally clipped Share glyph can instead use a narrow right-hand strip only when a single native cover meets its exact left edge and spans its full height; the strip stays inside the wrapper, within the glyph's vertical band, at most one glyph-height wide, and includes retained glyph pixels.
 Malformed geometry, ambiguous or inconsistent cover relationships, and insufficient uncovered space reject before tapping; opening Share is never retried after an unverified outcome.
+Validation uses `scripts/eval/x_link_validation.py::select_copy_link_check` to select opportunities with the same production Share selector after refreshing the observation and unique source.
+An unsupported Share region records a deferral without tapping, invalidating browsing, or crediting Copy link; a later eligible occurrence must complete a fresh receipt and verified return before coverage is earned.
+Eligibility is limited to that read: executing the selected check independently refreshes the source and Share geometry, and any action failure still stops without retry.
+Changed observations, ambiguous sources, unsupported screens, cancellation, deadlines, and read failures propagate instead of becoming deferrals.
 Only Copy link and sheet dismissal are used, with no OCR, network URL resolution, recipient selection, or external sharing.
 The native ID never replaces a local content or occurrence key, and advancing, starting again, successor selection, or caption expansion clears the retained link.
 Missing or obscured Share controls, unrecognized clipboard receipts, changed sources, and uncertain execution invalidate the attempt without blind retries.
