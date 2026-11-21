@@ -1,6 +1,7 @@
 """Native engagement state and scoped menus; no device access."""
 
 from dataclasses import dataclass
+from typing import Literal
 
 from .screen import (
     HANDLE,
@@ -25,6 +26,12 @@ class PostOptions:
 
 
 @dataclass(frozen=True)
+class FeedbackPreference:
+    kind: Literal["posts", "reposts"]
+    account: str
+
+
+@dataclass(frozen=True)
 class RemovalNotice:
     action: str
     text: str
@@ -32,6 +39,7 @@ class RemovalNotice:
     visibility: Visibility
     undo: Target
     message_visibility: Visibility
+    preference: FeedbackPreference | None = None
 
     @property
     def confirmation_visible(self):
@@ -67,20 +75,32 @@ def read_notices(scope, viewport, overlays):
             or len(texts) != len(row)
             or len(undo) != 1
             or texts[0] is not node
+            or texts[1] is not undo[0]
         ):
             continue
+        preference = None
         if action == "not_interested":
             if len(texts) > 2:
                 fewer = texts[2].get("text", "")
-                author = "@" + fewer.removeprefix("Show fewer posts from ")
-                if not fewer.startswith(
-                    "Show fewer posts from "
-                ) or not HANDLE.fullmatch(author):
+                kinds = [
+                    kind
+                    for kind in ("posts", "reposts")
+                    if fewer.startswith(f"Show fewer {kind} from ")
+                ]
+                if len(kinds) != 1:
                     continue
+                kind = kinds[0]
+                account = "@" + fewer.removeprefix(f"Show fewer {kind} from ")
+                if not HANDLE.fullmatch(account):
+                    continue
+                preference = FeedbackPreference(kind, account)
             if len(texts) > 3 and texts[3].get("text") != "This post isn’t relevant":
                 continue
             for extra in texts[2:]:
                 _target(extra, extra.get("text"), row, viewport, overlays)
+        controls = {_clickable(text, row) for text in texts[1:]}
+        if set(row.xpath('.//*[@clickable="true"]')) != controls:
+            continue
         target = _target(undo[0], "Undo", row, viewport, overlays)
         visibility = _visibility(row, viewport, overlays)
         if not _visibility(undo[0], viewport, overlays).accessible:
@@ -99,6 +119,7 @@ def read_notices(scope, viewport, overlays):
                 visibility,
                 target,
                 _visibility(node, viewport, overlays),
+                preference,
             )
         )
     return tuple(notices)

@@ -13,3 +13,8 @@ The feedback receipt's optional refinement controls are preserved as evidence an
 Replay cases mutate these captures to exercise stale targets, wrong authors, obscured controls, missing confirmations, transport failures, cancellation, and browser occurrence changes.
 One successful immediate feedback-advance case removes the successor's clipped quote to model an already observable successor.
 Such transformations are synthetic tests, not additional physical observations.
+
+The repost-feedback regressions transform the existing synthetic `undo-*.xml` inputs covered by `undo-manifest.json`.
+They add a display-only repost annotation and a distinct synthetic preference account to exercise the two-, three-, and four-text receipts.
+The modeled Undo continuation comes from the separate synthetic restoration fixture and does not establish an Undo result in any stopped phone trace.
+No new capture identifiers, content, hashes, or source mappings are included in these transformations.

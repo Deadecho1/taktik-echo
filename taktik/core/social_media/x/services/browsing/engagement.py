@@ -78,10 +78,17 @@ def _menu_author(source, screen):
     return screen.post_options
 
 
-def _open_menu(app, source):
+def _open_menu(app, source, *, feedback=False):
     current = _source(app)
-    if current.content_key != source.content_key:
+    if (
+        current.content_key != source.content_key
+        or current.reposted_by != source.reposted_by
+    ):
         raise XError("The X source changed before opening its menu.")
+    if feedback and any(
+        n.action == "not_interested" for n in app._screen.removal_notices
+    ):
+        _unsupported("An existing X feedback receipt prevents a new feedback action.")
     _tap(app, current.targets, "Post options")
     screen = app._wait_for(lambda s: s.kind == "post_options", "post menu")
     _menu_author(source, screen)
@@ -103,6 +110,18 @@ def _close_menu(app, source, screen):
     return _return_to_source(app, source)
 
 
+def _matches_removal_source(notice, source):
+    if notice.author is not None and notice.author.lower() != source.author.lower():
+        return False
+    preference = notice.preference
+    if preference is None:
+        return True
+    if preference.kind == "posts":
+        return preference.account.lower() == source.author.lower()
+    # Display-only repost annotations cannot verify the preference account's handle.
+    return preference.kind == "reposts" and source.reposted_by is not None
+
+
 def _removal_confirmation(app, source, action):
     def confirmed(screen):
         if screen.kind in {"unsupported", "post_options"}:
@@ -110,15 +129,13 @@ def _removal_confirmation(app, source, action):
         app._check_timeline(screen, app._screen)
         if any(p.content_key == source.content_key for p in screen.posts):
             return False
-        notices = [
-            n
-            for n in screen.removal_notices
-            if n.action == action
-            and n.confirmation_visible
-            and (n.author is None or n.author.lower() == source.author.lower())
-            and n.visibility.bounds[1] == source.header_visibility.bounds[1]
-        ]
-        return len(notices) == 1
+        notices = [n for n in screen.removal_notices if n.action == action]
+        return (
+            len(notices) == 1
+            and _matches_removal_source(notices[0], source)
+            and notices[0].confirmation_visible
+            and notices[0].visibility.bounds[1] == source.header_visibility.bounds[1]
+        )
 
     screen = app._wait_for(confirmed, f"native {action} confirmation")
     current = app._snapshot()
@@ -182,7 +199,7 @@ def set_following(app, selected):
 
 
 def _apply_feedback(app, source):
-    screen = _open_menu(app, source)
+    screen = _open_menu(app, source, feedback=True)
     state = _menu_author(source, screen)
     if state.feedback_label != "Not interested in Post":
         _close_menu(app, source, screen)
