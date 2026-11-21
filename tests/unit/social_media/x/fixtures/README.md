@@ -92,3 +92,11 @@ The `links/share-glyph-*.xml` fixtures contain synthetic text and identities wit
 They cover an unobscured glyph inside non-activating wrapper padding and a complete Share/copy/source-return sequence through the real Phone/TaktikDevice boundary with fake raw transport.
 The existing covered-footer sequence separately verifies a successful edge-clipped Share strip; it is not a continuation of the new sequence.
 The synthetic fixture integrity hashes are recorded in `links/share-glyph-manifest.json`; raw source provenance stays in local diagnostics.
+
+The `navigation/preceding-posts-*.xml` fixtures use synthetic identities and text to exercise verified removal of preceding posts while the selected source remains aligned.
+The terminal layout contains an incomplete next post; repeating it must stop after the unchanged no-progress allowance without selecting a successor.
+The test's separate 500-pixel continuation is explicitly synthetic.
+The `navigation/preceding-complete-*.xml` fixtures provide a complete native layout sequence through two successive selections, including explicit movement-only continuity gaps.
+These fixtures preserve native control semantics and geometry; all personalized text, counts, ages, custom labels, and system labels are synthetic.
+`navigation/manifest.json` contains only synthetic fixture integrity hashes.
+Private source provenance remains in ignored local diagnostics.

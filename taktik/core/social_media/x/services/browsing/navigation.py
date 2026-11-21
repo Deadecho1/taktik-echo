@@ -3016,7 +3016,8 @@ class X:
                 self._gesture(screen, "up")
                 total_scrolls += 1
                 after, offset, moved = self._advance_snapshot(screen, pending)
-                # Passing an unobservable successor is verified search progress.
+                # Count traversal past other posts, retaining exact source
+                # alignment when the passed post precedes the selection.
                 # Losing only the selected post or moving within it is not.
                 if offset is None:
                     geometric_cursor = True
@@ -3032,10 +3033,24 @@ class X:
                         sum(p.visibility.bounds[1] <= cursor + 2 for p in after.posts)
                         - 1
                     )
-                    passed_successor = moved is True
+                    progressed = moved is True
                 else:
                     new_index = index - offset
-                    passed_successor = moved is True and offset > max(index + 1, 0)
+                    passed_preceding = (
+                        not pending
+                        and 0 < offset <= index
+                        and index < len(screen.posts)
+                        and 0 <= new_index < len(after.posts)
+                        and screen.posts[index].content_key
+                        == after.posts[new_index].content_key
+                        == selected_key
+                        and sum(p.content_key == selected_key for p in screen.posts)
+                        == 1
+                        and sum(p.content_key == selected_key for p in after.posts) == 1
+                    )
+                    progressed = moved is True and (
+                        passed_preceding or offset > max(index + 1, 0)
+                    )
                 if moved is None and not pending:
                     # The preceding approach must not consume the clipped-text
                     # verification allowance. Entry uses its first attempt;
@@ -3046,7 +3061,7 @@ class X:
                     # Its normal bounded search starts after pending ends.
                     attempts = 0
                 else:
-                    attempts = 0 if passed_successor else attempts + 1
+                    attempts = 0 if progressed else attempts + 1
                 pending = moved is None
                 index = new_index
                 screen = after

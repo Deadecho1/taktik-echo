@@ -86,6 +86,8 @@ The unique unchanged caption can enter pending continuity when the GIF is offscr
 Pending continuity does not prove movement or complete the caption; two usable lower-edge frames and independent ordered alignment are required before selecting an observable successor.
 The physical caption/GIF continuation completed seven gestures with a reverified exit and a new observable successor.
 The eight-attempt pending/no-progress bounds and 32-gesture total bound remain unchanged.
+Verified ordered removal of a preceding post resets the no-progress counter only while the selected source remains uniquely aligned by its exact content key.
+Moving within that source or losing it alone does not earn this reset, and successor selection still requires an independently observable post.
 The [layout coverage record](validation/2026-11-20-x-layout-coverage.md) documents these runs, native media tags, and the outstanding ad-placement and visual-review limits.
 An exact, unobscured native no-results panel establishes an empty search; missing result posts alone do not.
 Consumer applications choose how to use these capabilities in their own workflows.
