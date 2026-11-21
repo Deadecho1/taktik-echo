@@ -2300,7 +2300,8 @@ class X:
             if result.kind != "detail":
                 return Screen(
                     "unsupported",
-                    reason="X left the detail while reading native content.",
+                    reason=result.reason
+                    or "X left the detail while reading native content.",
                 )
         if self.phone.read("app").get("package") != PACKAGE:
             return Screen(

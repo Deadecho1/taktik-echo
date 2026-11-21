@@ -95,6 +95,7 @@ def _detail_context(before, after):
         and new is not None
         and (
             old.author != new.author
+            or old.labels != new.labels
             or old.body != new.body
             or _quote_content(old.quoted_post) != _quote_content(new.quoted_post)
         )

@@ -107,3 +107,8 @@ The empty window contributes full occlusion and no actionable or observable evid
 It is not itself a clipboard receipt; only a preceding observed receipt permits the bounded stationary verification path.
 No next-post capture is present, and the separate unchanged-frame test preserves the existing advance limit without inventing a successor.
 `links/fullscreen-dismissal-manifest.json` records only synthetic fixture hashes; private source provenance remains in ignored local diagnostics.
+
+`detail/badge-*.xml` contain a synthetic feed source and paired ordinary/native detail layouts with a verification badge followed by an affiliation icon.
+The author, organization, body, counts, and timestamp are fictional.
+The public Phone/TaktikDevice regression uses the source fixture again for its synthetic successful return.
+`detail/badge-manifest.json` records synthetic fixture hashes only.

@@ -151,6 +151,10 @@ The [native link validation record](validation/2026-11-19-x-links.md) documents 
 `X.visit_profile()` visits the selected author's verified profile and returns header text and observable profile posts separately from the source post.
 `X.inspect_thread(max_posts=10, max_scrolls=4)` returns bounded, independently attributed thread observations and native detail metadata, retaining the original source content key separately.
 The detail reader independently extracts the main author, caption, media, and supported quoted content from native accessibility.
+The native author row may contain one verification badge followed by one noninteractive square affiliation icon inside the same name-and-handle column.
+Both native descriptions remain author labels; an affiliation description does not become a verification label.
+Malformed or ambiguous author layouts fail with their parser reason instead of triggering header-restoration scrolling.
+Geometrically clipped or obscured headers still require bounded, verified restoration.
 `detail.main_post` remains separate from reply `posts` and from the source content key.
 `main_verified` requires a source match and an observable main-post snapshot; missing or clipped content remains explicit.
 The result never claims complete thread coverage.

@@ -10,6 +10,7 @@ from .screen import (
     ACTION_ALIASES,
     ACTION_LABELS,
     HANDLE,
+    PACKAGE,
     VERIFICATION_LABELS,
     Post,
     Visibility,
@@ -97,6 +98,61 @@ def combine_hierarchies(ordinary, native):
     return etree.tostring(roots[1], encoding="unicode")
 
 
+def _author_column(node):
+    return (
+        node.get("class") == "android.view.View"
+        and not node.get("text")
+        and not node.get("content-desc")
+        and not node.get("resource-id")
+        and all(
+            node.get(flag) != "true"
+            for flag in ("clickable", "long-clickable", "focusable", "scrollable")
+        )
+    )
+
+
+def _author_badges(identity, name):
+    badges = list(identity)[1:-1]
+    if len(badges) > 2 or (
+        badges and badges[0].get("content-desc") not in VERIFICATION_LABELS
+    ):
+        raise _Unsupported("Unrecognized main-post author badge.")
+    previous = _rect(name)
+    for badge in badges:
+        rect = _rect(badge)
+        if (
+            badge.get("class") != "android.view.View"
+            or badge.get("package") != PACKAGE
+            or badge.get("text")
+            or badge.get("resource-id")
+            or not badge.get("content-desc", "").strip()
+            or len(badge)
+            or any(
+                badge.get(flag) == "true"
+                for flag in ("clickable", "long-clickable", "focusable", "scrollable")
+            )
+            or badge.get("enabled") == "false"
+            or badge.get("visible-to-user") == "false"
+            or rect[0] < previous[2]
+            or not previous[1] <= rect[1] < rect[3] <= previous[3]
+            or _intersect(rect, _rect(identity)) != rect
+        ):
+            raise _Unsupported("Unrecognized main-post author badge.")
+        previous = rect
+    if len(badges) == 2:
+        verification, affiliation = badges
+        left, top, right, bottom = _rect(affiliation)
+        verified = _rect(verification)
+        # This slot is an affiliation icon, not another verification label.
+        if (
+            affiliation.get("content-desc") in VERIFICATION_LABELS
+            or right - left != bottom - top
+            or right - left > verified[2] - verified[0]
+        ):
+            raise _Unsupported("Unrecognized main-post affiliation badge.")
+    return badges
+
+
 def _identity(listing):
     avatars = listing.xpath('./node/node[@resource-id="timeline_post_avatar"]')
     if not avatars:
@@ -109,6 +165,7 @@ def _identity(listing):
     texts = [n for n in identity if n.get("text")]
     if (
         len(texts) != 2
+        or not _author_column(identity)
         or identity[0] is not texts[0]
         or identity[-1] is not texts[1]
         or not all(_plain_annotation(n) for n in texts)
@@ -119,16 +176,7 @@ def _identity(listing):
         or _rect(avatar)[2] > _rect(identity)[0]
     ):
         raise _Unsupported("Unrecognized main-post name and handle.")
-    badges = [n for n in identity if n not in texts]
-    if len(badges) > 1 or any(
-        n.get("content-desc") not in VERIFICATION_LABELS
-        or len(n)
-        or n.get("clickable") == "true"
-        or _rect(n)[0] < _rect(texts[0])[2]
-        or not _rect(texts[0])[1] <= _rect(n)[1] < _rect(n)[3] <= _rect(texts[0])[3]
-        for n in badges
-    ):
-        raise _Unsupported("Unrecognized main-post author badge.")
+    badges = _author_badges(identity, texts[0])
     return header, identity, texts[0], texts[1], badges
 
 
@@ -138,7 +186,9 @@ def main_header_visible(listing, viewport, overlays):
     try:
         identity = _identity(listing)
     except _Unsupported:
-        return False
+        if _clipped_name(listing, viewport):
+            return False
+        raise
     if identity is None:
         return (
             False
@@ -151,6 +201,26 @@ def main_header_visible(listing, viewport, overlays):
             node, viewport, (*overlays, *_control_covers(listing, node))
         ).unobscured
         for node in (name, handle, *badges)
+    )
+
+
+def _clipped_name(listing, viewport):
+    """A scrolled native header can omit the name above its clipped handle."""
+    avatars = listing.xpath('./node/node[@resource-id="timeline_post_avatar"]')
+    if len(avatars) != 1:
+        return False
+    avatar = avatars[0]
+    header = avatar.getparent()
+    if len(header) != 2 or header[0] is not avatar or len(header[1]) != 1:
+        return False
+    handle = header[1][0]
+    return (
+        bool(avatar.get("content-desc"))
+        and _author_column(header[1])
+        and _plain_annotation(handle)
+        and bool(HANDLE.fullmatch(handle.get("text", "")))
+        and _rect(avatar)[2] <= _rect(header[1])[0] <= _rect(handle)[0]
+        and _rect(header)[1] < _rect(handle)[1] < viewport[1]
     )
 
 

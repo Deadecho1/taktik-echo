@@ -137,3 +137,21 @@ def test_main_detail_fixture_provenance():
             hashlib.sha256((FIXTURES / item["file"]).read_bytes()).hexdigest()
             == item["sha256"]
         )
+
+
+def test_secondary_badge_fixture_integrity_and_synthetic_labels():
+    manifest = json.loads((FIXTURES / "badge-manifest.json").read_text())
+    assert "Synthetic" in manifest["description"]
+    for item in manifest["fixtures"]:
+        assert set(item) == {"file", "sha256"}
+        assert (
+            hashlib.sha256((FIXTURES / item["file"]).read_bytes()).hexdigest()
+            == item["sha256"]
+        )
+    main = read_screen(document("badge-native"), SIZE).detail.main_post
+    source = read_screen(document("badge-source"), SIZE).observable_posts[0]
+    assert main.author == source.author == "@fixture_author"
+    assert main.body == source.body and main.labels == (
+        "Verified Business",
+        "Fixture Museum",
+    )
