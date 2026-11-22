@@ -2,7 +2,8 @@
 
 The initial seven XML hierarchies are copied from the persona workspace's original X inspection fixture package.
 The captures used X `12.41.0-prod.01`, Android 13, English UI, and 1080 × 2340 dimensions on 8 November 2026.
-`manifest.json` retains the source hashes and capture provenance for this subset.
+`manifest.json` records canonical expanded-input hashes for this subset.
+Original capture hashes and provenance remain in local migration diagnostics.
 The owner is anonymized as `Fixture Owner` / `@fixture_owner`; public post text and geometry remain intact.
 System and keyboard windows retain their root geometry without notification or suggestion contents.
 The initial seven captures were visually reviewed during the original inspection.

@@ -2,7 +2,8 @@
 
 The twelve retained-caption/reset captures come from one bounded physical diagnostic on 20 November 2026.
 The phone ran English X `12.42.0-prod.01` on Android 13 at 1080 × 2340.
-`manifest.json` records original and fixture hashes from run `20261120T133655.284102Z`.
+`manifest.json` records canonical expanded-input hashes.
+Original capture provenance remains in local migration diagnostics.
 The owner is anonymized as `Fixture Owner` / `@fixture_owner`, and external windows retain only empty root geometry.
 Public post text and native geometry remain unchanged.
 Screenshots remain local and have not received human review.

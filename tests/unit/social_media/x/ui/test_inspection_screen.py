@@ -1,7 +1,6 @@
 """Native inspection evidence never borrows missing main-post text from replies."""
 
 import copy
-import hashlib
 import json
 
 import pytest
@@ -205,12 +204,7 @@ def test_engagement_fixture_provenance():
     manifest = json.loads((ENGAGEMENT_FIXTURES / "manifest.json").read_text())
     assert manifest["size"] == list(SIZE)
     for item in manifest["fixtures"]:
-        assert (
-            hashlib.sha256(
-                (ENGAGEMENT_FIXTURES / item["file"]).read_bytes()
-            ).hexdigest()
-            == item["sha256"]
-        )
+        assert fixture_digest(ENGAGEMENT_FIXTURES / item["file"]) == item["sha256"]
 
 
 @pytest.mark.parametrize(
@@ -326,10 +320,7 @@ def test_link_fixture_provenance():
     manifest = json.loads((LINK_FIXTURES / "manifest.json").read_text())
     assert manifest["size"] == list(SIZE)
     for item in manifest["fixtures"]:
-        assert (
-            hashlib.sha256((LINK_FIXTURES / item["file"]).read_bytes()).hexdigest()
-            == item["sha256"]
-        )
+        assert fixture_digest(LINK_FIXTURES / item["file"]) == item["sha256"]
 
 
 def test_share_exposes_only_copy_and_safe_dismissal_targets():

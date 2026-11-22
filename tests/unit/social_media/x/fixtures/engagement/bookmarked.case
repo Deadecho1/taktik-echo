@@ -1,0 +1,9 @@
+<fixture base="engagement/source.xml" sha256="3c3b42c3c1e5e3c7d939caaf813715e72899140a1a91f45fcc1fd2a46fb392f4">
+  <set select="//node[@text='132']" text="133"/>
+  <set select="//node[@content-desc='Like']" content-desc="Undo Like"/>
+  <set select="//node[@class='android.view.View' and @bounds='[568,1520][692,1637]']" bounds="[573,1520][692,1637]"/>
+  <set select="//node[@text='4.1K']" bounds="[601,1564][676,1607]" text="4.2K"/>
+  <set select="//node[@class='android.view.View' and @bounds='[764,1520][872,1637]']" bounds="[763,1520][872,1637]"/>
+  <set select="//node[@text='558K']" text="559K"/>
+  <set select="//node[@content-desc='Bookmark']" content-desc="Delete Bookmark"/>
+</fixture>

@@ -1,0 +1,4 @@
+<fixture base="engagement/undo-complete-source.xml" sha256="80ffc388f4d158971d28a662ed433f332d46222520908c42c61af9612485ffde">
+  <set select="//node[@resource-id='scaffold_home_tabbed']/node[@class='android.view.View' and @bounds='[0,0][1080,2340]' and @index='0']/node[@class='android.view.View' and @bounds='[0,0][1080,2340]' and @index='0']/node[@class='android.view.View' and @bounds='[0,590][1080,2019]' and @index='2']" bounds="[0,590][1080,2018]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[0,2019][1080,2340]']" bounds="[0,2018][1080,2340]"/>
+</fixture>

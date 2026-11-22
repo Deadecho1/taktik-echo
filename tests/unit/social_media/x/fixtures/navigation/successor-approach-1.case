@@ -1,0 +1,26 @@
+<fixture base="navigation/successor-approach-0.xml" sha256="9094a19ceb9d8992feb92e666fdf26c3aaeadfc69721bae34b99146728f2669a">
+  <set select="//node[@class='android.view.View' and @bounds='[0,1720][1080,2340]']" bounds="[0,1527][1080,2340]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[11,1742][165,1896]']" bounds="[11,1549][165,1703]"/>
+  <set select="//node[@content-desc='Fixture label 5']" bounds="[22,1560][154,1692]"/>
+  <set select="//node[@resource-id='timeline_post']" bounds="[176,1560][876,1609]"/>
+  <set select="//node[@text='Fixture label 5']" bounds="[176,1560][293,1609]"/>
+  <set select="//node[@content-desc='Verified Governmental Account']" bounds="[302,1564][343,1605]"/>
+  <set select="//node[@text='@fixture_source']" bounds="[352,1560][500,1609]"/>
+  <set select="//node[@text='· 1h']" bounds="[509,1560][641,1609]"/>
+  <set select="//node[@content-desc='Explain this post with Grok']" bounds="[879,1527][959,1616]"/>
+  <set select="//node[@content-desc='Post options']" bounds="[959,1527][1080,1651]"/>
+  <set select="//node[@class='android.widget.TextView' and @bounds='[176,1809][1047,2005]']" bounds="[176,1616][1047,1812]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[0,2027][1080,2340]']" bounds="[0,1834][1080,2340]"/>
+  <replace select="//node[@class='android.view.View' and @bounds='[176,2027][873,2340]']">
+    <node bounds="[176,1834][873,2340]" checkable="false" checked="false" class="android.view.View" clickable="false" content-desc="" display-id="0" drawing-order="0" enabled="true" focusable="false" focused="false" hint="" index="0" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+      <node bounds="[176,1834][873,2340]" checkable="false" checked="false" class="android.widget.ImageView" clickable="true" content-desc="Image: Synthetic painted wooden exhibit 9." display-id="0" drawing-order="0" enabled="true" focusable="true" focused="false" hint="" index="0" long-clickable="true" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+      <node NAF="true" bounds="[165,2310][297,2340]" checkable="false" checked="false" class="android.view.View" clickable="true" content-desc="" display-id="0" drawing-order="1" enabled="true" focusable="true" focused="false" hint="" index="1" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+    </node>
+  </replace>
+  <replace select="//node[@class='android.view.View' and @bounds='[884,2027][1080,2340]']">
+    <node bounds="[884,1834][1080,2340]" checkable="false" checked="false" class="android.view.View" clickable="false" content-desc="" display-id="0" drawing-order="1" enabled="true" focusable="false" focused="false" hint="" index="1" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+      <node bounds="[884,1834][1080,2340]" checkable="false" checked="false" class="android.widget.ImageView" clickable="true" content-desc="Image: Synthetic painted wooden exhibit 10." display-id="0" drawing-order="0" enabled="true" focusable="true" focused="false" hint="" index="0" long-clickable="true" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+      <node NAF="true" bounds="[873,2310][1005,2340]" checkable="false" checked="false" class="android.view.View" clickable="true" content-desc="" display-id="0" drawing-order="1" enabled="true" focusable="true" focused="false" hint="" index="1" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+    </node>
+  </replace>
+</fixture>

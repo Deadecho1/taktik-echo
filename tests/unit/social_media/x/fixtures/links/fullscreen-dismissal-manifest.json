@@ -7,51 +7,52 @@
   "fixtures": [
     {
       "file": "fullscreen-dismissal-0.xml",
-      "sha256": "99761f8e09fd7b52474853426ac0e52871b9973612a1aaa85d27f9d7bba0f1c3"
+      "sha256": "9925cf2f4d6f6341dc31b615fd2987b5939734ceafe0d70937db82ce8b89f287"
     },
     {
       "file": "fullscreen-dismissal-1.xml",
-      "sha256": "99761f8e09fd7b52474853426ac0e52871b9973612a1aaa85d27f9d7bba0f1c3"
+      "sha256": "9925cf2f4d6f6341dc31b615fd2987b5939734ceafe0d70937db82ce8b89f287"
     },
     {
       "file": "fullscreen-dismissal-2.xml",
-      "sha256": "99761f8e09fd7b52474853426ac0e52871b9973612a1aaa85d27f9d7bba0f1c3"
+      "sha256": "9925cf2f4d6f6341dc31b615fd2987b5939734ceafe0d70937db82ce8b89f287"
     },
     {
       "file": "fullscreen-dismissal-3.xml",
-      "sha256": "59990093afb8dc2641af044425b2e915f741cb081e274dda71e14f1ca4a5abf8"
+      "sha256": "4ab078321f750d301d89824f87b1aaef84396b7f85d1e19b9d7dc1a214f56867"
     },
     {
       "file": "fullscreen-dismissal-4.xml",
-      "sha256": "59990093afb8dc2641af044425b2e915f741cb081e274dda71e14f1ca4a5abf8"
+      "sha256": "4ab078321f750d301d89824f87b1aaef84396b7f85d1e19b9d7dc1a214f56867"
     },
     {
       "file": "fullscreen-dismissal-5.xml",
-      "sha256": "61bb24a5b7bf758ed8a324a229aa30bcf5cb3c4fac74d2c5b078acfbd4bb6aeb"
+      "sha256": "3b089c04d1dc8186248f9c6385e21fbebf17174d7542c6bb497137df9c2b203b"
     },
     {
       "file": "fullscreen-dismissal-6.xml",
-      "sha256": "f57e8eab960e60402f956da8a453501276793bdeca7c70a34b2a63b5e965daa8"
+      "sha256": "9b417463134425d1cb324660d458557f9d254b70ae3e7029fa0eed8b6a2423c1"
     },
     {
       "file": "fullscreen-dismissal-7.xml",
-      "sha256": "f57e8eab960e60402f956da8a453501276793bdeca7c70a34b2a63b5e965daa8"
+      "sha256": "9b417463134425d1cb324660d458557f9d254b70ae3e7029fa0eed8b6a2423c1"
     },
     {
       "file": "fullscreen-dismissal-8.xml",
-      "sha256": "f57e8eab960e60402f956da8a453501276793bdeca7c70a34b2a63b5e965daa8"
+      "sha256": "9b417463134425d1cb324660d458557f9d254b70ae3e7029fa0eed8b6a2423c1"
     },
     {
       "file": "fullscreen-dismissal-9.xml",
-      "sha256": "f57e8eab960e60402f956da8a453501276793bdeca7c70a34b2a63b5e965daa8"
+      "sha256": "9b417463134425d1cb324660d458557f9d254b70ae3e7029fa0eed8b6a2423c1"
     },
     {
       "file": "fullscreen-dismissal-10.xml",
-      "sha256": "1bcf305f30acd88662fc752ef58fdc104c63187e4fe58fc88f4c6b6cb20832eb"
+      "sha256": "6ffd018bd165d612aa1aa2c0f6e92260c92d6da25f6b6a2f17cc676c6d30a04b"
     },
     {
       "file": "fullscreen-dismissal-11.xml",
-      "sha256": "99761f8e09fd7b52474853426ac0e52871b9973612a1aaa85d27f9d7bba0f1c3"
+      "sha256": "9925cf2f4d6f6341dc31b615fd2987b5939734ceafe0d70937db82ce8b89f287"
     }
-  ]
+  ],
+  "xml_hash": "canonical-xml-v1"
 }

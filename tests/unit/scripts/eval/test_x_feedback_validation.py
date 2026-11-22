@@ -1,13 +1,12 @@
 """Synthetic native layouts exercise feedback through the real Phone backend."""
 
-import hashlib
 import json
 from copy import deepcopy
 
 import pytest
 from lxml import etree
 from unit.paths import CORE
-from unit.x_fixtures import xml_fixture
+from unit.x_fixtures import fixture_digest, xml_fixture
 
 from scripts.eval.x_feedback_validation import check_feedback_roundtrip
 from taktik.core.shared.phone_interaction import (
@@ -33,15 +32,14 @@ def test_synthetic_feedback_fixture_integrity():
     manifest = json.loads((FIXTURES / "undo-manifest.json").read_text())
     assert manifest["size"] == list(SIZE)
     assert {entry["file"] for entry in manifest["fixtures"]} == {
-        path.name for path in FIXTURES.glob("undo-*.xml")
+        path.with_suffix(".xml").name
+        for suffix in ("xml", "case")
+        for path in FIXTURES.glob(f"undo-*.{suffix}")
     }
     for entry in manifest["fixtures"]:
         assert set(entry) == {"file", "kind", "sha256"}
         assert entry["kind"] == "synthetic_native_layout"
-        assert (
-            hashlib.sha256((FIXTURES / entry["file"]).read_bytes()).hexdigest()
-            == entry["sha256"]
-        )
+        assert fixture_digest(FIXTURES / entry["file"]) == entry["sha256"]
 
 
 class FeedbackReplay:

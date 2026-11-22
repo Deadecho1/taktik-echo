@@ -7,11 +7,12 @@
   "fixtures": [
     {
       "file": "drawer-tip-home.xml",
-      "sha256": "adcccfcfd7f4a5bc3a38ae26bd56b2edc8d21fb0afc43f89bb24fedaff2a277e"
+      "sha256": "156294756a6fbb3a45130f1258aeb430da663d9e3a186ef3cc3a31762826056d"
     },
     {
       "file": "drawer-tip.xml",
-      "sha256": "467b34ba6ddf8fc9ab70299c4d4430abe1b05fcb2680d0f4779dc6adaee24cef"
+      "sha256": "cd7c093b09b72e3663f5f46213a60f3872b24bdccc6f340e270c3cae375507d8"
     }
-  ]
+  ],
+  "xml_hash": "canonical-xml-v1"
 }
