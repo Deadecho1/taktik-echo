@@ -1,16 +1,10 @@
 """The soak caption workflow replays real Phone operations without a device."""
 
 import pytest
-from unit.social_media.x.services.browsing.test_expansion import LIMIT_TAP as TAP
-from unit.social_media.x.services.browsing.test_expansion import (
-    limit_selected as selected,
-)
-from unit.social_media.x.services.browsing.test_expansion import (
-    started as short_expansion,
-)
-from unit.social_media.x.services.browsing.test_long_detail_reading import (
-    started as long_detail,
-)
+from unit.social_media.x.services.expansion_replay import LIMIT_TAP as TAP
+from unit.social_media.x.services.expansion_replay import limit_selected as selected
+from unit.social_media.x.services.expansion_replay import started as short_expansion
+from unit.social_media.x.services.long_detail_replay import started as long_detail
 
 from scripts.eval.x_caption_validation import check_caption
 from taktik.core.shared.phone_interaction import (

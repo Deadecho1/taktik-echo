@@ -61,3 +61,14 @@ python -m pytest
 python -m pytest tests/unit/social_media/tiktok/workflows/publish
 python -m pytest tests/unit/kernel tests/unit/contract
 ```
+
+## X fixture and replay helpers
+
+The root harness [x_fixtures.py](unit/x_fixtures.py) loads named X cases with `xml_fixture(name)` or reads them through the real parser with `screen_fixture(name)`.
+A name can include or omit `.xml`; it resolves to full native XML or a checked one-step `.case` recipe.
+The [representation guide](../docs/validation/x-fixture-representation.md) describes expansion, canonical input hashes, base byte checksums, and local capture provenance.
+
+Reusable Phone-operation replays live in `unit/social_media/x/services/*_replay.py`; raw Android transports live in `*_transport.py` with `android_replay.py` supplying only clock, size, foreground, and action recording state.
+Evaluator feedback replays live beside their evaluator tests.
+Tap regions and transitions remain explicit in each replay, and the Share-sheet transport uses captured regions independently of production selection.
+Behavioral assertions stay in their named tests; helpers are never imported from `test_*.py` modules in the X/evaluator scope.

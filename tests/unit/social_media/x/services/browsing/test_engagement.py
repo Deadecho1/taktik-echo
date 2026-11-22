@@ -3,12 +3,11 @@
 import pytest
 from lxml import etree
 from unit.paths import CORE
-from unit.social_media.x.services.browsing.test_search import SearchReplay
-from unit.social_media.x.ui.test_inspection_screen import SIZE
-from unit.social_media.x.ui.test_inspection_screen import (
+from unit.social_media.x.services.inspection_inputs import (
     engagement_document as document,
 )
-from unit.x_fixtures import xml_fixture
+from unit.social_media.x.services.search_replay import SearchReplay
+from unit.x_fixtures import SIZE, xml_fixture
 
 from taktik.core.shared.phone_interaction import (
     InteractionCancelled,

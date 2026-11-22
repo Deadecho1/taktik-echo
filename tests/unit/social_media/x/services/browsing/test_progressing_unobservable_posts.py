@@ -1,6 +1,5 @@
 """Bound search between verified post-position changes; preserve session limits."""
 
-import json
 from copy import deepcopy
 from itertools import pairwise
 from types import SimpleNamespace
@@ -9,7 +8,8 @@ from unittest.mock import Mock
 import pytest
 from lxml import etree
 from unit.paths import CORE
-from unit.x_fixtures import fixture_digest, xml_fixture
+from unit.x_fixtures import SIZE, fixture_manifest, xml_fixture
+from unit.x_fixtures import xml_fixture as document
 
 from taktik.core.shared.phone_interaction import (
     InteractionCancelled,
@@ -31,10 +31,6 @@ from taktik.core.social_media.x.services.browsing.navigation import (
     scroll_region,
 )
 from taktik.core.social_media.x.ui.screen import PACKAGE, read_screen
-
-
-def document(name):
-    return xml_fixture((CORE / "tests/unit/social_media/x/fixtures") / f"{name}.xml")
 
 
 def captured_app(name):
@@ -123,7 +119,6 @@ def test_session_deadline_stops_a_progressing_search():
 
 
 FIXTURES = CORE / "tests/unit/social_media/x/fixtures/navigation"
-SIZE = (1080, 2340)
 
 
 def preceding_document(number):
@@ -345,10 +340,8 @@ def test_preceding_progress_preserves_phone_interruption_without_retry(
 
 
 def test_preceding_fixture_integrity():
-    manifest = json.loads((FIXTURES / "manifest.json").read_text())
+    manifest = fixture_manifest(FIXTURES / "manifest.json")
     assert manifest["kind"] == "synthetic_native_layout"
-    for item in manifest["fixtures"]:
-        assert fixture_digest(FIXTURES / item["file"]) == item["sha256"]
 
 
 def test_temporary_source_loss_cannot_credit_preceding_exit(replay):
@@ -587,7 +580,5 @@ def test_framing_preserves_phone_interruption_without_retry(
 
 
 def test_successor_fixture_integrity():
-    manifest = json.loads((FIXTURES / "successor-approach-manifest.json").read_text())
+    manifest = fixture_manifest(FIXTURES / "successor-approach-manifest.json")
     assert manifest["kind"] == "synthetic_native_layout"
-    for item in manifest["fixtures"]:
-        assert fixture_digest(FIXTURES / item["file"]) == item["sha256"]

@@ -5,16 +5,13 @@ from copy import deepcopy
 import pytest
 from lxml import etree
 from unit.paths import CORE
-from unit.x_fixtures import xml_fixture
+from unit.x_fixtures import SIZE, xml_fixture
+from unit.x_fixtures import xml_fixture as document
 
 from taktik.core.shared.ui.geometry import bounds
 from taktik.core.social_media.x.services.browsing.browser import post_context
 from taktik.core.social_media.x.services.browsing.navigation import _alignment
 from taktik.core.social_media.x.ui.screen import read_screen
-
-
-def document(name):
-    return xml_fixture(CORE / "tests/unit/social_media/x/fixtures" / f"{name}.xml")
 
 
 def screen(stage):
@@ -70,7 +67,6 @@ def test_ai_annotation_without_button_requires_exact_native_pair_and_footer(muta
 
 
 FIXTURES = CORE / "tests/unit/social_media/x/fixtures/coverage"
-SIZE = (1080, 2340)
 
 
 def tree(name="single"):

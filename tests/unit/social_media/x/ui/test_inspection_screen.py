@@ -1,12 +1,19 @@
 """Native inspection evidence never borrows missing main-post text from replies."""
 
 import copy
-import json
 
 import pytest
 from lxml import etree
-from unit.paths import CORE
-from unit.x_fixtures import fixture_digest, xml_fixture
+from unit.social_media.x.services.inspection_inputs import (
+    ENGAGEMENT_FIXTURES,
+    FIXTURES,
+    LINK_FIXTURES,
+    LINK_URL,
+    document,
+    engagement_document,
+    link_document,
+)
+from unit.x_fixtures import SIZE, fixture_manifest
 
 from taktik.core.shared.behavior.tap import free_tap_zone
 from taktik.core.shared.ui.geometry import bounds
@@ -15,13 +22,6 @@ from taktik.core.social_media.x.services.browsing.navigation import (
     _scroll_motion,
 )
 from taktik.core.social_media.x.ui.screen import PACKAGE, read_screen
-
-FIXTURES = CORE / "tests/unit/social_media/x/fixtures/inspection"
-SIZE = (1080, 2340)
-
-
-def document(name):
-    return xml_fixture(FIXTURES / f"{name}.xml")
 
 
 def changed(name, xpath, attribute, value):
@@ -32,10 +32,8 @@ def changed(name, xpath, attribute, value):
 
 
 def test_captured_inspection_fixture_hashes():
-    manifest = json.loads((FIXTURES / "manifest.json").read_text())
+    manifest = fixture_manifest(FIXTURES / "manifest.json")
     assert manifest["size"] == list(SIZE)
-    for item in manifest["fixtures"]:
-        assert fixture_digest(FIXTURES / item["file"]) == item["sha256"]
 
 
 def test_profile_identity_is_separate_from_authors_of_its_reposts():
@@ -192,19 +190,9 @@ def test_wrapping_unreadable_detail_content_cannot_create_scroll_geometry():
         scroll_region(screen)
 
 
-ENGAGEMENT_FIXTURES = CORE / "tests/unit/social_media/x/fixtures/engagement"
-SIZE = (1080, 2340)
-
-
-def engagement_document(name):
-    return xml_fixture(ENGAGEMENT_FIXTURES / f"{name}.xml")
-
-
 def test_engagement_fixture_provenance():
-    manifest = json.loads((ENGAGEMENT_FIXTURES / "manifest.json").read_text())
+    manifest = fixture_manifest(ENGAGEMENT_FIXTURES / "manifest.json")
     assert manifest["size"] == list(SIZE)
-    for item in manifest["fixtures"]:
-        assert fixture_digest(ENGAGEMENT_FIXTURES / item["file"]) == item["sha256"]
 
 
 @pytest.mark.parametrize(
@@ -307,20 +295,9 @@ def test_post_options_taps_stay_clear_of_grok_and_post_opening_padding():
         assert region[3] <= post.header_visibility.bounds[3]
 
 
-LINK_FIXTURES = CORE / "tests/unit/social_media/x/fixtures/links"
-LINK_QUERY = 'from:NASA "stellar merger"'
-LINK_URL = "https://x.com/NASA/status/2123169377855922254"
-
-
-def link_document(name):
-    return xml_fixture(LINK_FIXTURES / f"{name}.xml")
-
-
 def test_link_fixture_provenance():
-    manifest = json.loads((LINK_FIXTURES / "manifest.json").read_text())
+    manifest = fixture_manifest(LINK_FIXTURES / "manifest.json")
     assert manifest["size"] == list(SIZE)
-    for item in manifest["fixtures"]:
-        assert fixture_digest(LINK_FIXTURES / item["file"]) == item["sha256"]
 
 
 def test_share_exposes_only_copy_and_safe_dismissal_targets():

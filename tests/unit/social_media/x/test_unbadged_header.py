@@ -4,16 +4,12 @@ from pathlib import Path
 
 import pytest
 from lxml import etree
-from unit.x_fixtures import xml_fixture
+from unit.x_fixtures import xml_fixture as document
 
 from taktik.core.social_media.x.services.browsing.navigation import _alignment
 from taktik.core.social_media.x.ui.screen import read_screen
 
 FIXTURES = Path(__file__).with_name("fixtures")
-
-
-def document(name):
-    return xml_fixture(FIXTURES / f"{name}.xml")
 
 
 def test_unbadged_name_age_row_keeps_translated_body_and_video_unattributed():

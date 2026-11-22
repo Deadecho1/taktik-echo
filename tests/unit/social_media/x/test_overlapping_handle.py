@@ -1,17 +1,11 @@
 """A native handle overlapping New posts without its age remains unattributed."""
 
-from pathlib import Path
-
 import pytest
 from lxml import etree
-from unit.x_fixtures import xml_fixture
+from unit.x_fixtures import xml_fixture as document
 
 from taktik.core.social_media.x.services.browsing.navigation import _alignment
 from taktik.core.social_media.x.ui.screen import read_screen
-
-
-def document(name):
-    return xml_fixture(Path(__file__).parent / "fixtures" / f"{name}.xml")
 
 
 def test_overlapping_handle_retains_unattributed_body_and_verified_movement():

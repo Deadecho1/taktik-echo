@@ -6,7 +6,7 @@ from unittest.mock import Mock
 import pytest
 from lxml import etree
 from unit.paths import CORE
-from unit.x_fixtures import xml_fixture
+from unit.x_fixtures import SIZE, xml_fixture
 
 from taktik.core.shared.phone_interaction import Phone, Result, Status
 from taktik.core.social_media.x.services.browsing.navigation import (
@@ -17,7 +17,6 @@ from taktik.core.social_media.x.services.browsing.navigation import (
 from taktik.core.social_media.x.ui.screen import PACKAGE, read_screen
 
 FIXTURES = CORE / "tests/unit/social_media/x/fixtures/search"
-SIZE = (1080, 2340)
 
 
 def document(stage):

@@ -1,21 +1,15 @@
 """Scrolling can cross rejected content without promoting it to an observation."""
 
-import json
 from dataclasses import replace
 from unittest.mock import Mock
 
 import pytest
 from PIL import Image
 from unit.paths import CORE
-from unit.shared.phone_interaction.test_gestures import recording_session
-from unit.social_media.x.services.browsing.test_search import (
-    SearchReplay,
-    shifted_results,
-)
-from unit.social_media.x.services.browsing.test_search import (
-    document as search_document,
-)
-from unit.x_fixtures import fixture_digest, xml_fixture
+from unit.shared.phone_interaction.recording import recording_session
+from unit.social_media.x.services.search_replay import SearchReplay, shifted_results
+from unit.social_media.x.services.search_replay import document as search_document
+from unit.x_fixtures import SIZE, fixture_manifest, xml_fixture
 
 from scripts.eval.x_caption_validation import check_caption
 from taktik.core.shared.phone_interaction import (
@@ -34,8 +28,6 @@ from taktik.core.social_media.x.services.browsing.navigation import (
     _scroll_motion,
 )
 from taktik.core.social_media.x.ui.screen import read_screen
-
-SIZE = (1080, 2340)
 
 
 def test_unlabeled_inline_content_does_not_supply_missing_movement_evidence():
@@ -358,10 +350,8 @@ class StartupReplay(SearchReplay):
 
 
 def test_startup_fixture_hashes():
-    manifest = json.loads((STARTUP_FIXTURES / "manifest.json").read_text())
+    manifest = fixture_manifest(STARTUP_FIXTURES / "manifest.json")
     assert manifest["size"] == list(SIZE)
-    for item in manifest["fixtures"]:
-        assert fixture_digest(STARTUP_FIXTURES / item["file"]) == item["sha256"]
 
 
 def test_captured_short_framing_scroll_executes_with_its_safe_requested_travel():

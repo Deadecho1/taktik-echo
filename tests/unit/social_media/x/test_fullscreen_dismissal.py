@@ -1,12 +1,11 @@
 """Stationary clipboard dismissal through the public browser and raw transport."""
 
-import json
 from copy import deepcopy
 from pathlib import Path
 
 import pytest
 from lxml import etree
-from unit.x_fixtures import fixture_digest, xml_fixture
+from unit.x_fixtures import SIZE, fixture_manifest, xml_fixture
 
 from taktik.core.shared.phone_interaction import (
     InteractionCancelled,
@@ -21,7 +20,6 @@ from taktik.core.social_media.x.services.browsing.navigation import XError
 from taktik.core.social_media.x.ui.screen import PACKAGE, read_screen
 
 FIXTURES = Path(__file__).parent / "fixtures/links"
-SIZE = (1080, 2340)
 
 
 def document(number):
@@ -337,10 +335,8 @@ def test_final_unobscured_return_still_verifies_source_and_context(replay, probl
 
 
 def test_synthetic_fixture_integrity():
-    manifest = json.loads((FIXTURES / "fullscreen-dismissal-manifest.json").read_text())
+    manifest = fixture_manifest(FIXTURES / "fullscreen-dismissal-manifest.json")
     assert manifest["kind"] == "synthetic_native_layout"
-    for item in manifest["fixtures"]:
-        assert fixture_digest(FIXTURES / item["file"]) == item["sha256"]
 
 
 def test_captured_sequence_reaches_advance_without_inventing_a_successor(replay):

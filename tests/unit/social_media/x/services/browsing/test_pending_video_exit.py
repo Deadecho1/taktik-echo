@@ -7,7 +7,8 @@ from unittest.mock import Mock
 
 import pytest
 from unit.paths import CORE
-from unit.x_fixtures import xml_fixture
+from unit.x_fixtures import SIZE, xml_fixture
+from unit.x_fixtures import xml_fixture as document
 
 from taktik.core.shared.phone_interaction import (
     InteractionCancelled,
@@ -27,10 +28,6 @@ from taktik.core.social_media.x.services.browsing.navigation import (
     _text_continuation,
 )
 from taktik.core.social_media.x.ui.screen import PACKAGE, read_screen
-
-
-def document(name):
-    return xml_fixture((CORE / "tests/unit/social_media/x/fixtures") / f"{name}.xml")
 
 
 def captured_app(name):
@@ -208,7 +205,6 @@ def test_cancellation_during_captured_pending_text_stops_without_retry():
 
 
 CAPTION_FIXTURES = CORE / "tests/unit/social_media/x/fixtures/coverage"
-SIZE = (1080, 2340)
 
 
 def caption_document(number):

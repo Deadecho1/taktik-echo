@@ -4,18 +4,17 @@ from copy import deepcopy
 
 import pytest
 from lxml import etree
-from unit.scripts.eval.test_x_feedback_undo_visibility import (
-    ObscuredFeedbackReplay,
-    source_document,
-)
-from unit.scripts.eval.test_x_feedback_validation import (
+from unit.scripts.eval.feedback_replay import (
     FIXTURES,
-    SIZE,
     CompleteFeedbackReplay,
     FeedbackReplay,
     selected,
 )
-from unit.x_fixtures import xml_fixture
+from unit.scripts.eval.feedback_visibility_replay import (
+    ObscuredFeedbackReplay,
+    source_document,
+)
+from unit.x_fixtures import SIZE, xml_fixture
 
 from scripts.eval.x_feedback_validation import _find_undo, check_feedback_roundtrip
 from taktik.core.shared.phone_interaction import (

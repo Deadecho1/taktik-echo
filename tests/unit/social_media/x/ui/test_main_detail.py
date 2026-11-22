@@ -1,21 +1,12 @@
 """Independent main-post evidence captured with native screen-reader semantics."""
 
-import json
-
 import pytest
 from lxml import etree
-from unit.paths import CORE
-from unit.x_fixtures import fixture_digest, xml_fixture
+from unit.social_media.x.services.detail_inputs import FIXTURES, document
+from unit.x_fixtures import SIZE, fixture_manifest
 
 from taktik.core.social_media.x.ui.detail import combine_hierarchies
 from taktik.core.social_media.x.ui.screen import read_screen
-
-FIXTURES = CORE / "tests/unit/social_media/x/fixtures/detail"
-SIZE = (1080, 2340)
-
-
-def document(name="image-main"):
-    return xml_fixture(FIXTURES / f"{name}.xml")
 
 
 def test_main_detail_is_read_independently_with_separate_media_and_timestamp():
@@ -131,17 +122,14 @@ def test_obscured_main_author_never_becomes_observable():
 
 
 def test_main_detail_fixture_provenance():
-    manifest = json.loads((FIXTURES / "manifest.json").read_text())
-    for item in manifest["fixtures"]:
-        assert fixture_digest(FIXTURES / item["file"]) == item["sha256"]
+    fixture_manifest(FIXTURES / "manifest.json")
 
 
 def test_secondary_badge_fixture_integrity_and_synthetic_labels():
-    manifest = json.loads((FIXTURES / "badge-manifest.json").read_text())
+    manifest = fixture_manifest(FIXTURES / "badge-manifest.json")
     assert "Synthetic" in manifest["description"]
     for item in manifest["fixtures"]:
         assert set(item) == {"file", "sha256"}
-        assert fixture_digest(FIXTURES / item["file"]) == item["sha256"]
     main = read_screen(document("badge-native"), SIZE).detail.main_post
     source = read_screen(document("badge-source"), SIZE).observable_posts[0]
     assert main.author == source.author == "@fixture_author"

@@ -2,7 +2,7 @@ from dataclasses import replace
 
 import pytest
 from unit.paths import CORE
-from unit.x_fixtures import xml_fixture
+from unit.x_fixtures import xml_fixture as document
 
 from taktik.core.social_media.x.services.browsing.navigation import (
     XError,
@@ -11,10 +11,6 @@ from taktik.core.social_media.x.services.browsing.navigation import (
 from taktik.core.social_media.x.ui.screen import read_screen
 
 FIXTURES = CORE / "tests/unit/social_media/x/fixtures"
-
-
-def document(name):
-    return xml_fixture(FIXTURES / f"{name}.xml")
 
 
 def screens():

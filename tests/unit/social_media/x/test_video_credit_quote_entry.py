@@ -1,17 +1,12 @@
 """A clipped video may reveal its native source credit and a quote together."""
 
 from dataclasses import replace
-from pathlib import Path
 
 import pytest
-from unit.x_fixtures import xml_fixture
+from unit.x_fixtures import xml_fixture as document
 
 from taktik.core.social_media.x.services.browsing.navigation import XError, _alignment
 from taktik.core.social_media.x.ui.screen import read_screen
-
-
-def document(name):
-    return xml_fixture(Path(__file__).parent / "fixtures" / f"{name}.xml")
 
 
 def screens():
