@@ -4,6 +4,7 @@ import hashlib
 
 import pytest
 from lxml import etree
+
 from unit.x_fixtures import (
     FIXTURES,
     FixtureError,
