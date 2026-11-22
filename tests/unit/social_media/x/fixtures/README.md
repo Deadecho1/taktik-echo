@@ -118,3 +118,15 @@ No next-post capture is present, and the separate unchanged-frame test preserves
 The author, organization, body, counts, and timestamp are fictional.
 The public Phone/TaktikDevice regression uses the source fixture again for its synthetic successful return.
 `detail/badge-manifest.json` records synthetic fixture hashes only.
+
+## One-step scrolling variants
+
+The 322 root-level scrolling and visibility cases retain their original names and native inputs.
+They now use 147 full XML layouts, 154 explicit variants, and 21 direct aliases, with no removals.
+Bases stay within each named scenario sequence; a case with an unclear or larger recipe remains full XML.
+This removes 11,887 lines and 3,723,341 bytes from the root XML/recipe data.
+Every retained case matches the original complete native hierarchy and real parser result.
+
+Load case names with `unit.x_fixtures.xml_fixture` or use the expansion command described in [the representation guide](../../../../../docs/validation/x-fixture-representation.md).
+A `.case` stores the recipe for the corresponding `.xml` name; tests and diagnostics should use the loader for either representation.
+The input inventory hashes expanded canonical XML, while recipe base hashes check stored full XML bytes.

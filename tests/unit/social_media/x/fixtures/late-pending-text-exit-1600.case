@@ -1,0 +1,58 @@
+<fixture base="late-pending-text-exit-1300.xml" sha256="b145e0cc7b5a2ee73dcdc7e8ca67a79f1e1c336bcf67b426028d3aa20bfa0049">
+  <set select="//node[@class='android.view.View' and @bounds='[0,0][1080,1418]']" bounds="[0,0][1080,1718]"/>
+  <set select="//node[@text='Fixture text 9']" bounds="[176,0][1047,1600]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[137,1300][322,1407]']" bounds="[137,1600][322,1707]"/>
+  <set select="//node[@content-desc='Reply' and @bounds='[176,1344][220,1388]']" bounds="[176,1644][220,1688]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[182,1301][314,1407]']" bounds="[182,1601][314,1707]"/>
+  <set select="//node[@class='android.widget.TextView' and @bounds='[231,1345][265,1388]']" bounds="[231,1645][265,1688]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[322,1300][507,1418]']" bounds="[322,1600][507,1718]"/>
+  <set select="//node[@content-desc='Repost' and @bounds='[361,1344][405,1388]']" bounds="[361,1644][405,1688]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[373,1301][505,1418]']" bounds="[373,1601][505,1718]"/>
+  <set select="//node[@class='android.widget.TextView' and @bounds='[416,1345][461,1388]']" bounds="[416,1645][461,1688]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[507,1300][692,1418]']" bounds="[507,1600][692,1718]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[502,1300][634,1418]']" bounds="[502,1600][634,1718]"/>
+  <set select="//node[@content-desc='Like' and @bounds='[546,1344][590,1388]']" bounds="[546,1644][590,1688]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[557,1301][689,1418]']" bounds="[557,1601][689,1718]"/>
+  <set select="//node[@class='android.widget.TextView' and @bounds='[601,1345][644,1388]']" bounds="[601,1645][644,1688]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[692,1300][872,1418]']" bounds="[692,1600][872,1718]"/>
+  <set select="//node[@content-desc='Impressions' and @bounds='[731,1344][775,1388]']" bounds="[731,1644][775,1688]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[749,1301][872,1418]']" bounds="[749,1601][872,1718]"/>
+  <set select="//node[@class='android.widget.TextView' and @bounds='[786,1345][844,1388]']" bounds="[786,1645][844,1688]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[872,1300][959,1418]']" bounds="[872,1600][959,1718]"/>
+  <set select="//node[@content-desc='Bookmark' and @bounds='[916,1344][959,1388]']" bounds="[916,1644][959,1688]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[959,1300][1080,1418]']" bounds="[959,1600][1080,1718]"/>
+  <set select="//node[@content-desc='Share' and @bounds='[1003,1344][1047,1388]']" bounds="[1003,1644][1047,1688]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[0,1418][1080,1781]']" bounds="[0,1718][1080,2081]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[116,1407][381,1539]']" bounds="[116,1707][381,1839]"/>
+  <set select="//node[@text='.. reposted']" bounds="[177,1752][381,1795]"/>
+  <set select="//node[@content-desc='Fixture text 11']" bounds="[22,1817][154,1949]"/>
+  <set select="//node[@resource-id='timeline_post']" bounds="[176,1817][876,1866]"/>
+  <set select="//node[@text='Fixture text 11']" bounds="[176,1817][378,1866]"/>
+  <set select="//node[@content-desc='Verified']" bounds="[387,1821][428,1862]"/>
+  <set select="//node[@text='@fixture_10']" bounds="[437,1817][678,1866]"/>
+  <set select="//node[@text='· 3h']" bounds="[687,1817][755,1866]"/>
+  <set select="//node[@content-desc='Explain this post with Grok']" bounds="[879,1776][959,1873]"/>
+  <set select="//node[@content-desc='Post options']" bounds="[959,1776][1080,1908]"/>
+  <set select="//node[@text='Fixture text 12']" bounds="[176,1873][1047,1963]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[137,1663][322,1770]']" bounds="[137,1963][322,2070]"/>
+  <set select="//node[@content-desc='Reply' and @bounds='[176,1707][220,1751]']" bounds="[176,2007][220,2051]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[182,1664][314,1770]']" bounds="[182,1964][314,2070]"/>
+  <set select="//node[@class='android.widget.TextView' and @bounds='[231,1708][265,1751]']" bounds="[231,2008][265,2051]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[322,1663][507,1781]']" bounds="[322,1963][507,2081]"/>
+  <set select="//node[@content-desc='Repost' and @bounds='[361,1707][405,1751]']" bounds="[361,2007][405,2051]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[373,1664][505,1781]']" bounds="[373,1964][505,2081]"/>
+  <set select="//node[@class='android.widget.TextView' and @bounds='[416,1708][461,1751]']" bounds="[416,2008][461,2051]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[507,1663][692,1781]']" bounds="[507,1963][692,2081]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[502,1663][634,1781]']" bounds="[502,1963][634,2081]"/>
+  <set select="//node[@content-desc='Like' and @bounds='[546,1707][590,1751]']" bounds="[546,2007][590,2051]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[557,1664][689,1781]']" bounds="[557,1964][689,2081]"/>
+  <set select="//node[@class='android.widget.TextView' and @bounds='[601,1708][644,1751]']" bounds="[601,2008][644,2051]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[692,1663][872,1781]']" bounds="[692,1963][872,2081]"/>
+  <set select="//node[@content-desc='Impressions' and @bounds='[731,1707][775,1751]']" bounds="[731,2007][775,2051]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[749,1664][872,1781]']" bounds="[749,1964][872,2081]"/>
+  <set select="//node[@class='android.widget.TextView' and @bounds='[786,1708][844,1751]']" bounds="[786,2008][844,2051]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[872,1663][959,1781]']" bounds="[872,1963][959,2081]"/>
+  <set select="//node[@content-desc='Bookmark' and @bounds='[916,1707][959,1751]']" bounds="[916,2007][959,2051]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[959,1663][1080,1781]']" bounds="[959,1963][1080,2081]"/>
+  <set select="//node[@content-desc='Share' and @bounds='[1003,1707][1047,1751]']" bounds="[1003,2007][1047,2051]"/>
+</fixture>
