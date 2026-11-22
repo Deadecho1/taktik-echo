@@ -1,0 +1,73 @@
+<fixture base="offscreen-quote-video-before.xml" sha256="42b24818f699537b7df149ef46f16a6cb815ca7bd822d6e097989fba50c046c8">
+  <set select="//node[@class='android.view.View' and @bounds='[0,0][1080,911]']" bounds="[0,0][1080,1517]"/>
+  <replace select="//node[@class='android.view.View' and @bounds='[0,0][1080,911]']/node[@class='android.view.View' and @bounds='[176,0][1047,447]' and @index='0']">
+    <node bounds="[176,0][1047,1053]" checkable="false" checked="false" class="android.view.View" clickable="true" content-desc="" display-id="0" drawing-order="0" enabled="true" focusable="true" focused="false" hint="" index="0" long-clickable="true" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+      <node bounds="[176,0][1047,1053]" checkable="false" checked="false" class="android.view.View" clickable="false" content-desc="Video" display-id="0" drawing-order="0" enabled="true" focusable="false" focused="false" hint="" index="0" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+      <node bounds="[176,0][1047,1053]" checkable="false" checked="false" class="androidx.compose.ui.viewinterop.u" clickable="false" content-desc="" display-id="0" drawing-order="1" enabled="true" focusable="false" focused="false" hint="" index="1" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+        <node bounds="[176,0][1047,1053]" checkable="false" checked="false" class="android.widget.FrameLayout" clickable="false" content-desc="" display-id="0" drawing-order="1" enabled="true" focusable="false" focused="false" hint="" index="0" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+          <node bounds="[176,0][1047,1053]" checkable="false" checked="false" class="android.widget.FrameLayout" clickable="false" content-desc="" display-id="0" drawing-order="1" enabled="true" focusable="false" focused="false" hint="" index="0" long-clickable="false" package="com.twitter.android" password="false" resource-id="com.twitter.android:id/exo_content_frame" scrollable="false" selected="false" text="" visible-to-user="true">
+            <node bounds="[176,0][1047,1053]" checkable="false" checked="false" class="android.view.View" clickable="false" content-desc="" display-id="0" drawing-order="1" enabled="true" focusable="false" focused="false" hint="" index="0" long-clickable="false" package="com.twitter.android" password="false" resource-id="com.twitter.android:id/async_surface_texture_view" scrollable="false" selected="false" text="" visible-to-user="true"/>
+            <node bounds="[176,0][1047,1053]" checkable="false" checked="false" class="android.widget.FrameLayout" clickable="false" content-desc="" display-id="0" drawing-order="2" enabled="true" focusable="false" focused="false" hint="" index="1" long-clickable="false" package="com.twitter.android" password="false" resource-id="com.twitter.android:id/exo_subtitles" scrollable="false" selected="false" text="" visible-to-user="true">
+              <node bounds="[176,0][1047,1053]" checkable="false" checked="false" class="android.view.View" clickable="false" content-desc="" display-id="0" drawing-order="1" enabled="true" focusable="false" focused="false" hint="" index="0" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+            </node>
+          </node>
+        </node>
+      </node>
+      <node bounds="[926,932][1058,1064]" checkable="false" checked="false" class="android.widget.ImageView" clickable="true" content-desc="Unmute" display-id="0" drawing-order="2" enabled="true" focusable="true" focused="false" hint="" index="2" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+    </node>
+  </replace>
+  <set select="//node[@class='android.view.View' and @bounds='[0,0][1080,911]']/node[@class='android.view.View' and @bounds='[176,469][1047,793]' and @index='1']" bounds="[176,1075][1047,1399]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[0,0][1080,911]']/node[@class='android.view.View' and @bounds='[176,469][1047,793]' and @index='1']/node" bounds="[176,1075][1047,1399]"/>
+  <set select="//node[@content-desc='Quote']" bounds="[198,1098][253,1153]"/>
+  <set select="//node[@text='Fixture text 5']" bounds="[264,1097][550,1153]"/>
+  <set select="//node[@content-desc='Verified']" bounds="[559,1106][600,1147]"/>
+  <set select="//node[@text='@fixture_4']" bounds="[609,1102][837,1151]"/>
+  <set select="//node[@text='· 1d']" bounds="[846,1102][908,1151]"/>
+  <set select="//node[@text='Translated from Arabic']" bounds="[283,1165][650,1208]"/>
+  <set select="//node[@text='Fixture text 6']" bounds="[198,1208][1025,1369]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[137,793][322,911]']" bounds="[137,1399][322,1517]"/>
+  <set select="//node[@content-desc='Reply']" bounds="[176,1443][220,1487]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[322,793][507,911]']" bounds="[322,1399][507,1517]"/>
+  <set select="//node[@content-desc='Repost']" bounds="[361,1443][405,1487]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[370,794][502,911]']" bounds="[370,1400][502,1517]"/>
+  <set select="//node[@text='10']" bounds="[416,1444][455,1487]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[507,793][692,911]']" bounds="[507,1399][692,1517]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[502,793][634,911]']" bounds="[502,1399][634,1517]"/>
+  <set select="//node[@content-desc='Like']" bounds="[546,1443][590,1487]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[554,794][686,911]']" bounds="[554,1400][686,1517]"/>
+  <set select="//node[@text='16']" bounds="[601,1444][638,1487]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[692,793][872,911]']" bounds="[692,1399][872,1517]"/>
+  <set select="//node[@content-desc='Impressions']" bounds="[731,1443][775,1487]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[753,794][872,911]']" bounds="[753,1400][872,1517]"/>
+  <set select="//node[@text='83K']" bounds="[786,1444][852,1487]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[872,793][959,911]']" bounds="[872,1399][959,1517]"/>
+  <set select="//node[@content-desc='Bookmark']" bounds="[916,1443][959,1487]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[959,793][1080,911]']" bounds="[959,1399][1080,1517]"/>
+  <set select="//node[@content-desc='Share']" bounds="[1003,1443][1047,1487]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[0,911][1080,2340]']" bounds="[0,1517][1080,2340]"/>
+  <set select="//node[@content-desc='Fixture text 2']" bounds="[22,1550][154,1682]"/>
+  <set select="//node[@resource-id='timeline_post']" bounds="[176,1550][876,1599]"/>
+  <set select="//node[@text='Fixture text 2']" bounds="[176,1550][279,1599]"/>
+  <set select="//node[@text='@fixture_1']" bounds="[288,1550][625,1599]"/>
+  <set select="//node[@text='· 6h']" bounds="[634,1550][703,1599]"/>
+  <set select="//node[@content-desc='Explain this post with Grok']" bounds="[879,1517][959,1641]"/>
+  <set select="//node[@content-desc='Post options']" bounds="[959,1517][1080,1641]"/>
+  <set select="//node[@text='Translated from Indonesian']" bounds="[228,1618][670,1661]"/>
+  <set select="//node[@text='Show original']" bounds="[681,1574][912,1678]"/>
+  <set select="//node[@text='Fixture text 3']" bounds="[176,1678][1047,2002]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[0,911][1080,2340]']/node[@class='android.view.View' and @bounds='[176,1418][1047,2340]' and @index='7']" bounds="[176,2024][1047,2340]"/>
+  <set select="//node[@content-desc='Video' and @bounds='[176,1418][1047,2340]']" bounds="[176,2024][1047,2340]"/>
+  <replace select="//node[@class='androidx.compose.ui.viewinterop.u' and @bounds='[176,1418][1047,2340]']">
+    <node bounds="[176,2024][1047,2340]" checkable="false" checked="false" class="android.view.View" clickable="false" content-desc="" display-id="0" drawing-order="1" enabled="true" focusable="false" focused="false" hint="" index="1" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+  </replace>
+  <set select="//node[@resource-id='scaffold_home_tabbed']/node[@class='android.view.View' and @bounds='[0,0][1080,2340]' and @index='0']/node[@class='android.view.View' and @bounds='[389,142][691,274]' and @index='1']" bounds="[389,143][691,275]"/>
+  <set select="//node[@resource-id='ntp']" bounds="[389,143][691,275]"/>
+  <set select="//node[@content-desc='New posts']" bounds="[389,158][691,260]"/>
+  <set select="//node[@resource-id='facepile']" bounds="[467,168][647,250]"/>
+  <set select="//node[@resource-id='facepile']/node[@class='android.view.View' and @bounds='[540,142][672,274]' and @index='0']" bounds="[540,143][672,275]"/>
+  <set select="//node[@resource-id='facepile']/node[@class='android.view.View' and @bounds='[540,142][672,274]' and @index='0']/node" bounds="[540,143][672,275]"/>
+  <set select="//node[@resource-id='facepile']/node[@class='android.view.View' and @bounds='[491,142][623,274]' and @index='1']" bounds="[491,143][623,275]"/>
+  <set select="//node[@resource-id='facepile']/node[@class='android.view.View' and @bounds='[491,142][623,274]' and @index='1']/node" bounds="[491,143][623,275]"/>
+  <set select="//node[@resource-id='facepile']/node[@class='android.view.View' and @bounds='[442,142][574,274]' and @index='2']" bounds="[442,143][574,275]"/>
+  <set select="//node[@resource-id='facepile']/node[@class='android.view.View' and @bounds='[442,142][574,274]' and @index='2']/node" bounds="[442,143][574,275]"/>
+</fixture>
