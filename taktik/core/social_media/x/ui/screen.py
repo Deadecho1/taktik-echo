@@ -3604,6 +3604,7 @@ def _read(root, area):
     if any(n.get("package") != PACKAGE for n in window.iter()):
         raise _Unsupported("Unexpected package inside X window.")
     keyboard, system_bars, receipts, clipboard_overlays = [], [], [], []
+    navigation_bars = []
     empty_window = False
     fullscreen_window = False
     for other in root:
@@ -3616,6 +3617,27 @@ def _read(root, area):
             keyboard.append(_rect(other))
         elif other.get("package") != "com.android.systemui":
             raise _Unsupported("Unrecognized external window.")
+        elif other.get("resource-id") == "com.android.systemui:id/navigation_bar_frame":
+            rect = _rect(other)
+            if (
+                other.get("class") != "android.widget.FrameLayout"
+                or rect[3] != area[3]
+                or rect[1] < area[3] - (area[3] - area[1]) * 0.1
+                or _intersect(rect, area) != rect
+                or any(
+                    n.get("package") != "com.android.systemui"
+                    or not rect[1] <= _rect(n)[1] < _rect(n)[3] <= rect[3]
+                    for n in other.iter()
+                )
+                or len(
+                    other.xpath(
+                        './node[@resource-id="com.android.systemui:id/navigation_bar_view"]'
+                    )
+                )
+                != 1
+            ):
+                raise _Unsupported("Unrecognized Android navigation bar.")
+            navigation_bars.append(rect)
         elif _rect(other)[1] != 0 or (
             _rect(other) == area and empty_system_window(other, area)
         ):
@@ -3629,7 +3651,7 @@ def _read(root, area):
             system_bars.append(_rect(other))
     if tip is not None and (keyboard or clipboard_overlays):
         raise _Unsupported("Conflicting X drawer overlays.")
-    external = (*keyboard, *system_bars, *clipboard_overlays, *tips)
+    external = (*keyboard, *system_bars, *navigation_bars, *clipboard_overlays, *tips)
     if len(clipboard_overlays) > 1:
         raise _Unsupported("Ambiguous clipboard receipts.")
     screen = replace(

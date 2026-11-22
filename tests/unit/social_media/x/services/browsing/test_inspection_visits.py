@@ -345,12 +345,12 @@ def test_collapsed_detail_return_restores_back_with_one_bounded_scroll():
     assert ("back", None) not in replay.events
 
 
-def test_collapsed_detail_back_restoration_exhausts_its_bound_without_blind_back():
+def test_collapsed_detail_back_restoration_stops_on_no_progress_without_blind_back():
     replay, app = started(image=True)
     replay.detail = document("image-detail-scrolled")
-    with pytest.raises(XError, match="Back control within the limit"):
+    with pytest.raises(XError, match="Cannot verify progress.*Back control"):
         app.inspect_thread(max_scrolls=0)
-    assert len([e for e in replay.events if e[0] == "gesture"]) == 8
+    assert len([e for e in replay.events if e[0] == "gesture"]) == 1
     assert ("back", None) not in replay.events
     assert ("tap", "inspection Back") not in replay.events
     assert app.verified_account is None

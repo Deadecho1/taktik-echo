@@ -18,6 +18,70 @@ def document(name="image-main"):
     return (FIXTURES / f"{name}.xml").read_text()
 
 
+def partial_header(xml, missing="name", *, handle_top=None):
+    """Synthetic omissions of text nodes, without changing the detail structure."""
+    root = etree.fromstring(xml.encode())
+    avatar = root.xpath('.//*[@resource-id="timeline_post_avatar"]')[0]
+    column = avatar.getparent()[1]
+    for node in list(column):
+        is_handle = node.get("text", "").startswith("@")
+        if node.get("text") and (
+            missing == "both" or (is_handle == (missing == "handle"))
+        ):
+            column.remove(node)
+        elif is_handle and handle_top is not None:
+            from taktik.core.shared.ui.geometry import bounds
+
+            left, _, right, bottom = bounds(node)
+            node.set("bounds", f"[{left},{handle_top}][{right},{bottom}]")
+    return etree.tostring(root, encoding="unicode")
+
+
+@pytest.mark.parametrize("native", ["native", "native-second"])
+def test_full_missing_header_captures_keep_detail_context_without_attribution(native):
+    ordinary = document("missing-header-ordinary")
+    screen = read_screen(
+        combine_hierarchies(ordinary, document(f"missing-header-{native}")),
+        (1440, 3216),
+    )
+    assert read_screen(ordinary, (1440, 3216)).kind == "detail"
+    assert screen.kind == "detail", screen.reason
+    assert screen.content_viewport == (0, 160, 1440, 2784)
+    assert screen.detail.main_post is None and screen.detail.main_reason
+    assert screen.detail.main_header_visible is False
+    assert screen.detail.timestamp is not None and screen.scroll_areas
+    assert not screen.clipboard_bounds
+    assert (223, 3040, 1197, 3216) in screen.overlaps
+
+
+@pytest.mark.parametrize("top", [159, 160, 161, 162, 190])
+def test_missing_name_recovery_does_not_depend_on_handle_viewport_position(top):
+    xml = partial_header(document("missing-header-native"), handle_top=top)
+    screen = read_screen(xml, (1440, 3216))
+    assert screen.kind == "detail", screen.reason
+    assert screen.detail.main_post is None
+    assert screen.detail.main_header_visible is False
+
+
+@pytest.mark.parametrize("missing", ["name", "handle", "both"])
+def test_incomplete_header_is_not_an_author_even_when_its_avatar_is_named(missing):
+    screen = read_screen(partial_header(document(), missing), SIZE)
+    assert screen.kind == "detail", screen.reason
+    assert screen.detail.main_post is None
+    assert screen.detail.main_header_visible is False
+
+
+def test_missing_header_fixture_integrity():
+    manifest = json.loads((FIXTURES / "missing-header-manifest.json").read_text())
+    assert manifest["size"] == [1440, 3216]
+    for item in manifest["fixtures"]:
+        assert set(item) == {"file", "sha256"}
+        assert (
+            hashlib.sha256((FIXTURES / item["file"]).read_bytes()).hexdigest()
+            == item["sha256"]
+        )
+
+
 def test_main_detail_is_read_independently_with_separate_media_and_timestamp():
     screen = read_screen(document(), SIZE)
     source = read_screen(document("image-source"), SIZE).observable_posts[0]
@@ -155,3 +219,77 @@ def test_secondary_badge_fixture_integrity_and_synthetic_labels():
         "Verified Business",
         "Fixture Museum",
     )
+
+
+@pytest.mark.parametrize(
+    "problem",
+    [
+        "scope",
+        "composer",
+        "duplicate_column",
+        "column_control",
+        "unknown_text",
+        "nested_text",
+        "outside_column",
+        "foreign_package",
+        "navigation_geometry",
+        "navigation_structure",
+    ],
+)
+def test_incomplete_header_does_not_recover_unknown_or_malformed_structure(problem):
+    from copy import deepcopy
+
+    root = etree.fromstring(document("missing-header-native").encode())
+    scope = root.xpath('.//*[@resource-id="PostDetail"]')[0]
+    avatar = scope.xpath('.//*[@resource-id="timeline_post_avatar"]')[0]
+    column = avatar.getparent()[1]
+    if problem == "scope":
+        scope.set("resource-id", "UnknownScreen")
+    elif problem == "composer":
+        scope.xpath('.//*[@resource-id="post-detail-reply-text-field"]')[0].set(
+            "resource-id", "Unknown"
+        )
+    elif problem == "duplicate_column":
+        avatar.addnext(deepcopy(column))
+    elif problem == "column_control":
+        column.set("clickable", "true")
+    elif problem == "unknown_text":
+        column[0].set("text", "Unknown metadata")
+    elif problem == "nested_text":
+        column[0].append(deepcopy(column[0]))
+    elif problem == "outside_column":
+        column[0].set("bounds", "[0,162][224,225]")
+    elif problem == "foreign_package":
+        column[0].set("package", "example.other")
+    else:
+        bar = root.xpath(
+            './node[@resource-id="com.android.systemui:id/navigation_bar_frame"]'
+        )[0]
+        if problem == "navigation_geometry":
+            bar.set("bounds", "[223,500][1197,3216]")
+        else:
+            bar[0].set("resource-id", "Unknown")
+    screen = read_screen(etree.tostring(root), (1440, 3216))
+    assert screen.kind == "unsupported" and screen.detail is None
+
+
+def test_missing_header_without_quote_stays_unattributed():
+    root = etree.fromstring(document("missing-header-native").encode())
+    listing = root.xpath('.//*[@resource-id="PostDetail"]/node[@scrollable="true"]')[0]
+    for child in list(listing):
+        if child.xpath('.//*[@content-desc="Quote"]'):
+            listing.remove(child)
+    screen = read_screen(etree.tostring(root), (1440, 3216))
+    assert screen.kind == "detail" and screen.detail.main_post is None
+    assert screen.detail.main_header_visible is False
+
+
+@pytest.mark.parametrize("missing", ["name", "both"])
+def test_navigation_with_missing_text_does_not_require_an_avatar_description(missing):
+    root = etree.fromstring(
+        partial_header(document("missing-header-native"), missing).encode()
+    )
+    root.xpath('.//*[@resource-id="timeline_post_avatar"]')[0].set("content-desc", "")
+    screen = read_screen(etree.tostring(root), (1440, 3216))
+    assert screen.kind == "detail" and screen.detail.main_post is None
+    assert screen.detail.main_header_visible is False

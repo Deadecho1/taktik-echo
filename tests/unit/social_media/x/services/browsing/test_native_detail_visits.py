@@ -250,6 +250,7 @@ class BadgeReplay(RawStartup):
         self.returned = self.home
         self.native_reads = 0
         self.after_native = lambda: None
+        self.paths = []
         self.after_scroll = lambda: None
         self.tap_error = self.native_error = None
         self._process = object()
@@ -325,6 +326,7 @@ class BadgeReplay(RawStartup):
             super().long_click(x, y, duration)
 
     def swipe_points(self, points, duration):
+        self.paths.append(points)
         self.actions.append("scroll")
         self.after_scroll()
 
@@ -408,7 +410,6 @@ def changed_badge(change):
     "change",
     [
         "missing_verification",
-        "missing_name",
         "duplicate_affiliation",
         "duplicate_avatar",
         "nested",
@@ -541,5 +542,391 @@ def test_affiliation_change_between_native_reads_invalidates_visit(badge_visit):
         raw, "native", raw.native.replace("Fixture Museum", "Another Organization")
     )
     with pytest.raises(XError, match="native main post changed"):
+        browser.inspect_thread(browser.observe(), max_scrolls=0)
+    assert raw.actions == ["Open post"] and not browser.browsing_valid
+
+
+def shifted_detail(xml, distance):
+    """Synthetic list movement; no physical recovery continuation was captured."""
+    from taktik.core.shared.ui.geometry import bounds
+
+    root = etree.fromstring(xml.encode())
+    listing = root.xpath('.//*[@resource-id="PostDetail"]/node[@scrollable="true"]')[0]
+    for child in listing:
+        for node in child.iter():
+            left, top, right, bottom = bounds(node)
+            node.set(
+                "bounds", f"[{left},{top + distance}][{right},{bottom + distance}]"
+            )
+            positions = node.get("taktik-character-locations")
+            if positions:
+                moved = []
+                for position in positions.split(";"):
+                    if position == "null":
+                        moved.append(position)
+                    else:
+                        a, b, c, d = map(float, position.split(","))
+                        moved.append(f"{a},{b + distance},{c},{d + distance}")
+                node.set("taktik-character-locations", ";".join(moved))
+    return etree.tostring(root, encoding="unicode")
+
+
+def captured_toolbar_return():
+    """Synthetic toolbar reveal over the full sanitized captured layout."""
+    from copy import deepcopy
+
+    from taktik.core.shared.ui.geometry import bounds
+
+    root = etree.fromstring(
+        shifted_detail(document("missing-header-native"), 480).encode()
+    )
+    scope = root.xpath('.//*[@resource-id="PostDetail"]')[0]
+    other = etree.fromstring(document("badge-native").encode())
+    toolbar = other.xpath('.//*[@content-desc="Back"]')[0]
+    while toolbar.getparent().get("resource-id") != "PostDetail":
+        toolbar = toolbar.getparent()
+    toolbar = deepcopy(toolbar)
+    for node in toolbar.iter():
+        a, b, c, d = bounds(node)
+        node.set("bounds", f"[{a * 4 // 3},{b * 4 // 3}][{c * 4 // 3},{d * 4 // 3}]")
+        node.attrib.pop("taktik-character-locations", None)
+    scope.append(toolbar)
+    return etree.tostring(root, encoding="unicode")
+
+
+class MissingHeaderReplay(BadgeReplay):
+    """Full captured entry, synthetic Back/Home continuation, real device adapter."""
+
+    def __init__(self):
+        super().__init__()
+        self.detail = document("missing-header-ordinary")
+        self.native = document("missing-header-native")
+        self.size = (1440, 3216)
+        self.paths = []
+        self.after_scroll = self.restore_toolbar
+        # Existing synthetic account/feed layouts, scaled to the captured device.
+        from taktik.core.shared.ui.geometry import bounds
+
+        for field in ("home", "drawer"):
+            root = etree.fromstring(getattr(self, field).encode())
+            for node in root.iter("node"):
+                a, b, c, d = bounds(node)
+                node.set(
+                    "bounds",
+                    f"[{a * 4 // 3},{b * 3216 // 2340}][{c * 4 // 3},{d * 3216 // 2340}]",
+                )
+                node.attrib.pop("taktik-character-locations", None)
+            setattr(self, field, etree.tostring(root, encoding="unicode"))
+        self.returned = self.home
+
+    def window_size(self):
+        return self.size
+
+    def restore_toolbar(self):
+        self.native = self.detail = captured_toolbar_return()
+
+    def long_click(self, x, y, duration):
+        xml = (
+            self.drawer
+            if self.stage == "drawer"
+            else self.detail
+            if self.stage == "detail"
+            else self.home
+        )
+        screen = read_screen(xml, self.size)
+        targets = (*screen.controls, *(t for p in screen.posts for t in p.targets))
+        matches = [
+            t.label
+            for t in targets
+            if t.visibility.visible_bounds
+            and t.visibility.visible_bounds[0] <= x < t.visibility.visible_bounds[2]
+            and t.visibility.visible_bounds[1] <= y < t.visibility.visible_bounds[3]
+            and not any(
+                a <= x < c and b <= y < d for a, b, c, d in t.visibility.overlaps
+            )
+        ]
+        assert len(matches) == 1, matches
+        label = matches[0]
+        self.actions.append(label)
+        self.stage = {
+            "Back": "home",
+            "Open post": "detail",
+            "Show navigation drawer": "drawer",
+            "Close navigation menu": "home",
+        }[label]
+
+    def swipe_points(self, points, duration):
+        screen = read_screen(self.native, self.size)
+        region, distance, exclusions = scroll_region(screen, restore=True)
+        assert points[-1][1] > points[0][1]
+        assert points[-1][1] - points[0][1] <= distance * 1.1
+        for x, y in points:
+            assert region[0] <= x < region[2] and region[1] <= y < region[3]
+            assert not any(a <= x < c and b <= y < d for a, b, c, d in exclusions)
+        super().swipe_points(points, duration)
+
+
+def test_startup_from_full_retained_detail_reaches_home_and_verifies_account():
+    raw = MissingHeaderReplay()
+    raw.stage = "detail"
+    phone = Phone(
+        TaktikDevice(raw, "fixture"), seed=0, clock=lambda: raw.now, sleep=raw.sleep
+    )
+    try:
+        browser = XBrowser(phone, {"for_you"})
+        browser.start("fixture_owner", "for_you")
+        assert browser.browser.verified_account == "@fixture_owner"
+        assert browser.observe().username == "fixture_author"
+        assert raw.actions == [
+            "launch",
+            "scroll",
+            "Back",
+            "Show navigation drawer",
+            "Close navigation menu",
+        ]
+        assert len(raw.paths) == 1 and raw.native_reads >= 1
+        assert raw._process is not None
+    finally:
+        phone.close(home=False).require()
+
+
+@pytest.mark.parametrize("missing", ["name", "handle", "both"])
+def test_missing_header_restoration_verifies_source_and_retains_occurrence(
+    badge_visit, missing
+):
+    from unit.social_media.x.ui.test_main_detail import partial_header
+
+    raw, browser = badge_visit
+    raw.native = partial_header(raw.native, missing)
+    raw.after_scroll = lambda: setattr(raw, "native", document("badge-native"))
+    source = browser.observe()
+    report = browser.inspect_thread(source, max_scrolls=0)
+    assert report.main_verified and report.detail.main_post.author == "@fixture_author"
+    assert report.main_text == source.caption and report.main_text_complete
+    assert browser.observe().identity == source.identity
+    assert raw.actions == ["Open post", "scroll", "Back"]
+
+
+@pytest.mark.parametrize("loss", ["reread", "clipped_reread", "forward"])
+def test_header_loss_during_inspection_preserves_verification_without_reverse_loops(
+    badge_visit, loss
+):
+    from unit.social_media.x.ui.test_main_detail import partial_header
+
+    raw, browser = badge_visit
+    native = raw.native
+    steps = []
+    if loss in {"reread", "clipped_reread"}:
+
+        def lose_header():
+            raw.native = (
+                partial_header(native)
+                if loss == "reread"
+                else changed_badge("offscreen")
+            )
+            raw.after_native = lambda: None
+
+        raw.after_native = lose_header
+
+    def advance():
+        steps.append("up")
+        raw.detail = shifted_detail(document("badge-ordinary"), -80 * len(steps))
+        raw.native = partial_header(shifted_detail(native, -80 * len(steps)), "both")
+
+    raw.after_scroll = advance
+    source = browser.observe()
+    report = browser.inspect_thread(source, max_scrolls=2)
+    assert report.main_verified and report.main_text == source.caption
+    assert report.main_text_complete and report.scrolls == 2
+    assert steps == ["up", "up"]
+    assert raw.actions == ["Open post", "scroll", "scroll", "Back"]
+    assert all(path[-1][1] < path[0][1] for path in raw.paths)
+    assert browser.observe().identity == source.identity
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [
+        "no_progress",
+        "limit",
+        "changed_thread",
+        "restored_author",
+        "return",
+        "no_path",
+        "foreground",
+        "uncertain",
+        "cancel",
+        "deadline",
+    ],
+)
+def test_missing_header_restoration_stops_safely(badge_visit, failure):
+    from unit.social_media.x.ui.test_main_detail import partial_header
+
+    from taktik.core.shared.phone_interaction import InteractionCancelled
+
+    raw, browser = badge_visit
+    raw.native = partial_header(raw.native, "both")
+    expected, gestures = XError, 1
+    if failure == "limit":
+
+        def progress():
+            raw.detail = shifted_detail(raw.detail, 15)
+            raw.native = shifted_detail(raw.native, 15)
+
+        raw.after_scroll = progress
+        gestures = 8
+    elif failure == "changed_thread":
+        raw.after_scroll = lambda: setattr(
+            raw, "native", document("badge-native").replace("9:00 AM", "10:00 AM")
+        )
+    elif failure == "restored_author":
+        raw.after_scroll = lambda: setattr(
+            raw,
+            "native",
+            document("badge-native").replace("@fixture_author", "@another_author"),
+        )
+    elif failure == "return":
+        raw.after_scroll = lambda: setattr(raw, "native", document("badge-native"))
+        raw.returned = raw.returned.replace("@fixture_author", "@another_author")
+    elif failure == "no_path":
+        root = etree.fromstring(raw.native.encode())
+        listing = root.xpath(
+            './/*[@resource-id="PostDetail"]/node[@scrollable="true"]'
+        )[0]
+        extra = etree.SubElement(
+            listing,
+            "node",
+            package="com.twitter.android",
+            bounds="[0,0][1080,2340]",
+            clickable="true",
+        )
+        extra.set("class", "android.view.View")
+        listing.insert(0, extra)
+        raw.native = etree.tostring(root, encoding="unicode")
+        gestures = 0
+    elif failure == "foreground":
+        raw.after_native = lambda: setattr(raw, "foreground", "example.other")
+        gestures = 0
+    elif failure == "uncertain":
+
+        def uncertain():
+            raise OSError("Synthetic acknowledgement lost")
+
+        raw.after_scroll = uncertain
+        expected = InteractionError
+    elif failure in {"cancel", "deadline"}:
+
+        def stop():
+            if failure == "cancel":
+                browser.phone.configure(cancelled=lambda: True)
+            else:
+                browser.phone.configure(deadline=raw.now)
+
+        raw.after_native = stop
+        expected, gestures = InteractionCancelled, 0
+    with pytest.raises(expected) as error:
+        browser.inspect_thread(browser.observe(), max_scrolls=0)
+    if failure == "uncertain":
+        assert error.value.result.status == Status.UNCERTAIN
+    if failure == "limit":
+        assert "within the limit" in str(error.value)
+    assert raw.actions == ["Open post"] + ["scroll"] * gestures + (
+        ["Back"] if failure == "return" else []
+    )
+    assert not browser.browsing_valid and raw._process is not None
+
+
+@pytest.mark.parametrize(
+    "failure", ["no_progress", "limit", "changed_thread", "wrong_account"]
+)
+def test_retained_detail_startup_keeps_context_and_account_guards(failure):
+    raw = MissingHeaderReplay()
+    raw.stage = "detail"
+    if failure == "no_progress":
+        raw.after_scroll = lambda: None
+    elif failure == "limit":
+
+        def progress():
+            raw.detail = shifted_detail(raw.detail, 15)
+            raw.native = shifted_detail(raw.native, 15)
+
+        raw.after_scroll = progress
+    elif failure == "changed_thread":
+
+        def changed():
+            raw.restore_toolbar()
+            raw.native = raw.detail = raw.detail.replace("09:00 •", "10:00 •")
+
+        raw.after_scroll = changed
+    else:
+        raw.drawer = raw.drawer.replace("@fixture_owner", "@wrong_owner")
+    phone = Phone(
+        TaktikDevice(raw, "fixture"), seed=0, clock=lambda: raw.now, sleep=raw.sleep
+    )
+    try:
+        browser = XBrowser(phone, {"for_you"})
+        with pytest.raises(XError):
+            browser.start("fixture_owner", "for_you")
+        assert not browser.browsing_valid and browser.browser.verified_account is None
+        assert raw.actions == ["launch"] + ["scroll"] * (
+            8 if failure == "limit" else 1
+        ) + (["Back", "Show navigation drawer"] if failure == "wrong_account" else [])
+    finally:
+        phone.close(home=False).require()
+
+
+def test_hidden_complete_header_with_conflicting_author_is_not_restored(badge_visit):
+    raw, browser = badge_visit
+    raw.native = changed_badge("offscreen").replace(
+        "@fixture_author", "@another_author"
+    )
+    with pytest.raises(XError, match="author does not match"):
+        browser.inspect_thread(browser.observe(), max_scrolls=0)
+    assert raw.actions == ["Open post"] and not browser.browsing_valid
+
+
+def test_back_restoration_retains_thread_timestamp_across_header_and_timestamp_loss(
+    badge_visit,
+):
+    from unit.social_media.x.ui.test_main_detail import partial_header
+
+    raw, browser = badge_visit
+    movements = []
+
+    def scroll():
+        movements.append("scroll")
+        if len(movements) == 2:
+            raw.detail = document("badge-ordinary").replace("9:00 AM", "10:00 AM")
+            raw.native = document("badge-native").replace("9:00 AM", "10:00 AM")
+            return
+        for field in ("detail", "native"):
+            xml = shifted_detail(getattr(raw, field), -80)
+            if field == "native":
+                xml = partial_header(xml, "both")
+            root = etree.fromstring(xml.encode())
+            stamp = root.xpath('.//*[@text and contains(@text,"9:00 AM")]')[0]
+            stamp.getparent().remove(stamp)
+            toolbar = root.xpath('.//*[@content-desc="Back"]')[0]
+            while toolbar.getparent().get("resource-id") != "PostDetail":
+                toolbar = toolbar.getparent()
+            toolbar.getparent().remove(toolbar)
+            setattr(raw, field, etree.tostring(root, encoding="unicode"))
+
+    raw.after_scroll = scroll
+    with pytest.raises(XError, match="thread context changed"):
+        browser.inspect_thread(browser.observe(), max_scrolls=1)
+    assert raw.actions == ["Open post", "scroll", "scroll"]
+    assert not browser.browsing_valid
+
+
+@pytest.mark.parametrize("missing", ["name", "handle", "both"])
+def test_missing_text_with_unknown_badge_never_restores(badge_visit, missing):
+    from unit.social_media.x.ui.test_main_detail import partial_header
+
+    raw, browser = badge_visit
+    raw.native = partial_header(raw.native, missing).replace(
+        "Verified Business", "Unknown verification"
+    )
+    with pytest.raises(XError, match="author badge"):
         browser.inspect_thread(browser.observe(), max_scrolls=0)
     assert raw.actions == ["Open post"] and not browser.browsing_valid

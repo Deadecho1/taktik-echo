@@ -2835,17 +2835,24 @@ class X:
             region = max(regions, key=lambda r: (r[2] - r[0]) * (r[3] - r[1]))
             self.phone.tap(region, exclude=target.overlaps).require()
             screen = self._wait_for(lambda s: s.kind == kind, f"X {kind} inspection")
-            if kind == "detail" and screen.detail.main_header_visible is False:
-                screen = self._restore_main_header(screen)
+            if kind == "detail":
+                from .inspection import _verify_main_source
+
+                _verify_main_source(source, screen.detail.main_post)
+                if screen.detail.main_header_visible is False:
+                    screen = self._restore_main_header(screen, source=source)
             yield source, screen
             current = self._snapshot()
             if current.kind != kind:
                 raise XError("X left the inspection before returning to the feed.")
             if kind == "detail":
-                from .inspection import _verify_main_source
+                from .inspection import _detail_context, _verify_main_source
 
+                _detail_context(screen, current)
                 _verify_main_source(source, current.detail.main_post)
-            self._inspection_back(current)
+            self._inspection_back(
+                current, source=source if kind == "detail" else None, reference=screen
+            )
             restored = self._wait_for(
                 lambda s: s.kind == self._screen.kind,
                 "return to the X browsing context",
@@ -2856,24 +2863,29 @@ class X:
                 raise XError("The original X post is not observable after inspection.")
             self._select(restored, self._index)
 
-    def _restore_main_header(self, screen):
-        from .inspection import _detail_context
+    def _restore_main_header(self, screen, *, source):
+        from .inspection import _detail_context, _verify_main_source
 
+        reference = screen
         for _ in range(RESTORE_ATTEMPTS):
             before = screen
             self._gesture(before, "down", restore=True)
             screen = self._snapshot()
             _detail_context(before, screen)
+            _detail_context(reference, screen)
+            _verify_main_source(source, screen.detail.main_post)
+            shift = _scroll_motion(screen, before)
             if screen.detail.main_header_visible is True:
                 return screen
-            if (
-                screen.detail.main_header_visible is None
-                or _scroll_motion(screen, before) >= -2
-            ):
+            if screen.detail.main_header_visible is None or shift >= -2:
                 raise XError("Cannot verify progress toward the X main-post header.")
         raise XError("Cannot restore the X main-post header within the limit.")
 
-    def _inspection_back(self, screen):
+    def _inspection_back(self, screen, *, source=None, reference=None):
+        from .inspection import _detail_context, _verify_main_source
+
+        if reference is None:
+            reference = screen
         for attempt in range(RESTORE_ATTEMPTS + 1):
             if any(
                 t.label == "Back" and t.visibility.visible_bounds is not None
@@ -2889,10 +2901,18 @@ class X:
                 break
             # Short reverse drags are consumed by the collapsed toolbar, which
             # then snaps closed. Restore it with one continuous longer path.
-            self._gesture(screen, "down", restore=True)
-            screen = self._wait_for(
-                lambda s: s.kind == "detail", "detail header restoration"
-            )
+            before = screen
+            self._gesture(before, "down", restore=True)
+            screen = self._snapshot()
+            _detail_context(before, screen)
+            _detail_context(reference, screen)
+            if source is not None:
+                _verify_main_source(source, screen.detail.main_post)
+            shift = _scroll_motion(screen, before)
+            if screen.collapsed and shift >= -2:
+                raise XError(
+                    "Cannot verify progress toward the X inspection Back control."
+                )
         raise XError("Cannot restore the X inspection Back control within the limit.")
 
     def visit_profile(self):

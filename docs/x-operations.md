@@ -56,6 +56,14 @@ When `ActionResult.advanced` is true, observe that successor without advancing a
 Native IDs/URLs remain unknown until explicit `copy_link` succeeds and never replace local occurrence/content keys.
 Profile, detail, media, and Share visits return only after verifying their source context.
 
+A recognized detail page can retain an incomplete main-author header without identifying its author.
+At detail entry, missing name/handle text permits up to eight downward restoration drags through the existing safe scroll area, independently of handle visibility.
+Each read must preserve thread context and show navigation continuity; an unrevealed header must also show movement before another attempt.
+Restored identity and content must match the selected source before they count as verified evidence.
+Forward thread reading retains previously verified identity and text coverage when header nodes disappear, without restoring the header on every read.
+Startup can return from that same recognized detail context through Back and Home before verifying the configured drawer account.
+Back restoration has the same continuity, progress, and attempt bounds, and missing author text grants no engagement permission.
+
 Treat `Status.UNCERTAIN` as an unknown execution outcome, and do not replay the action automatically.
 Recovery is explicit and rechecks account and browsing context; it starts a new position.
 `InteractionCancelled` and `SessionExpired` escape retry loops and must still permit narrowly scoped cleanup.

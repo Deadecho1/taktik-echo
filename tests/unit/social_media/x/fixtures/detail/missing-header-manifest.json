@@ -1,0 +1,21 @@
+{
+  "description": "Sanitized full ordinary and two independent native layouts. Fictional identities, captions, counts, timestamps and system labels; original geometry and dimensions. Recovery continuations in tests are synthetic, not physical restoration evidence.",
+  "size": [
+    1440,
+    3216
+  ],
+  "fixtures": [
+    {
+      "file": "missing-header-ordinary.xml",
+      "sha256": "96a9435a7c72b080d120b91110740bcc9ceee24cbb6060fce07d967a80bd64be"
+    },
+    {
+      "file": "missing-header-native.xml",
+      "sha256": "c4579f67e27bff157d1cd72c091ed0516c412defc5b7589a75d07624516564e4"
+    },
+    {
+      "file": "missing-header-native-second.xml",
+      "sha256": "e14af801f273c1274aeb72cbcaaadace4c736f46003a0d739b6cae43c4d06591"
+    }
+  ]
+}

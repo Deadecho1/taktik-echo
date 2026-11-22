@@ -111,13 +111,14 @@ def _author_column(node):
     )
 
 
-def _author_badges(identity, name):
-    badges = list(identity)[1:-1]
+def _author_badges(identity, name, badges=None):
+    if badges is None:
+        badges = list(identity)[1:-1]
     if len(badges) > 2 or (
         badges and badges[0].get("content-desc") not in VERIFICATION_LABELS
     ):
         raise _Unsupported("Unrecognized main-post author badge.")
-    previous = _rect(name)
+    previous = _rect(name) if name is not None else None
     for badge in badges:
         rect = _rect(badge)
         if (
@@ -133,8 +134,13 @@ def _author_badges(identity, name):
             )
             or badge.get("enabled") == "false"
             or badge.get("visible-to-user") == "false"
-            or rect[0] < previous[2]
-            or not previous[1] <= rect[1] < rect[3] <= previous[3]
+            or (
+                previous is not None
+                and (
+                    rect[0] < previous[2]
+                    or not previous[1] <= rect[1] < rect[3] <= previous[3]
+                )
+            )
             or _intersect(rect, _rect(identity)) != rect
         ):
             raise _Unsupported("Unrecognized main-post author badge.")
@@ -186,7 +192,7 @@ def main_header_visible(listing, viewport, overlays):
     try:
         identity = _identity(listing)
     except _Unsupported:
-        if _clipped_name(listing, viewport):
+        if _incomplete_header(listing):
             return False
         raise
     if identity is None:
@@ -204,24 +210,41 @@ def main_header_visible(listing, viewport, overlays):
     )
 
 
-def _clipped_name(listing, viewport):
-    """A scrolled native header can omit the name above its clipped handle."""
+def _incomplete_header(listing):
+    """Recognize omitted identity text, never infer it from the avatar or quote."""
     avatars = listing.xpath('./node/node[@resource-id="timeline_post_avatar"]')
     if len(avatars) != 1:
         return False
     avatar = avatars[0]
     header = avatar.getparent()
-    if len(header) != 2 or header[0] is not avatar or len(header[1]) != 1:
+    if len(header) != 2 or header[0] is not avatar:
         return False
-    handle = header[1][0]
-    return (
-        bool(avatar.get("content-desc"))
-        and _author_column(header[1])
-        and _plain_annotation(handle)
-        and bool(HANDLE.fullmatch(handle.get("text", "")))
-        and _rect(avatar)[2] <= _rect(header[1])[0] <= _rect(handle)[0]
-        and _rect(header)[1] < _rect(handle)[1] < viewport[1]
-    )
+    column = header[1]
+    texts = [n for n in column if n.get("text")]
+    if (
+        not _author_column(column)
+        or len(texts) > 1
+        or _rect(avatar)[2] > _rect(column)[0]
+    ):
+        return False
+    name = handle = None
+    badges = list(column)
+    if texts:
+        node = texts[0]
+        if (
+            not _plain_annotation(node)
+            or node.get("resource-id")
+            or _intersect(_rect(node), _rect(column)) != _rect(node)
+        ):
+            return False
+        if node is column[-1] and HANDLE.fullmatch(node.get("text")):
+            handle, badges = node, list(column)[:-1]
+        elif node is column[0] and node.get("text") == avatar.get("content-desc"):
+            name, badges = node, list(column)[1:]
+        else:
+            return False
+    _author_badges(column, name, badges)
+    return handle is None or all(_rect(b)[3] <= _rect(handle)[1] for b in badges)
 
 
 def _action_root(node, listing):
