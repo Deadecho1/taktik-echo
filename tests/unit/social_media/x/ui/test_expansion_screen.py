@@ -1,9 +1,9 @@
 """Expansion evidence separates readable inline text from missing detail content."""
 
-import hashlib
 import json
 
 from unit.paths import CORE
+from unit.x_fixtures import fixture_digest, xml_fixture
 
 from taktik.core.social_media.x.ui.screen import read_screen
 
@@ -12,17 +12,14 @@ SIZE = (1080, 2340)
 
 
 def screen(name):
-    return read_screen((FIXTURES / f"{name}.xml").read_text(), SIZE)
+    return read_screen(xml_fixture(FIXTURES / f"{name}.xml"), SIZE)
 
 
 def test_expansion_fixture_hashes():
     manifest = json.loads((FIXTURES / "manifest.json").read_text())
     assert manifest["size"] == list(SIZE)
     for item in manifest["fixtures"]:
-        assert (
-            hashlib.sha256((FIXTURES / item["file"]).read_bytes()).hexdigest()
-            == item["sha256"]
-        )
+        assert fixture_digest(FIXTURES / item["file"]) == item["sha256"]
 
 
 def test_native_inline_expansion_exposes_independently_attributed_full_text():

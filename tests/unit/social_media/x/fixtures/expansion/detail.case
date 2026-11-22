@@ -1,0 +1,12 @@
+<fixture base="expansion/detail-depth-100.xml" sha256="521b5cc8049284f391e7bdafdece8230918dd2f19d995801dbb8ca827689db63">
+  <set select="//node[@class='android.view.View' and @bounds='[771,2252][903,2304]']" bounds="[769,2252][901,2304]"/>
+  <replace select="//node[@class='android.view.View' and @bounds='[44,0][1036,312]']">
+    <node bounds="[44,0][1036,312]" checkable="false" checked="false" class="android.view.View" clickable="false" content-desc="" display-id="0" drawing-order="0" enabled="true" focusable="false" focused="false" hint="" index="0" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+      <node bounds="[22,158][154,290]" checkable="false" checked="false" class="android.view.View" clickable="true" content-desc="" display-id="0" drawing-order="0" enabled="true" focusable="true" focused="false" hint="" index="0" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+        <node bounds="[55,191][121,257]" checkable="false" checked="false" class="android.view.View" clickable="false" content-desc="Back" display-id="0" drawing-order="0" enabled="true" focusable="false" focused="false" hint="" index="0" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+        <node bounds="[33,169][143,279]" checkable="false" checked="false" class="android.widget.Button" clickable="false" content-desc="" display-id="0" drawing-order="1" enabled="true" focusable="false" focused="false" hint="" index="1" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+      </node>
+      <node bounds="[165,196][1014,252]" checkable="false" checked="false" class="android.widget.TextView" clickable="false" content-desc="" display-id="0" drawing-order="1" enabled="true" focusable="false" focused="false" hint="" index="1" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="Post" visible-to-user="true"/>
+    </node>
+  </replace>
+</fixture>

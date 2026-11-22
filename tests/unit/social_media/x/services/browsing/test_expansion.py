@@ -1,6 +1,5 @@
 """Captured inline expansion through the same Phone interface used on Android."""
 
-import hashlib
 import json
 import subprocess
 from dataclasses import replace
@@ -17,6 +16,7 @@ from unit.social_media.x.services.browsing.test_search import (
     document as search_document,
 )
 from unit.social_media.x.ui.drawer.test_tip_startup import RawStartup
+from unit.x_fixtures import fixture_digest, xml_fixture
 
 from scripts.eval.x_caption_validation import check_caption
 from taktik.core.shared.behavior.tap import free_tap_zone
@@ -41,7 +41,7 @@ TAP = (526, 942, 618, 964)
 
 
 def document(name):
-    return (FIXTURES / f"{name}.xml").read_text()
+    return xml_fixture(FIXTURES / f"{name}.xml")
 
 
 def mutate(xml, xpath, attr, value):
@@ -940,7 +940,7 @@ def test_wrapped_tap_alone_does_not_credit_expansion(wrapped, outcome):
 
 def test_wrapped_control_does_not_enable_quoted_expansion(wrapped):
     raw, browser, calls = wrapped
-    raw.home = (FIXTURES.parent / "nested-quote-tail-after.xml").read_text()
+    raw.home = xml_fixture("nested-quote-tail-after.xml")
     raw.home = mutate(
         raw.home,
         './/*[@bounds="[176,916][1047,1405]" and @text!=""]',
@@ -979,7 +979,4 @@ def test_wrapped_synthetic_fixture_integrity():
     manifest = json.loads((FIXTURES / "wrapped-manifest.json").read_text())
     assert manifest["kind"] == "synthetic_native_layout"
     for item in manifest["fixtures"]:
-        assert (
-            hashlib.sha256((FIXTURES / item["file"]).read_bytes()).hexdigest()
-            == item["sha256"]
-        )
+        assert fixture_digest(FIXTURES / item["file"]) == item["sha256"]

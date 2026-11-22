@@ -6,7 +6,8 @@ The expanded fixture supplies a synthetic successful continuation, not a histori
 `wrapped-manifest.json` contains only synthetic fixture hashes; raw evidence and provenance remain local.
 
 These thirteen hierarchies were captured on Nir's Pixel 4a, X `12.42.0-prod.01`, Android 13, English UI, at 1080 × 2340.
-`manifest.json` records source paths and SHA-256 hashes for the raw and sanitized XML and selected OCR rows.
+`manifest.json` records canonical expanded XML hashes and stored-byte hashes for the selected OCR rows.
+Original capture paths and raw hashes remain in local migration diagnostics.
 Public post text is preserved; external windows retain only their root geometry and empty content.
 Screenshots remain local.
 `crop-edge-source` preserves snapshot 375 from `20261120T201433.889306Z`, whose translated 288-character caption ends in Show more at body bounds `[176,1636,1047,2001]`.
@@ -42,3 +43,12 @@ The Lunar post expands inline and its XML contains text beyond the viewport.
 That text remains incomplete and unobservable under the existing visibility contract.
 The probe stopped for evidence review when it discovered the inline surface, then restored the keyboard and closed the Phone session.
 It is discovery evidence, not a successful implementation round trip.
+
+## Recipe migration
+
+All 15 named XML inputs are retained: nine full layouts, four explicit variants, and two direct aliases.
+This family removes 836 XML/recipe lines before counting manifest and caller changes.
+Every expanded hierarchy and complete real parser result matches the original input.
+The wrapped caption changes only the body text, while the stable-height and long-caption recipes retain the complete native geometry.
+The detail depth variant stays within the same captured detail family.
+Inspect any case with `PYTHONPATH=tests:. python -m unit.x_fixtures expansion/wrapped-expanded.xml`.
