@@ -55,7 +55,7 @@ No required input moved into ignored storage.
 New files include 371 lines / 13,137 bytes of loader and loader tests, a 580-line / 56,054-byte canonical inventory, and 39 lines / 1,280 bytes of comparison tooling.
 Fifteen new replay/input helper modules contain 928 lines / 31,552 bytes, mostly relocated from tests; the category totals include both their addition and the removed definitions.
 The representation guide adds 37 lines / 2,709 bytes, and this results report and all other documentation changes are included above.
-X/evaluator Python shrinks by 342 lines; the combined Python footprint grows slightly once the new checked loader, its tests, and comparison tooling are included.
+X/evaluator Python shrinks by 344 lines; the combined Python footprint grows slightly once the new checked loader, its tests, and comparison tooling are included.
 The net savings therefore come from fixture representation, with simpler shared test infrastructure rather than a lower behavioral test count.
 
 ## Equivalence and scenarios
