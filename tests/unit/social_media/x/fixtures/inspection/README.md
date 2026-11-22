@@ -27,3 +27,13 @@ It retains the selected post's two `Image` descriptions, original media indices,
 External System UI children were removed while preserving root geometry.
 The workflow regression skips both images without injecting actions or crediting image coverage.
 Synthetic continuation combines this source with the existing independently captured image/gallery fixtures; it does not claim a physical continuation of the stopped soak.
+
+`overlay-gallery` was captured on 22 November 2026 from a stalled Echoseek X
+search session on Android 16 at 1440 × 3216. Its per-fixture size overrides the
+manifest's original default. The image node spans the screen; its ancestor clips
+it to `(0, 904, 1440, 2313)`, and gallery identity/controls cover its lower edge.
+The safe capture is `(0, 904, 1440, 2174)`, marked partial. The author, caption and
+notification descriptions were replaced with fixture text; native structure and
+geometry remain intact. Raw hierarchy and screenshot stay in Echoseek's ignored
+operation directory. The screenshot was inspected by the coding agent, with no
+claim of human review.

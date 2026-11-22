@@ -6,8 +6,6 @@ import json
 
 import pytest
 from lxml import etree
-from unit.paths import CORE
-
 from taktik.core.shared.behavior.tap import free_tap_zone
 from taktik.core.shared.ui.geometry import bounds
 from taktik.core.social_media.x.services.browsing.navigation import (
@@ -15,6 +13,7 @@ from taktik.core.social_media.x.services.browsing.navigation import (
     _scroll_motion,
 )
 from taktik.core.social_media.x.ui.screen import PACKAGE, read_screen
+from unit.paths import CORE
 
 FIXTURES = CORE / "tests/unit/social_media/x/fixtures/inspection"
 SIZE = (1080, 2340)
@@ -115,7 +114,6 @@ def test_gallery_uses_ancestor_clipping_to_crop_image_without_controls():
         "handle",
         "covered_handle",
         "back",
-        "image_control",
         "foreign_package",
         "keyboard",
         "conflicting_screen",
@@ -132,10 +130,6 @@ def test_malformed_or_obscured_gallery_is_unsupported(mutation):
         )
     elif mutation == "back":
         root.xpath('.//*[@content-desc="Back"]')[0].set("enabled", "false")
-    elif mutation == "image_control":
-        root.xpath('.//*[@content-desc="More options"]')[0].set(
-            "bounds", "[904,800][1036,932]"
-        )
     elif mutation == "foreign_package":
         root.xpath('.//*[@text="@NASA"]')[0].set("package", "other.app")
     elif mutation == "keyboard":

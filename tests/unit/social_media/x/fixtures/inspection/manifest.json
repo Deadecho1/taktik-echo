@@ -107,6 +107,16 @@
       "source": "tests/smoke/x-soak-runs/20261120T141911.022052Z/snapshot-000162-hierarchy.xml",
       "sha256": "a04e9a7c184a6bbbd3b6bbbf2b3e3f923c9a8db4010ab1457f0658056ec73f06",
       "source_sha256": "dae69427e06823a02c27f166b91d97a9054c11fc503fe8296d8a60e2d7395a16"
+    },
+    {
+      "file": "overlay-gallery.xml",
+      "source": "Echoseek/state/operations/moria-x-gallery-20261122/gallery.xml",
+      "sha256": "6a2d2b143f71603c812c8a737e151e37614ae771066e06ac6805ef69f5b8130d",
+      "source_sha256": "241adcd7aef9040124cc4d159b2e29d36fbad4090a6cf87c1eae290778294676",
+      "size": [
+        1440,
+        3216
+      ]
     }
   ]
 }

@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 
+from taktik.core.shared.ui.geometry import free_regions
+
 from .detail_text import DetailText, read_text
 from .screen import (
     HANDLE,
@@ -50,9 +52,10 @@ class Gallery:
     display_name: str
     caption: TextSpan
     description: str
-    crop: Rect
+    crop: Rect | None
     # The native node retains text beyond the gallery's visibly shortened caption.
     caption_complete: bool = False
+    partial: bool = False
 
 
 def _control_covers(root, node):
@@ -305,14 +308,20 @@ def read_gallery(scope, area, overlays):
     if crop is None or not visibility.accessible or visibility.overlaps:
         raise _Unsupported("Gallery image is obscured.")
     controls = [n for n in chrome.iter() if n.get("clickable") == "true"]
-    if any(
-        _intersect(crop, _rect(n))
-        for n in (*controls, caption, header, actions, bottom)
-    ):
-        raise _Unsupported("Gallery controls cover its image.")
+    # Some X versions report a full-screen image underneath the gallery chrome.
+    # Keep its verified Back target even if no image area is safe to capture.
+    safe_crop = max(
+        free_regions(
+            crop,
+            tuple(_rect(n) for n in (*controls, caption, header, actions, bottom)),
+            1,
+        ),
+        key=lambda r: (r[2] - r[0]) * (r[3] - r[1]),
+        default=None,
+    )
     return Screen(
         "media",
-        content_viewport=crop,
+        content_viewport=safe_crop,
         overlaps=tuple(overlays),
         controls=(target,),
         gallery=Gallery(
@@ -320,6 +329,7 @@ def read_gallery(scope, area, overlays):
             name.get("text"),
             TextSpan(caption.get("text"), _visibility(caption, area, overlays)),
             image.get("content-desc"),
-            crop,
+            safe_crop,
+            partial=safe_crop != crop,
         ),
     )

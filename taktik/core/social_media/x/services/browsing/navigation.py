@@ -11,6 +11,8 @@ from itertools import pairwise
 from unicodedata import category
 
 from taktik.core.shared.phone_interaction import InteractionError, Phone
+from taktik.core.shared.ui.geometry import free_regions as _free_regions
+from taktik.core.shared.ui.geometry import intersection as _intersection
 from taktik.core.social_media.x.ui.screen import (
     ACTION_LABELS,
     HANDLE,
@@ -40,31 +42,6 @@ class _FramingLimit(XError):
     def __init__(self, screen):
         super().__init__("No observable X post within the framing limit.")
         self.screen = screen
-
-
-def _intersection(a, b):
-    result = max(a[0], b[0]), max(a[1], b[1]), min(a[2], b[2]), min(a[3], b[3])
-    return result if result[0] < result[2] and result[1] < result[3] else None
-
-
-def _free_regions(area, exclusions, minimum_width):
-    """Continuous rectangles only; Phone remains responsible for path sampling."""
-    boxes = [box for rect in exclusions if (box := _intersection(area, rect))]
-    edges = sorted({area[0], area[2], *(x for box in boxes for x in (box[0], box[2]))})
-    for i, left in enumerate(edges):
-        for right in edges[i + 1 :]:
-            if right - left < minimum_width:
-                continue
-            blocked = sorted(
-                (b[1], b[3]) for b in boxes if b[0] < right and b[2] > left
-            )
-            top = area[1]
-            for start, end in blocked:
-                if start > top:
-                    yield left, top, right, start
-                top = max(top, end)
-            if top < area[3]:
-                yield left, top, right, area[3]
 
 
 def scroll_region(screen, *, restore=False):
