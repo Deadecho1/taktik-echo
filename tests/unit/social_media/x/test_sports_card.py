@@ -2,20 +2,15 @@
 
 from dataclasses import replace
 from itertools import pairwise
-from pathlib import Path
 
 import pytest
 from lxml import etree
-from unit.x_fixtures import xml_fixture
+from unit.x_fixtures import xml_fixture as document
 
 from taktik.core.shared.ui.geometry import bounds
 from taktik.core.social_media.x.services.browsing.browser import post_context
 from taktik.core.social_media.x.services.browsing.navigation import XError, _alignment
 from taktik.core.social_media.x.ui.screen import read_screen
-
-
-def document(name):
-    return xml_fixture(Path(__file__).parent / "fixtures" / f"{name}.xml")
 
 
 def screen(stage):

@@ -1,118 +1,28 @@
 """Single-attempt native Copy link flows through the real Phone boundary."""
 
-import json
 from copy import deepcopy
 from dataclasses import replace
 
 import pytest
 from lxml import etree
-from unit.social_media.x.services.browsing.test_search import SearchReplay
-from unit.social_media.x.ui.test_inspection_screen import (
-    LINK_FIXTURES,
-    SIZE,
-)
-from unit.social_media.x.ui.test_inspection_screen import (
-    LINK_QUERY as QUERY,
-)
-from unit.social_media.x.ui.test_inspection_screen import (
-    LINK_URL as URL,
-)
-from unit.social_media.x.ui.test_inspection_screen import (
-    link_document as document,
-)
-from unit.x_fixtures import fixture_digest
+from unit.social_media.x.services.inspection_inputs import LINK_FIXTURES
+from unit.social_media.x.services.inspection_inputs import LINK_QUERY as QUERY
+from unit.social_media.x.services.inspection_inputs import LINK_URL as URL
+from unit.social_media.x.services.inspection_inputs import link_document as document
+from unit.social_media.x.services.link_transport import glyph_browser
+from unit.social_media.x.services.search_replay import SearchReplay
+from unit.x_fixtures import SIZE, fixture_manifest
 
 from taktik.core.shared.phone_interaction import (
     InteractionCancelled,
     InteractionError,
-    Phone,
     SessionExpired,
     Status,
 )
-from taktik.core.shared.phone_interaction._device import TaktikDevice
 from taktik.core.social_media.x.services.browsing.browser import XBrowser
 from taktik.core.social_media.x.services.browsing.navigation import X, XError
 from taktik.core.social_media.x.services.browsing.selection import _control
 from taktik.core.social_media.x.ui.screen import read_screen
-
-
-class GlyphLinkReplay:
-    def __init__(self):
-        self.state = "source"
-        self.now = 0
-        self.actions = []
-        self.share_error = self.copy_error = None
-        self.controls = []
-        self.frames = {
-            "source": document("share-glyph-complete-source"),
-            "share": document("share-glyph-sheet"),
-            "receipt": document("share-glyph-receipt"),
-        }
-
-    def app_current(self):
-        return {"package": "com.twitter.android"}
-
-    def window_size(self):
-        return SIZE
-
-    def dump_hierarchy(self):
-        return self.frames[self.state]
-
-    def sleep(self, seconds):
-        self.now += seconds
-
-    def long_click(self, x, y, duration):
-        self.actions.append((self.state, x, y))
-        if self.state == "source":
-            self.controls.append("Share")
-            if 1003 <= x < 1047 and 1928 <= y < 1972:
-                self.state = "share"
-            if self.share_error:
-                raise self.share_error
-        elif self.state == "share":
-            screen = read_screen(self.dump_hierarchy(), SIZE)
-            for label, following in (
-                ("Copy link", "receipt"),
-                ("Close sheet", "source"),
-            ):
-                _, region = _control(screen.controls, label)
-                if region[0] <= x < region[2] and region[1] <= y < region[3]:
-                    self.controls.append(label)
-                    self.state = following
-                    if label == "Copy link" and self.copy_error:
-                        raise self.copy_error
-                    break
-            else:
-                raise AssertionError("The tap missed the verified sheet controls.")
-        else:
-            raise AssertionError("No additional native mutation is expected.")
-
-
-def glyph_browser(raw=None):
-    raw = raw or GlyphLinkReplay()
-    phone = Phone(
-        TaktikDevice(raw, "fixture"),
-        seed=0,
-        clock=lambda: raw.now,
-        sleep=raw.sleep,
-    )
-    browser = XBrowser(phone, {"for_you"})
-    app = browser.browser
-    app.timeline = "for_you"
-    app.verified_account = app._expected = "@fixture_owner"
-    screen = read_screen(raw.dump_hierarchy(), SIZE)
-    app._select(
-        screen,
-        next(
-            i for i, post in enumerate(screen.posts) if post.author == "@fixture_author"
-        ),
-    )
-    browser.workflow, browser._username, browser._valid = (
-        "for_you",
-        "fixture_owner",
-        True,
-    )
-    return raw, browser
 
 
 def test_share_glyph_tap_opens_sheet_and_copies_without_wrapper_padding():
@@ -142,11 +52,10 @@ def test_share_target_excludes_the_padding_point_that_did_not_open_a_sheet():
 
 
 def test_share_glyph_fixture_integrity():
-    manifest = json.loads((LINK_FIXTURES / "share-glyph-manifest.json").read_text())
+    manifest = fixture_manifest(LINK_FIXTURES / "share-glyph-manifest.json")
     assert manifest["kind"] == "synthetic_native_layout"
     for item in manifest["fixtures"]:
         assert item["kind"] == "synthetic_native_layout"
-        assert fixture_digest(LINK_FIXTURES / item["file"]) == item["sha256"]
 
 
 def test_edge_clipped_share_uses_the_proven_strip_within_the_glyph_height():
@@ -931,7 +840,7 @@ def changed(xml, problem):
     elif problem == "context":
         return document("top-source")
     elif problem == "account":
-        from unit.social_media.x.services.browsing.test_search import document as search
+        from unit.social_media.x.services.search_replay import document as search
 
         return search("account-drawer").replace("@fixture_owner", "@Other")
     else:
@@ -1156,11 +1065,8 @@ def test_unsupported_reason_precedes_header_transition_diagnostics(timeline):
 
 
 def test_advancement_resumes_after_dismissal_using_existing_search_scroll_evidence():
-    from unit.social_media.x.services.browsing.test_search import (
-        SearchReplay,
-        shifted_results,
-    )
-    from unit.social_media.x.services.browsing.test_search import document as search
+    from unit.social_media.x.services.search_replay import SearchReplay, shifted_results
+    from unit.social_media.x.services.search_replay import document as search
 
     replay = SearchReplay()
     replay.latest = shifted_results(350)

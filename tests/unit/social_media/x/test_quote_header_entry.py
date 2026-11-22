@@ -1,18 +1,13 @@
 """An offscreen quote header does not yet establish readable quote content."""
 
 from dataclasses import replace
-from pathlib import Path
 
 import pytest
 from lxml import etree
-from unit.x_fixtures import xml_fixture
+from unit.x_fixtures import xml_fixture as document
 
 from taktik.core.social_media.x.services.browsing.navigation import _alignment
 from taktik.core.social_media.x.ui.screen import PostFragment, read_screen
-
-
-def document(name):
-    return xml_fixture(Path(__file__).parent / "fixtures" / f"{name}.xml")
 
 
 def test_native_quote_header_below_viewport_can_enter_without_invented_body():

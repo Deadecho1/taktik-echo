@@ -1,35 +1,23 @@
 """Synthetic native layouts exercise feedback through the real Phone backend."""
 
-import json
 from copy import deepcopy
 
 import pytest
 from lxml import etree
-from unit.paths import CORE
-from unit.x_fixtures import fixture_digest, xml_fixture
+from unit.scripts.eval.feedback_replay import FIXTURES, CompleteFeedbackReplay, selected
+from unit.x_fixtures import SIZE, fixture_manifest
 
 from scripts.eval.x_feedback_validation import check_feedback_roundtrip
 from taktik.core.shared.phone_interaction import (
     InteractionCancelled,
     InteractionError,
-    Phone,
     Status,
 )
-from taktik.core.shared.phone_interaction._device import TaktikDevice
-from taktik.core.social_media.x.services.browsing.browser import XBrowser
 from taktik.core.social_media.x.services.browsing.navigation import XError
-from taktik.core.social_media.x.ui.screen import PACKAGE, read_screen
-
-FIXTURES = CORE / "tests/unit/social_media/x/fixtures/engagement"
-SIZE = (1080, 2340)
-
-
-def document(name):
-    return xml_fixture(FIXTURES / f"undo-{name}.xml")
 
 
 def test_synthetic_feedback_fixture_integrity():
-    manifest = json.loads((FIXTURES / "undo-manifest.json").read_text())
+    manifest = fixture_manifest(FIXTURES / "undo-manifest.json")
     assert manifest["size"] == list(SIZE)
     assert {entry["file"] for entry in manifest["fixtures"]} == {
         path.with_suffix(".xml").name
@@ -39,109 +27,6 @@ def test_synthetic_feedback_fixture_integrity():
     for entry in manifest["fixtures"]:
         assert set(entry) == {"file", "kind", "sha256"}
         assert entry["kind"] == "synthetic_native_layout"
-        assert fixture_digest(FIXTURES / entry["file"]) == entry["sha256"]
-
-
-class FeedbackReplay:
-    def __init__(self):
-        self.documents = {
-            name: document(name)
-            for name in ("source", "options", "receipt", "framing", "successor")
-        }
-        self.xml = self.documents["source"]
-        self.stage = "source"
-        self.actions = []
-        self.now = 0
-        self.phone = Phone(
-            TaktikDevice(self, "fixture"),
-            seed=0,
-            clock=lambda: self.now,
-            sleep=self.sleep,
-        )
-
-    def app_current(self):
-        return {"package": PACKAGE}
-
-    def window_size(self):
-        return SIZE
-
-    def dump_hierarchy(self):
-        return self.xml
-
-    def sleep(self, seconds):
-        self.now += seconds
-
-    def long_click(self, x, y, duration):
-        self.actions.append(("tap", self.stage))
-        if self.stage == "source":
-            assert 1019 <= x < 1080 and 957 <= y < 1006
-            self.stage = "options"
-        elif self.stage == "options":
-            assert 0 <= x < 1080 and 888 <= y < 1042
-            self.stage = "receipt"
-        elif self.stage == "receipt":
-            assert 853 <= x < 1047 and 988 <= y < 1120
-            self.stage = "source"
-        else:
-            raise AssertionError("Cannot tap after framing away the Undo receipt.")
-        self.xml = self.documents[self.stage]
-
-    def swipe_points(self, path, duration):
-        self.actions.append(("scroll", self.stage))
-        self.stage = "framing" if self.stage == "receipt" else "successor"
-        self.xml = self.documents[self.stage]
-
-
-class CompleteFeedbackReplay(FeedbackReplay):
-    def __init__(self):
-        super().__init__()
-        self.documents = {
-            name: document(f"complete-{name}")
-            for name in ("source", "options", "transition", "receipt", "restored")
-        }
-        self.xml = self.documents["source"]
-        self.pending = []
-
-    def dump_hierarchy(self):
-        if self.pending:
-            self.xml = self.documents[self.pending.pop(0)]
-        return self.xml
-
-    def long_click(self, x, y, duration):
-        self.actions.append(("tap", self.stage))
-        if self.stage == "source":
-            assert 1019 <= x < 1080 and 623 <= y < 672
-            self.stage = "options"
-        elif self.stage == "options":
-            assert 0 <= x < 1080 and 888 <= y < 1042
-            self.stage = "receipt"
-            self.pending = ["transition", "receipt"]
-        elif self.stage == "receipt":
-            assert 853 <= x < 1047 and 654 <= y < 786
-            self.stage = "restored"
-        else:
-            raise AssertionError("Unexpected extra tap after verified restoration.")
-        self.xml = self.documents[self.stage]
-
-    def swipe_points(self, path, duration):
-        raise AssertionError("The complete round trip must not frame a successor.")
-
-
-def selected(replay=None):
-    replay = replay or FeedbackReplay()
-    browser = XBrowser(replay.phone, {"for_you"})
-    app = browser.browser
-    app.timeline = "for_you"
-    app.verified_account = app._expected = "@fixture_owner"
-    screen = read_screen(replay.xml, SIZE)
-    source = screen.observable_posts[0]
-    app._select(screen, screen.posts.index(source))
-    browser.workflow, browser._username, browser._valid = (
-        "for_you",
-        "fixture_owner",
-        True,
-    )
-    return replay, browser
 
 
 def test_feedback_undo_precedes_successor_framing_and_retains_occurrence():

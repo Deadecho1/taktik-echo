@@ -6,12 +6,9 @@ import pytest
 from lxml import etree
 from unit.paths import CORE
 from unit.x_fixtures import xml_fixture
+from unit.x_fixtures import xml_fixture as document
 
 from taktik.core.social_media.x.ui.screen import read_screen
-
-
-def document(name):
-    return xml_fixture(CORE / "tests/unit/social_media/x/fixtures" / f"{name}.xml")
 
 
 def screen(stage="after"):

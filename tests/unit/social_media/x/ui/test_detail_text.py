@@ -2,7 +2,8 @@
 
 import pytest
 from lxml import etree
-from unit.social_media.x.ui.test_main_detail import SIZE, document
+from unit.social_media.x.services.detail_inputs import document
+from unit.x_fixtures import SIZE
 
 from taktik.core.social_media.x.services.browsing.inspection import _TextCoverage
 from taktik.core.social_media.x.ui.screen import read_screen

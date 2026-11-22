@@ -1,17 +1,16 @@
 """Copy-link dispatch through the public browser and real Phone transport."""
 
-import json
 from copy import deepcopy
 
 import pytest
 from lxml import etree
-from unit.social_media.x.services.browsing.test_links import (
+from unit.social_media.x.services.inspection_inputs import LINK_FIXTURES
+from unit.social_media.x.services.link_transport import (
     GlyphLinkReplay,
     document,
     glyph_browser,
 )
-from unit.social_media.x.ui.test_inspection_screen import LINK_FIXTURES
-from unit.x_fixtures import fixture_digest
+from unit.x_fixtures import fixture_manifest
 
 from scripts.eval.x_link_validation import select_copy_link_check
 from taktik.core.shared.phone_interaction import (
@@ -98,14 +97,11 @@ class OpportunityReplay(GlyphLinkReplay):
 
 
 def test_opportunity_fixture_has_only_synthetic_integrity_metadata():
-    manifest = json.loads(
-        (LINK_FIXTURES / "share-opportunity-manifest.json").read_text()
-    )
+    manifest = fixture_manifest(LINK_FIXTURES / "share-opportunity-manifest.json")
     assert manifest["kind"] == "synthetic_native_layout"
     for item in manifest["fixtures"]:
         assert set(item) == {"file", "kind", "sha256"}
         assert item["kind"] == "synthetic_native_layout"
-        assert fixture_digest(LINK_FIXTURES / item["file"]) == item["sha256"]
 
 
 def dispatch(browser, observation, features, skipped):

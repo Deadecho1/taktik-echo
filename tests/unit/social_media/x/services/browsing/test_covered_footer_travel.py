@@ -3,8 +3,7 @@
 from unittest.mock import Mock
 
 import pytest
-from unit.paths import CORE
-from unit.x_fixtures import xml_fixture
+from unit.x_fixtures import xml_fixture as document
 
 from taktik.core.shared.phone_interaction import Phone
 from taktik.core.social_media.x.services.browsing.navigation import (
@@ -13,10 +12,6 @@ from taktik.core.social_media.x.services.browsing.navigation import (
     _alignment,
 )
 from taktik.core.social_media.x.ui.screen import read_screen
-
-
-def document(name):
-    return xml_fixture(CORE / "tests/unit/social_media/x/fixtures" / f"{name}.xml")
 
 
 def screen(stage="before"):

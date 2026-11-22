@@ -5,11 +5,9 @@ from types import SimpleNamespace
 
 import pytest
 from lxml import etree
-from unit.social_media.x.services.browsing.test_inspection_visits import (
-    InspectionReplay,
-)
-from unit.social_media.x.ui.drawer.test_tip_startup import RawStartup
-from unit.social_media.x.ui.test_main_detail import document
+from unit.social_media.x.services.detail_inputs import document
+from unit.social_media.x.services.detail_replay import MainReplay
+from unit.social_media.x.services.startup_transport import RawStartup
 
 from taktik.core.shared.phone_interaction import InteractionError, Phone, Status
 from taktik.core.shared.phone_interaction._device import TaktikDevice
@@ -20,25 +18,6 @@ from taktik.core.social_media.x.services.browsing.navigation import (
     scroll_region,
 )
 from taktik.core.social_media.x.ui.screen import read_screen
-
-
-class MainReplay(InspectionReplay):
-    def __init__(self):
-        super().__init__()
-        self.results = self.latest = document("image-source")
-        self.restored = document("image-return")
-        self.detail = document("image-ordinary")
-        self.native = document("image-main")
-        self.native_error = None
-        self.native_reads = 0
-
-    def read(self, what):
-        if what == "screen_reader_hierarchy":
-            self.native_reads += 1
-            if self.native_error:
-                raise self.native_error
-            return self.native
-        return super().read(what)
 
 
 def started():

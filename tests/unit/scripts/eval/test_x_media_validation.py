@@ -5,11 +5,9 @@ from dataclasses import replace
 
 import pytest
 from lxml import etree
-from unit.social_media.x.services.browsing.test_inspection_visits import (
-    InspectionReplay,
-    started,
-)
-from unit.social_media.x.ui.test_inspection_screen import SIZE, document
+from unit.social_media.x.services.inspection_inputs import document
+from unit.social_media.x.services.inspection_replay import InspectionReplay, started
+from unit.x_fixtures import SIZE
 
 from scripts.eval.x_media_validation import select_media_check
 from taktik.core.shared.phone_interaction import (

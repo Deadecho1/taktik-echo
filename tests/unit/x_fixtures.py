@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import copy
 import hashlib
+import json
 from pathlib import Path
 
 from lxml import etree
@@ -159,7 +160,8 @@ class FixtureStore:
 
 def xml_fixture(name: str | Path) -> str:
     """Return a fresh XML string; names are relative to the X fixture directory."""
-    return FixtureStore(FIXTURES).xml(name)
+    path = Path(name)
+    return FixtureStore(FIXTURES).xml(path if path.suffix else path.with_suffix(".xml"))
 
 
 def screen_fixture(name: str | Path):
@@ -175,6 +177,17 @@ def fixture_digest(path: str | Path) -> str:
         canonical_xml(xml_fixture(path)) if path.suffix == ".xml" else path.read_bytes()
     )
     return hashlib.sha256(data).hexdigest()
+
+
+def fixture_manifest(path: Path) -> dict:
+    """Check canonical inputs separately from stored-byte hashes of other assets."""
+    manifest = json.loads(path.read_text())
+    assert manifest["xml_hash"] == "canonical-xml-v1", path
+    for entry in manifest.get("fixtures", manifest.get("cases", [])):
+        assert fixture_digest(path.parent / entry["file"]) == entry["sha256"], entry[
+            "file"
+        ]
+    return manifest
 
 
 def main():

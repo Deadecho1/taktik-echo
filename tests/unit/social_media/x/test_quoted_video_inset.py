@@ -4,10 +4,7 @@ from dataclasses import replace
 
 import pytest
 from lxml import etree
-from unit.social_media.x.services.browsing.test_quote_body_preview import (
-    FIXTURES,
-    screens,
-)
+from unit.social_media.x.services.quote_inputs import FIXTURES, screens
 from unit.x_fixtures import xml_fixture
 
 from taktik.core.social_media.x.services.browsing.navigation import (

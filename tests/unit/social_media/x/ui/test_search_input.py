@@ -5,14 +5,13 @@ from copy import deepcopy
 import pytest
 from lxml import etree
 from unit.paths import CORE
-from unit.x_fixtures import xml_fixture
+from unit.x_fixtures import SIZE, xml_fixture
 
 from taktik.core.shared.phone_interaction import TextField
 from taktik.core.shared.phone_interaction._fields import resolve_field
 from taktik.core.social_media.x.ui.screen import PACKAGE, read_screen
 
 FIXTURE = CORE / "tests/unit/social_media/x/fixtures/search/search-standalone.xml"
-SIZE = (1080, 2340)
 
 
 def test_standalone_search_capture_supplies_the_shared_scoped_field():

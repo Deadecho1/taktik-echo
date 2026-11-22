@@ -5,13 +5,12 @@ from copy import deepcopy
 import pytest
 from lxml import etree
 from unit.paths import CORE
-from unit.x_fixtures import xml_fixture
+from unit.x_fixtures import SIZE, xml_fixture
 
 from taktik.core.social_media.x.services.browsing.navigation import scroll_region
 from taktik.core.social_media.x.ui.screen import read_screen
 
 FIXTURE = CORE / "tests/unit/social_media/x/fixtures/search/results-standalone.xml"
-SIZE = (1080, 2340)
 
 
 def test_captured_standalone_results_have_observable_posts_and_a_bounded_viewport():

@@ -3,7 +3,7 @@
 from pathlib import Path
 from unittest.mock import Mock
 
-from unit.x_fixtures import xml_fixture
+from unit.x_fixtures import xml_fixture as document
 
 from taktik.core.shared.behavior.gesture import SWIPE_FLOOR_H
 from taktik.core.shared.phone_interaction import Phone
@@ -11,10 +11,6 @@ from taktik.core.social_media.x.services.browsing.navigation import X
 from taktik.core.social_media.x.ui.screen import read_screen
 
 FIXTURES = Path(__file__).with_name("fixtures")
-
-
-def document(name):
-    return xml_fixture(FIXTURES / f"{name}.xml")
 
 
 def test_quote_preview_text_preserves_a_reachable_scroll_budget():
