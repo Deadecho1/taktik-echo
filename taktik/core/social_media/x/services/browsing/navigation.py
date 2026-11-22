@@ -2481,6 +2481,7 @@ class X:
         )
         self._tap(screen, "Search")
         screen = self._wait_for(lambda s: s.kind == "search_input", "X query field")
+        screen = self.clear_search_query()
         if screen.query_field is None:
             raise XError("No verified X query field.")
         self.phone.enter_text(
@@ -2494,6 +2495,25 @@ class X:
             self._tap(screen, SEARCH_TABS[self.result_tab])
             screen = self._wait_for(self._on_timeline, "X search result tab")
         return screen
+
+    def clear_search_query(self):
+        """Clear retained search text once through X's native X button."""
+        with self._operation():
+            screen = self._snapshot()
+            if screen.kind != "search_input" or screen.query_field is None:
+                raise XError("Cannot verify the X query field before clearing.")
+            if screen.query == "":
+                return screen
+            field = screen.query_field
+            self._tap(screen, "Clear search")
+            return self._wait_for(
+                lambda s: (
+                    s.kind == "search_input"
+                    and s.query_field == field
+                    and s.query == ""
+                ),
+                "empty X query after Clear search",
+            )
 
     def _reveal_search_query(self, screen):
         for attempt in range(RESTORE_ATTEMPTS + 1):

@@ -2,13 +2,6 @@
 
 import pytest
 from lxml import etree
-from unit.paths import CORE
-from unit.social_media.x.services.browsing.test_search import SearchReplay
-from unit.social_media.x.ui.test_inspection_screen import SIZE
-from unit.social_media.x.ui.test_inspection_screen import (
-    engagement_document as document,
-)
-
 from taktik.core.shared.phone_interaction import (
     InteractionCancelled,
     InteractionError,
@@ -21,6 +14,12 @@ from taktik.core.social_media.x.services.browsing.navigation import (
     _alignment,
 )
 from taktik.core.social_media.x.ui.screen import read_screen
+from unit.paths import CORE
+from unit.social_media.x.services.browsing.test_search import SearchReplay
+from unit.social_media.x.ui.test_inspection_screen import SIZE
+from unit.social_media.x.ui.test_inspection_screen import (
+    engagement_document as document,
+)
 
 QUERY = "from:NASA -filter:replies"
 
@@ -375,6 +374,12 @@ def test_browser_like_dispatch_and_native_states_preserve_identity():
     browser.browser = app
     browser.workflow, browser.target, browser._valid = "search", QUERY, True
     source = browser.observe()
+    assert source.post_context["available_engagement_actions"] == [
+        "like",
+        "save",
+        "follow",
+        "unfollow",
+    ]
     assert source.post_context["engagement"] == {"liked": False, "bookmarked": False}
     assert not browser.act("like", source).advanced
     current = browser.observe()
@@ -411,6 +416,67 @@ def test_observation_keeps_offscreen_engagement_states_unknown():
     assert states["Like"].state_visibility.visible_bounds is None
     assert states["Bookmark"].state_visibility.visible_bounds is None
     assert post_context(post)["engagement"] == {"liked": None, "bookmarked": None}
+
+
+def test_browser_does_not_offer_offscreen_footer_actions():
+    replay, app = started()
+    replay.xml = (
+        CORE / "tests/unit/social_media/x/fixtures/live-badge-tail-ready.xml"
+    ).read_text()
+    screen = read_screen(replay.xml, SIZE)
+    source = next(p for p in screen.observable_posts if p.author == "@fixture_1")
+    app.timeline, app.query = "for_you", None
+    app._select(screen, screen.posts.index(source))
+    browser = XBrowser(replay.phone, {"for_you"})
+    browser.browser = app
+    browser.workflow, browser._valid = "for_you", True
+    events = list(replay.events)
+    available = browser.observe().post_context["available_engagement_actions"]
+    assert "like" not in available and "save" not in available
+    assert "follow" in available and "unfollow" in available
+    assert replay.events == events
+
+
+@pytest.mark.parametrize("problem", ["own_account", "no_menu", "receipt", "following"])
+def test_menu_action_availability_uses_observed_context(problem):
+    from dataclasses import replace
+
+    from taktik.core.social_media.x.services.browsing.engagement import (
+        available_actions,
+    )
+
+    _, app = home_started()
+    source = app.observe()
+    screen = app._screen
+    account = app.verified_account
+    assert "not_interested" in available_actions(source, screen, account, app.timeline)
+    if problem == "own_account":
+        account = source.author
+    elif problem == "no_menu":
+        source = replace(source, targets=())
+    elif problem == "receipt":
+        screen = replace(
+            screen,
+            removal_notices=read_screen(document("feedback"), SIZE).removal_notices,
+        )
+    else:
+        screen = replace(screen, tab="Following")
+    actions = available_actions(source, screen, account, app.timeline)
+    assert "not_interested" not in actions
+    assert ("follow" in actions) == (problem in {"receipt", "following"})
+    assert ("unfollow" in actions) == (problem in {"receipt", "following"})
+
+
+def test_collapsed_for_you_retains_feedback_availability():
+    replay, browser = home_started(wrapper=True)
+    replay.xml = document("feedback-scrolling-source")
+    screen = read_screen(replay.xml, SIZE)
+    assert screen.kind == "home" and screen.tab is None
+    browser.browser._select(screen, screen.posts.index(screen.observable_posts[0]))
+    assert (
+        "not_interested"
+        in browser.observe().post_context["available_engagement_actions"]
+    )
 
 
 @pytest.mark.parametrize(

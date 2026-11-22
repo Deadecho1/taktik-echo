@@ -58,6 +58,13 @@ This feature builds on the shared browsing implementation on `main`.
 
 Search starts with drawer account verification, opens Explore and the scoped query field, and submits only after exact text and X screen-context verification.
 `XBrowser(phone, {"search"}).start(username, "search", target=query)` opens Top results.
+Pass `search_tab="latest"` to `XBrowser.start` or `transition` to choose Latest.
+Before typing a replacement query, navigation presses the native Clear search
+button and verifies that the same query field is empty. `X.clear_search_query()`
+exposes this operation while the verified search input is open; an already empty
+field is a no-op. A failed clear stops query entry without repeating the press.
+Changing only the tab starts a newly verified occurrence; an identical query and
+tab is a no-op. Recovery retains the chosen tab and clears inspection context.
 The lower-level `X(phone).start(username, "search", query=query, result_tab="latest")` also supports Latest.
 `X.search(query, tab="top")` starts another account-verified search from an active session.
 Queries preserve Unicode and native X operators; empty queries and control characters are rejected before device interaction.
@@ -96,6 +103,12 @@ Consumer applications choose how to use these capabilities in their own workflow
 Their configuration, model policy, and integration schedules are independent of Taktik implementation and validation.
 
 `XBrowser.act(action, observation)` supports `like`, `save` (Bookmark), `follow`, `unfollow`, and `not_interested`.
+Each observation includes `post_context.available_engagement_actions`, derived
+from visible, usable controls and known footer states. Follow/unfollow require
+an author menu target and another account; their relationship state is checked
+when the menu opens. Not interested additionally requires For you and no existing
+feedback receipt. These are observed prerequisites, not a promise of execution:
+every action still verifies fresh targets, menu offerings, and outcomes.
 The lower-level `X` exposes `set_liked(selected=True)`, `set_bookmarked(selected=True)`, `follow()`, `unfollow()`, and `not_interested()`.
 The setters also accept `False` for explicit removal; an already matching native state is a verified no-op.
 Low-level operations return `EngagementResult` with the source content key, whether the state changed, the verified selected state when applicable, and whether browsing advanced.
@@ -163,6 +176,14 @@ Unknown windows, changed evidence, and exhausted bounds invalidate browsing, whi
 The [native link validation record](validation/2026-11-19-x-links.md) documents the successful repeated-copy phone run, supported device/version, regression checks, and completed human review of all nine presented screenshots.
 
 `X.visit_profile()` visits the selected author's verified profile and returns header text and observable profile posts separately from the source post.
+The shared browser retains successful `visit_profile` and `inspect_thread`
+results in subsequent observations' `post_context.profile_inspection` and
+`post_context.thread_inspection`. Related posts retain their own author, body,
+metadata, and completeness; they never replace the outer caption or identity.
+Only the observed native main-text prefix is exposed, with its independent
+`main_text_complete` flag. Advancing, restarting, recovery, and caption expansion
+clear these results. The shared X action list includes `inspect_profile` and
+`inspect_thread`; both perform a bounded visit and verified return.
 `X.inspect_thread(max_posts=10, max_scrolls=4)` returns bounded, independently attributed thread observations and native detail metadata, retaining the original source content key separately.
 The detail reader independently extracts the main author, caption, media, and supported quoted content from native accessibility.
 The native author row may contain one verification badge followed by one noninteractive square affiliation icon inside the same name-and-handle column.

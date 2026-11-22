@@ -11,6 +11,7 @@ from taktik.core.shared.browsing import (
 )
 from taktik.core.shared.phone_interaction import Phone, Result, Status
 
+from .engagement import available_actions
 from .navigation import X, XError
 
 
@@ -139,6 +140,14 @@ def _workflows(enabled_workflows):
     return enabled
 
 
+def _related_post(post):
+    return {
+        "username": post.author.removeprefix("@"),
+        "body": post.body,
+        **post_context(post),
+    }
+
+
 class XBrowser:
     name = "x"
 
@@ -148,6 +157,7 @@ class XBrowser:
         self.browser = X(phone)
         self.workflow = None
         self.target = ""
+        self.search_tab = "top"
         self._username = None
         self._occurrence = 0
         self._valid = False
@@ -164,10 +174,16 @@ class XBrowser:
 
     def _clear_observation_state(self):
         self._media_inspection = None
+        self._profile_inspection = None
+        self._thread_inspection = None
         self._expanded_source_key = None
         self._post_link = None
 
-    def start(self, username, workflow, target=""):
+    def start(self, username, workflow, target="", *, search_tab="top"):
+        if search_tab not in {"top", "latest"} or (
+            workflow != "search" and search_tab != "top"
+        ):
+            raise ValueError("Only X search accepts a top/latest result tab.")
         self._valid = False
         self._clear_observation_state()
         if workflow not in self.enabled or (workflow != "search" and target):
@@ -175,26 +191,39 @@ class XBrowser:
                 "X requires an enabled workflow; only search accepts a target."
             )
         if workflow == "search":
-            self.browser.start(username, workflow, query=target)
+            self.browser.start(username, workflow, query=target, result_tab=search_tab)
         else:
             self.browser.start(username, workflow)
         self.workflow, self.target, self._username = workflow, target, username
+        self.search_tab = search_tab
         self._occurrence += 1
         self._valid = True
 
-    def transition(self, workflow, target=""):
+    def transition(self, workflow, target="", *, search_tab="top"):
+        if search_tab not in {"top", "latest"} or (
+            workflow != "search" and search_tab != "top"
+        ):
+            raise ValueError("Only X search accepts a top/latest result tab.")
         if not self.browsing_valid:
             raise XError("X browsing context was lost; restart account verification.")
         if workflow not in self.enabled or (workflow != "search" and target):
             raise XError("Unavailable X workflow.", result=Result(Status.UNSUPPORTED))
-        if (workflow, target) != (self.workflow, self.target):
-            self.start(self._username, workflow, target)
+        if (workflow, target, search_tab) != (
+            self.workflow,
+            self.target,
+            self.search_tab,
+        ):
+            self.start(self._username, workflow, target, search_tab=search_tab)
 
     def recover(self):
         """Reverify the saved account/context and establish a new occurrence."""
         self._valid = False
         self._clear_observation_state()
         self.browser.recover()
+        self.workflow = self.browser.timeline
+        self.target = self.browser.query or ""
+        self.search_tab = self.browser.result_tab
+        self._username = self.browser.verified_account.removeprefix("@")
         self._occurrence += 1
         self._valid = True
 
@@ -216,11 +245,38 @@ class XBrowser:
             else None
         )
         context = post_context(post)
+        context["available_engagement_actions"] = available_actions(
+            post,
+            self.browser._screen,
+            self.browser.verified_account,
+            self.browser.timeline,
+        )
         if self.workflow == "search":
             context["search_query"] = self.browser.query
             context["search_tab"] = self.browser.result_tab
         if self.browser.navigation_gaps:
             context["navigation_gaps"] = list(self.browser.navigation_gaps)
+        profile = self._profile_inspection
+        if profile is not None and profile.source_key == post.content_key:
+            context["profile_inspection"] = {
+                "username": profile.profile.handle.removeprefix("@"),
+                "display_name": profile.profile.display_name,
+                "text": [span.text for span in profile.profile.text],
+                "tab": profile.tab,
+                "posts": [_related_post(p) for p in profile.posts],
+                "complete": False,
+            }
+        thread = self._thread_inspection
+        if thread is not None and thread.source_key == post.content_key:
+            context["thread_inspection"] = {
+                "main_verified": thread.main_verified,
+                "main_text": thread.main_text,
+                "main_text_complete": thread.main_text_complete,
+                "posts": [_related_post(p) for p in thread.posts],
+                "complete": thread.complete,
+                "scrolls": thread.scrolls,
+                "stop_reason": thread.stop_reason,
+            }
         frames = []
         inspection = self._media_inspection
         if inspection is not None and inspection.source_key == post.content_key:
@@ -265,6 +321,10 @@ class XBrowser:
             )
         if action == "inspect":
             self.inspect(observation)
+        elif action == "inspect_thread":
+            self.inspect_thread(observation)
+        elif action == "inspect_profile":
+            self.visit_profile(observation)
         elif action == "read_more":
             self.read_more(observation)
         else:
@@ -293,7 +353,8 @@ class XBrowser:
 
     def visit_profile(self, observation):
         self._selected(observation)
-        return self.browser.visit_profile()
+        self._profile_inspection = self.browser.visit_profile()
+        return self._profile_inspection
 
     def copy_link(self, observation):
         self._selected(observation)
@@ -302,7 +363,10 @@ class XBrowser:
 
     def inspect_thread(self, observation, *, max_posts=10, max_scrolls=4):
         self._selected(observation)
-        return self.browser.inspect_thread(max_posts=max_posts, max_scrolls=max_scrolls)
+        self._thread_inspection = self.browser.inspect_thread(
+            max_posts=max_posts, max_scrolls=max_scrolls
+        )
+        return self._thread_inspection
 
     def inspect(self, observation, *, index=0, frame_count=1, interval=1.0):
         self._selected(observation)
@@ -317,6 +381,8 @@ class XBrowser:
         if post.content_key != current.source_key:
             self._expanded_source_key = self._expanded_source_key or current.source_key
             self._media_inspection = None
+            self._profile_inspection = None
+            self._thread_inspection = None
             self._post_link = None
 
     def advance(self):
