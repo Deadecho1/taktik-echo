@@ -3,6 +3,7 @@
 import pytest
 from lxml import etree
 from unit.paths import CORE
+from unit.x_fixtures import xml_fixture
 
 from taktik.core.shared.browsing import FeedEmpty
 from taktik.core.shared.phone_interaction import (
@@ -26,7 +27,7 @@ SIZE = (1080, 2340)
 
 
 def document(name):
-    return (FIXTURES / f"{name}.xml").read_text()
+    return xml_fixture(FIXTURES / f"{name}.xml")
 
 
 def changed_query(xml, query):

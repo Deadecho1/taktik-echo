@@ -16,6 +16,7 @@ from unit.social_media.x.services.browsing.test_search import (
 from unit.social_media.x.services.browsing.test_search import (
     document as search_document,
 )
+from unit.x_fixtures import xml_fixture
 
 from scripts.eval.x_caption_validation import check_caption
 from taktik.core.shared.phone_interaction import (
@@ -41,7 +42,7 @@ SIZE = (1080, 2340)
 def test_unlabeled_inline_content_does_not_supply_missing_movement_evidence():
     fixtures = CORE / "tests/unit/social_media/x/fixtures/coverage"
     before, after = [
-        read_screen((fixtures / f"unlabeled-inline-{stage}.xml").read_text(), SIZE)
+        read_screen(xml_fixture(fixtures / f"unlabeled-inline-{stage}.xml"), SIZE)
         for stage in ("before", "after")
     ]
     for screen in (before, after):
@@ -80,7 +81,7 @@ FIXTURES = CORE / "tests/unit/social_media/x/fixtures"
 
 
 def document(stage):
-    return (FIXTURES / f"navigation-evidence-{stage}.xml").read_text()
+    return xml_fixture(FIXTURES / f"navigation-evidence-{stage}.xml")
 
 
 def test_rejected_post_does_not_exhaust_the_scroll_distance():
@@ -304,7 +305,7 @@ TAP = (568, 1478, 660, 1500)
 
 
 def startup_document(name):
-    return (STARTUP_FIXTURES / f"{name}.xml").read_text()
+    return xml_fixture(STARTUP_FIXTURES / f"{name}.xml")
 
 
 class StartupReplay(SearchReplay):

@@ -8,6 +8,7 @@ from unit.social_media.x.ui.test_inspection_screen import SIZE
 from unit.social_media.x.ui.test_inspection_screen import (
     engagement_document as document,
 )
+from unit.x_fixtures import xml_fixture
 
 from taktik.core.shared.phone_interaction import (
     InteractionCancelled,
@@ -402,9 +403,9 @@ def test_feedback_retains_verified_collapsed_home_during_captured_successor_fram
 
 
 def test_observation_keeps_offscreen_engagement_states_unknown():
-    xml = (
+    xml = xml_fixture(
         CORE / "tests/unit/social_media/x/fixtures/live-badge-tail-ready.xml"
-    ).read_text()
+    )
     screen = read_screen(xml, SIZE)
     post = next(p for p in screen.observable_posts if p.author == "@fixture_1")
     states = {t.label: t for t in post.actions}
@@ -425,9 +426,9 @@ def test_selected_action_aliases_preserve_clipped_post_continuity(
 ):
     screens = []
     for stage in ("before", "after"):
-        xml = (
+        xml = xml_fixture(
             CORE / f"tests/unit/social_media/x/fixtures/{name}-{stage}.xml"
-        ).read_text()
+        )
         xml = xml.replace(f'content-desc="{label}"', f'content-desc="{native}"')
         screens.append(read_screen(xml, SIZE))
     assert _alignment(*screens, scrolling=True) == (offset, True)
@@ -435,9 +436,9 @@ def test_selected_action_aliases_preserve_clipped_post_continuity(
 
 def test_liking_a_post_with_a_covered_empty_bookmark_slot_preserves_observability():
     replay, app = started()
-    replay.xml = (
+    replay.xml = xml_fixture(
         CORE / "tests/unit/social_media/x/fixtures/ai-covered-footer-after.xml"
-    ).read_text()
+    )
     screen = read_screen(replay.xml, SIZE)
     source = next(p for p in screen.observable_posts if p.author == "@fixture_1")
     app.timeline, app.query = "for_you", None

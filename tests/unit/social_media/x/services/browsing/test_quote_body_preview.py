@@ -4,6 +4,7 @@ from dataclasses import replace
 
 import pytest
 from unit.paths import CORE
+from unit.x_fixtures import xml_fixture
 
 from taktik.core.social_media.x.services.browsing.navigation import XError, _alignment
 from taktik.core.social_media.x.ui.screen import PostFragment, read_screen
@@ -13,7 +14,9 @@ FIXTURES = CORE / "tests/unit/social_media/x/fixtures"
 
 def screens(family="quote-body-preview"):
     return [
-        read_screen((FIXTURES / f"{family}-{stage}.xml").read_bytes(), (1080, 2340))
+        read_screen(
+            xml_fixture(FIXTURES / f"{family}-{stage}.xml").encode(), (1080, 2340)
+        )
         for stage in ("before", "after")
     ]
 

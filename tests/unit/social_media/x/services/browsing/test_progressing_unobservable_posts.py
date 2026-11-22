@@ -10,6 +10,7 @@ from unittest.mock import Mock
 import pytest
 from lxml import etree
 from unit.paths import CORE
+from unit.x_fixtures import xml_fixture
 
 from taktik.core.shared.phone_interaction import (
     InteractionCancelled,
@@ -34,7 +35,7 @@ from taktik.core.social_media.x.ui.screen import PACKAGE, read_screen
 
 
 def document(name):
-    return ((CORE / "tests/unit/social_media/x/fixtures") / f"{name}.xml").read_text()
+    return xml_fixture((CORE / "tests/unit/social_media/x/fixtures") / f"{name}.xml")
 
 
 def captured_app(name):
@@ -127,7 +128,7 @@ SIZE = (1080, 2340)
 
 
 def preceding_document(number):
-    return (FIXTURES / f"preceding-posts-{number}.xml").read_text()
+    return xml_fixture(FIXTURES / f"preceding-posts-{number}.xml")
 
 
 def synthetic_continuation():
@@ -287,7 +288,7 @@ def test_preceding_exit_does_not_repair_changed_or_ambiguous_source(replay, chan
 def test_complete_sequence_reaches_successor_then_continues_with_explicit_gaps(replay):
     raw, browser = replay
     raw.documents = [
-        (FIXTURES / f"preceding-complete-{i}.xml").read_text() for i in range(11)
+        xml_fixture(FIXTURES / f"preceding-complete-{i}.xml") for i in range(11)
     ]
     browser.browser._select(read_screen(raw.documents[0], SIZE), 2)
     source = browser.observe()
@@ -369,7 +370,7 @@ def test_temporary_source_loss_cannot_credit_preceding_exit(replay):
 
 
 def successor_document(index):
-    return (FIXTURES / f"successor-approach-{index}.xml").read_text()
+    return xml_fixture(FIXTURES / f"successor-approach-{index}.xml")
 
 
 def container(root, handle="@fixture_source"):

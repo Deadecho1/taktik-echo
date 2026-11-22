@@ -7,6 +7,7 @@ from copy import deepcopy
 import pytest
 from lxml import etree
 from unit.paths import CORE
+from unit.x_fixtures import xml_fixture
 
 from taktik.core.shared.phone_interaction import (
     InteractionCancelled,
@@ -26,7 +27,7 @@ SIZE = (1080, 2340)
 
 
 def document(name):
-    return (FIXTURES / f"drawer-tip{name}.xml").read_text()
+    return xml_fixture(FIXTURES / f"drawer-tip{name}.xml")
 
 
 class RawStartup:

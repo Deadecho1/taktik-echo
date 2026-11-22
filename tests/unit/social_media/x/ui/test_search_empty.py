@@ -3,6 +3,7 @@
 import pytest
 from lxml import etree
 from unit.paths import CORE
+from unit.x_fixtures import xml_fixture
 
 from taktik.core.social_media.x.ui.screen import read_screen
 
@@ -12,7 +13,7 @@ QUERY = "zzqtaktiksearch20261117qxzz"
 
 
 def test_captured_native_no_results_state_is_bound_to_the_displayed_query():
-    screen = read_screen(FIXTURE.read_text(), SIZE)
+    screen = read_screen(xml_fixture(FIXTURE), SIZE)
     assert screen.kind == "search_results", screen.reason
     assert screen.query == QUERY and screen.tab == "Top"
     assert screen.empty
@@ -23,7 +24,7 @@ def test_captured_native_no_results_state_is_bound_to_the_displayed_query():
     "problem", ["query", "explanation", "structure", "interactive", "covered", "post"]
 )
 def test_no_results_claim_requires_exact_native_content_and_visibility(problem):
-    root = etree.parse(str(FIXTURE)).getroot()
+    root = etree.ElementTree(etree.fromstring(xml_fixture(FIXTURE).encode())).getroot()
     title = root.xpath(".//*[@text=$text]", text=f"No results for “{QUERY}”")[0]
     panel = title.getparent()
     if problem == "query":

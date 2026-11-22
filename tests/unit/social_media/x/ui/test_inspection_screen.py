@@ -7,6 +7,7 @@ import json
 import pytest
 from lxml import etree
 from unit.paths import CORE
+from unit.x_fixtures import xml_fixture
 
 from taktik.core.shared.behavior.tap import free_tap_zone
 from taktik.core.shared.ui.geometry import bounds
@@ -21,7 +22,7 @@ SIZE = (1080, 2340)
 
 
 def document(name):
-    return (FIXTURES / f"{name}.xml").read_text()
+    return xml_fixture(FIXTURES / f"{name}.xml")
 
 
 def changed(name, xpath, attribute, value):
@@ -200,7 +201,7 @@ SIZE = (1080, 2340)
 
 
 def engagement_document(name):
-    return (ENGAGEMENT_FIXTURES / f"{name}.xml").read_text()
+    return xml_fixture(ENGAGEMENT_FIXTURES / f"{name}.xml")
 
 
 def test_engagement_fixture_provenance():
@@ -321,7 +322,7 @@ LINK_URL = "https://x.com/NASA/status/2123169377855922254"
 
 
 def link_document(name):
-    return (LINK_FIXTURES / f"{name}.xml").read_text()
+    return xml_fixture(LINK_FIXTURES / f"{name}.xml")
 
 
 def test_link_fixture_provenance():

@@ -15,6 +15,7 @@ from unit.scripts.eval.test_x_feedback_validation import (
     FeedbackReplay,
     selected,
 )
+from unit.x_fixtures import xml_fixture
 
 from scripts.eval.x_feedback_validation import _find_undo, check_feedback_roundtrip
 from taktik.core.shared.phone_interaction import (
@@ -442,11 +443,9 @@ def test_changed_repost_decision_cannot_apply_feedback(change):
 def test_changed_account_after_feedback_cannot_authorize_undo():
     replay, browser = selected(RepostFeedbackReplay())
     source = browser.observe()
-    replay.documents["transition"] = (
-        (FIXTURES.parent / "startup/drawer.xml")
-        .read_text()
-        .replace("@fixture_owner", "@different")
-    )
+    replay.documents["transition"] = xml_fixture(
+        FIXTURES.parent / "startup/drawer.xml"
+    ).replace("@fixture_owner", "@different")
     with pytest.raises(InteractionError) as raised:
         check_feedback_roundtrip(browser, source)
     assert raised.value.result.status == Status.UNCERTAIN

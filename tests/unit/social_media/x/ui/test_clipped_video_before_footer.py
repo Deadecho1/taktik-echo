@@ -5,12 +5,13 @@ from copy import deepcopy
 import pytest
 from lxml import etree
 from unit.paths import CORE
+from unit.x_fixtures import xml_fixture
 
 from taktik.core.social_media.x.ui.screen import read_screen
 
 
 def document(name):
-    return (CORE / "tests/unit/social_media/x/fixtures" / f"{name}.xml").read_text()
+    return xml_fixture(CORE / "tests/unit/social_media/x/fixtures" / f"{name}.xml")
 
 
 def screen(stage="after"):
@@ -83,7 +84,7 @@ FIXTURE = CORE / "tests/unit/social_media/x/fixtures/coverage/caption-gif-244.xm
 
 def test_visible_native_gif_renderer_retains_only_unattributed_content():
     screen = read_screen(
-        FIXTURE.with_name("caption-gif-visible.xml").read_text(), (1080, 2340)
+        xml_fixture(FIXTURE.with_name("caption-gif-visible.xml")), (1080, 2340)
     )
     assert not screen.posts and not screen.rejected_posts
     (fragment,) = screen.fragments
@@ -97,7 +98,9 @@ def test_visible_native_gif_renderer_retains_only_unattributed_content():
     "mutation", ["text", "description", "interactive", "bounds", "class", "child"]
 )
 def test_visible_renderer_rejects_unknown_descendants(index, mutation):
-    root = etree.fromstring(FIXTURE.with_name("caption-gif-visible.xml").read_bytes())
+    root = etree.fromstring(
+        xml_fixture(FIXTURE.with_name("caption-gif-visible.xml")).encode()
+    )
     glyph = root.xpath('//*[@content-desc="GIF"]')[0]
     renderer = glyph.getnext()
     node = list(renderer.iter())[index]
@@ -148,7 +151,7 @@ def test_visible_renderer_rejects_unknown_descendants(index, mutation):
     ],
 )
 def test_incomplete_gif_footer_requires_exact_structure_and_geometry(mutation):
-    root = etree.fromstring(FIXTURE.read_bytes())
+    root = etree.fromstring(xml_fixture(FIXTURE).encode())
     glyph = root.xpath('//*[@content-desc="GIF"]')[0]
     wrapper = glyph.getparent()
     container = wrapper.getparent()

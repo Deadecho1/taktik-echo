@@ -7,6 +7,7 @@ from copy import deepcopy
 import pytest
 from lxml import etree
 from unit.paths import CORE
+from unit.x_fixtures import xml_fixture
 
 from scripts.eval.x_feedback_validation import check_feedback_roundtrip
 from taktik.core.shared.phone_interaction import (
@@ -25,7 +26,7 @@ SIZE = (1080, 2340)
 
 
 def document(name):
-    return (FIXTURES / f"undo-{name}.xml").read_text()
+    return xml_fixture(FIXTURES / f"undo-{name}.xml")
 
 
 def test_synthetic_feedback_fixture_integrity():

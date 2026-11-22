@@ -5,6 +5,7 @@ from copy import deepcopy
 import pytest
 from lxml import etree
 from unit.paths import CORE
+from unit.x_fixtures import xml_fixture
 
 from taktik.core.social_media.x.ui.screen import read_screen
 
@@ -14,7 +15,7 @@ LABEL = "Explore Settings. New feature available"
 
 
 def test_captured_explore_feature_badge_preserves_search_navigation():
-    screen = read_screen(FIXTURE.read_text(), SIZE)
+    screen = read_screen(xml_fixture(FIXTURE), SIZE)
     assert screen.kind == "explore", screen.reason
     assert screen.tab == "Explore"
     assert [c for c in screen.controls if c.label == "Search"]
@@ -23,7 +24,7 @@ def test_captured_explore_feature_badge_preserves_search_navigation():
 
 @pytest.mark.parametrize("mutation", ["unknown", "duplicate", "primary_conflict"])
 def test_explore_feature_badge_does_not_relax_marker_checks(mutation):
-    root = etree.parse(str(FIXTURE)).getroot()
+    root = etree.ElementTree(etree.fromstring(xml_fixture(FIXTURE).encode())).getroot()
     settings = root.xpath(".//*[@content-desc=$label]", label=LABEL)[0]
     if mutation == "unknown":
         settings.set("content-desc", "Explore Settings: unknown variant")

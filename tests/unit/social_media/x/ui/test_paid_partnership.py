@@ -5,6 +5,7 @@ from copy import deepcopy
 import pytest
 from lxml import etree
 from unit.paths import CORE
+from unit.x_fixtures import xml_fixture
 
 from taktik.core.shared.ui.geometry import bounds
 from taktik.core.social_media.x.services.browsing.navigation import XError, _alignment
@@ -15,7 +16,9 @@ SIZE = (1080, 2340)
 
 
 def tree(name="partnership-probe-after"):
-    return etree.parse(str(FIXTURES / f"{name}.xml"))
+    return etree.ElementTree(
+        etree.fromstring(xml_fixture(FIXTURES / f"{name}.xml").encode())
+    )
 
 
 @pytest.mark.parametrize("name", ["partnership-probe-after", "partnership-fragment"])

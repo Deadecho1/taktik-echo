@@ -7,6 +7,7 @@ from unittest.mock import Mock
 
 import pytest
 from unit.paths import CORE
+from unit.x_fixtures import xml_fixture
 
 from taktik.core.shared.phone_interaction import (
     InteractionCancelled,
@@ -29,7 +30,7 @@ from taktik.core.social_media.x.ui.screen import PACKAGE, read_screen
 
 
 def document(name):
-    return ((CORE / "tests/unit/social_media/x/fixtures") / f"{name}.xml").read_text()
+    return xml_fixture((CORE / "tests/unit/social_media/x/fixtures") / f"{name}.xml")
 
 
 def captured_app(name):
@@ -116,7 +117,7 @@ FIXTURES = CORE / "tests/unit/social_media/x/fixtures/coverage"
 
 def test_captured_search_header_loss_enters_pending_without_a_new_observation():
     before, after = [
-        read_screen((FIXTURES / f"pending-search-{name}.xml").read_text(), (1080, 2340))
+        read_screen(xml_fixture(FIXTURES / f"pending-search-{name}.xml"), (1080, 2340))
         for name in ("before", "hidden-header")
     ]
     app = X(Mock(spec=Phone))
@@ -137,7 +138,7 @@ def test_captured_search_header_loss_enters_pending_without_a_new_observation():
 class PassageReplay:
     def __init__(self):
         self.case = json.loads((FIXTURES / "long-text-traversal.json").read_text())
-        self.documents = [(FIXTURES / name).read_text() for name in self.case["files"]]
+        self.documents = [xml_fixture(FIXTURES / name) for name in self.case["files"]]
         self.index = 0
         self.now = 0
         self.phone = Phone(self, clock=lambda: self.now, sleep=self.sleep)
@@ -211,7 +212,7 @@ SIZE = (1080, 2340)
 
 
 def caption_document(number):
-    return (CAPTION_FIXTURES / f"caption-gif-{number}.xml").read_text()
+    return xml_fixture(CAPTION_FIXTURES / f"caption-gif-{number}.xml")
 
 
 class CaptionReplay:
