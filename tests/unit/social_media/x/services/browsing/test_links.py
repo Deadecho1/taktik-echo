@@ -9,7 +9,7 @@ from unit.social_media.x.services.inspection_inputs import LINK_FIXTURES
 from unit.social_media.x.services.inspection_inputs import LINK_QUERY as QUERY
 from unit.social_media.x.services.inspection_inputs import LINK_URL as URL
 from unit.social_media.x.services.inspection_inputs import link_document as document
-from unit.social_media.x.services.link_transport import glyph_browser
+from unit.social_media.x.services.link_transport import GlyphLinkReplay, glyph_browser
 from unit.social_media.x.services.search_replay import SearchReplay
 from unit.x_fixtures import SIZE, fixture_manifest
 
@@ -23,6 +23,15 @@ from taktik.core.social_media.x.services.browsing.browser import XBrowser
 from taktik.core.social_media.x.services.browsing.navigation import X, XError
 from taktik.core.social_media.x.services.browsing.selection import _control
 from taktik.core.social_media.x.ui.screen import read_screen
+
+
+@pytest.mark.parametrize("point", [(540, 525), (100, 100), (500, 2150)])
+def test_sheet_replay_rejects_covered_or_unrelated_taps(point):
+    raw = GlyphLinkReplay()
+    raw.state = "share"
+    with pytest.raises(AssertionError, match="missed the verified sheet controls"):
+        raw.long_click(*point, 0.1)
+    assert raw.state == "share" and not raw.controls
 
 
 def test_share_glyph_tap_opens_sheet_and_copies_without_wrapper_padding():
