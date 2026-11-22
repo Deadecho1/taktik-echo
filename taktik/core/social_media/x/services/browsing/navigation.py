@@ -49,24 +49,28 @@ def scroll_region(screen, *, restore=False):
     if screen.kind not in {"home", "search_results", "detail"} or viewport is None:
         raise XError("X scrolling requires a recognized feed viewport.")
     width, height = viewport[2] - viewport[0], viewport[3] - viewport[1]
-    areas = screen.scroll_areas or screen.navigation_areas
-    exclusions = (
-        *screen.overlaps,
-        *(rect for area in areas for rect in area.exclusions),
-    )
     restoring = restore and screen.kind == "detail"
     minimum_width = width * (0.02 if restoring else 0.08)
     minimum_height = height * 0.2 if restoring else width * 0.1
     regions = []
-    for candidate in areas:
-        area = candidate.visibility.visible_bounds
-        if area is None or not candidate.visibility.accessible:
-            continue
-        regions.extend(
-            rect
-            for rect in _free_regions(area, exclusions, minimum_width)
-            if rect[3] - rect[1] >= minimum_height
+    # A clipped post can contribute geometry with no usable gesture path.
+    # Prefer post regions, then try the independently verified navigation space.
+    for areas in (screen.scroll_areas, screen.navigation_areas):
+        exclusions = (
+            *screen.overlaps,
+            *(rect for area in areas for rect in area.exclusions),
         )
+        for candidate in areas:
+            area = candidate.visibility.visible_bounds
+            if area is None or not candidate.visibility.accessible:
+                continue
+            regions.extend(
+                rect
+                for rect in _free_regions(area, exclusions, minimum_width)
+                if rect[3] - rect[1] >= minimum_height
+            )
+        if regions:
+            break
     if not regions:
         raise XError(
             "No continuous X scroll region excludes nested controls and media."
