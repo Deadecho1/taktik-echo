@@ -491,6 +491,19 @@ def test_browser_rejects_invalid_tab_before_touching_phone(workflow, tab):
     assert not replay.events
 
 
+def test_recovery_labels_the_verified_context_after_invalid_search():
+    replay = SearchReplay()
+    browser = XBrowser(replay.phone, {"for_you", "search"})
+    browser.start("fixture_owner", "for_you")
+    with pytest.raises(ValueError):
+        browser.start("fixture_owner", "search", "")
+    browser.recover()
+    observation = browser.observe()
+    assert observation.workflow == browser.browser.timeline == "for_you"
+    assert browser.target == ""
+    assert "search_query" not in observation.post_context
+
+
 @pytest.mark.parametrize(
     "keyboard",
     ["com.google.android.inputmethod.latin", "com.alexal1.adbkeyboard", None],

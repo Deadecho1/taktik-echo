@@ -189,12 +189,12 @@ class XBrowser:
             raise ValueError(
                 "X requires an enabled workflow; only search accepts a target."
             )
-        self.workflow, self.target, self._username = workflow, target, username
-        self.search_tab = search_tab
         if workflow == "search":
             self.browser.start(username, workflow, query=target, result_tab=search_tab)
         else:
             self.browser.start(username, workflow)
+        self.workflow, self.target, self._username = workflow, target, username
+        self.search_tab = search_tab
         self._occurrence += 1
         self._valid = True
 
@@ -219,6 +219,10 @@ class XBrowser:
         self._valid = False
         self._clear_observation_state()
         self.browser.recover()
+        self.workflow = self.browser.timeline
+        self.target = self.browser.query or ""
+        self.search_tab = self.browser.result_tab
+        self._username = self.browser.verified_account.removeprefix("@")
         self._occurrence += 1
         self._valid = True
 
