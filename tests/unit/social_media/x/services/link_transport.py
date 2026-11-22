@@ -38,7 +38,7 @@ class GlyphLinkReplay(AndroidReplay):
         elif self.state == "share":
             for label, region, following in (
                 ("Copy link", (220, 1996, 418, 2230), "receipt"),
-                ("Close sheet", (0, 136, 1080, 545), "source"),
+                ("Close sheet", (0, 136, 1080, 507), "source"),
             ):
                 if region[0] <= x < region[2] and region[1] <= y < region[3]:
                     self.controls.append(label)

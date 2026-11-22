@@ -183,7 +183,14 @@ def fixture_manifest(path: Path) -> dict:
     """Check canonical inputs separately from stored-byte hashes of other assets."""
     manifest = json.loads(path.read_text())
     assert manifest["xml_hash"] == "canonical-xml-v1", path
-    for entry in manifest.get("fixtures", manifest.get("cases", [])):
+    inventories = [manifest[key] for key in ("fixtures", "cases") if key in manifest]
+    if (
+        len(inventories) != 1
+        or not isinstance(inventories[0], list)
+        or not inventories[0]
+    ):
+        raise FixtureError(f"{path}: expected one nonempty fixture inventory")
+    for entry in inventories[0]:
         assert fixture_digest(path.parent / entry["file"]) == entry["sha256"], entry[
             "file"
         ]

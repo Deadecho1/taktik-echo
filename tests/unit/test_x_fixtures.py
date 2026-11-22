@@ -1,6 +1,7 @@
 """Fixture recipes are deterministic input data, independent of X recognition."""
 
 import hashlib
+import json
 
 import pytest
 from lxml import etree
@@ -11,6 +12,7 @@ from unit.x_fixtures import (
     FixtureStore,
     canonical_xml,
     fixture_digest,
+    fixture_manifest,
 )
 
 
@@ -133,6 +135,23 @@ def test_inventory_covers_every_stored_case():
     }
     paths = list(FIXTURES.rglob("*.xml")) + list(FIXTURES.rglob("*.case"))
     assert names == {str(p.relative_to(FIXTURES).with_suffix(".xml")) for p in paths}
+
+
+@pytest.mark.parametrize(
+    "inventory",
+    [
+        {},
+        {"fixtures": []},
+        {"cases": []},
+        {"fixtures": None},
+        {"fixtures": [], "cases": []},
+    ],
+)
+def test_manifest_requires_one_nonempty_inventory(tmp_path, inventory):
+    path = tmp_path / "manifest.json"
+    path.write_text(json.dumps({"xml_hash": "canonical-xml-v1", **inventory}))
+    with pytest.raises(FixtureError, match="one nonempty fixture inventory"):
+        fixture_manifest(path)
 
 
 @pytest.mark.parametrize(
