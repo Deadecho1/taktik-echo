@@ -41,6 +41,7 @@ jobs:
           tests/unit/scripts/eval
           tests/unit/test_package_metadata.py
           tests/unit/test_package_requirements.py
+          tests/unit/test_x_fixtures.py
       - name: Check repository layout
         run: python scripts/audits/audit_tree_layout.py
       - name: Build wheel and source distribution
