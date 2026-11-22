@@ -6,6 +6,7 @@ from unittest.mock import Mock
 
 import pytest
 from unit.paths import CORE
+from unit.x_fixtures import xml_fixture
 
 from taktik.core.shared.phone_interaction import Phone, Result, Status
 from taktik.core.social_media.x.services.browsing.navigation import (
@@ -17,7 +18,7 @@ from taktik.core.social_media.x.ui.screen import read_screen
 
 
 def document(name):
-    return ((CORE / "tests/unit/social_media/x/fixtures") / f"{name}.xml").read_text()
+    return xml_fixture((CORE / "tests/unit/social_media/x/fixtures") / f"{name}.xml")
 
 
 def captured_app(name):

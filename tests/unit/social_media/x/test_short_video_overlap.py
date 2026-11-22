@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
+from unit.x_fixtures import xml_fixture
 
 from taktik.core.shared.phone_interaction import Phone
 from taktik.core.social_media.x.services.browsing.navigation import (
@@ -17,7 +18,7 @@ FIXTURES = Path(__file__).with_name("fixtures")
 
 
 def document(name):
-    return (FIXTURES / f"{name}.xml").read_text()
+    return xml_fixture(FIXTURES / f"{name}.xml")
 
 
 def test_short_video_scroll_budget_preserves_overlap_when_body_leaves():

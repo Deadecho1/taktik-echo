@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 from lxml import etree
+from unit.x_fixtures import xml_fixture
 
 from taktik.core.social_media.x.services.browsing.navigation import XError, _alignment
 from taktik.core.social_media.x.ui.screen import read_screen
@@ -12,7 +13,7 @@ FIXTURES = Path(__file__).with_name("fixtures")
 
 def screens(prefix):
     return tuple(
-        read_screen((FIXTURES / f"{prefix}-{stage}.xml").read_text(), (1080, 2340))
+        read_screen(xml_fixture(FIXTURES / f"{prefix}-{stage}.xml"), (1080, 2340))
         for stage in ("before", "after")
     )
 
@@ -37,7 +38,7 @@ def test_action_only_footer_never_establishes_its_own_forward_identity():
     "mutation", ["badge", "badge_text", "badge_control", "handle", "cover"]
 )
 def test_covered_badge_does_not_allow_unknown_header_content(mutation):
-    root = etree.fromstring((FIXTURES / "covered-badge-after.xml").read_bytes())
+    root = etree.fromstring(xml_fixture(FIXTURES / "covered-badge-after.xml").encode())
     header = root.xpath('//*[@resource-id="timeline_post"]')[0]
     if mutation == "badge":
         header[1].set("content-desc", "Unknown")

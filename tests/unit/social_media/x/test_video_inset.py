@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 from lxml import etree
+from unit.x_fixtures import xml_fixture
 
 from taktik.core.social_media.x.services.browsing.navigation import XError, _alignment
 from taktik.core.social_media.x.ui.screen import QuotedPost, read_screen
@@ -14,7 +15,7 @@ SIZE = (1080, 2340)
 
 
 def document(stage):
-    return (FIXTURES / f"video-inset-{stage}.xml").read_bytes()
+    return xml_fixture(FIXTURES / f"video-inset-{stage}.xml").encode()
 
 
 def screens():

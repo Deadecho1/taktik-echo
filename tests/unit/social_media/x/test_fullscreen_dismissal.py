@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 from lxml import etree
+from unit.x_fixtures import xml_fixture
 
 from taktik.core.shared.phone_interaction import (
     InteractionCancelled,
@@ -25,7 +26,7 @@ SIZE = (1080, 2340)
 
 
 def document(number):
-    return (FIXTURES / f"fullscreen-dismissal-{number}.xml").read_text()
+    return xml_fixture(FIXTURES / f"fullscreen-dismissal-{number}.xml")
 
 
 class RawReplay:

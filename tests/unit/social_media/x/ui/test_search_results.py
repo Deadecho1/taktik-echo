@@ -5,6 +5,7 @@ from copy import deepcopy
 import pytest
 from lxml import etree
 from unit.paths import CORE
+from unit.x_fixtures import xml_fixture
 
 from taktik.core.social_media.x.services.browsing.navigation import scroll_region
 from taktik.core.social_media.x.ui.screen import read_screen
@@ -14,7 +15,7 @@ SIZE = (1080, 2340)
 
 
 def test_captured_standalone_results_have_observable_posts_and_a_bounded_viewport():
-    screen = read_screen(FIXTURE.read_text(), SIZE)
+    screen = read_screen(xml_fixture(FIXTURE), SIZE)
     assert screen.kind == "search_results", screen.reason
     assert screen.query == "astronomy" and screen.tab == "Top"
     assert screen.content_viewport == (0, 444, 1080, 2230)
@@ -31,7 +32,7 @@ def test_captured_standalone_results_have_observable_posts_and_a_bounded_viewpor
     "mutation", ["composer", "back", "covered_back", "duplicate_marker"]
 )
 def test_standalone_result_shell_requires_captured_navigation_evidence(mutation):
-    root = etree.parse(str(FIXTURE)).getroot()
+    root = etree.ElementTree(etree.fromstring(xml_fixture(FIXTURE).encode())).getroot()
     if mutation in {"composer", "back"}:
         node = root.xpath(
             ".//*[@content-desc=$label]",
@@ -73,7 +74,7 @@ PASSAGE_FIXTURE = (
     ],
 )
 def test_ambiguous_passage_never_enters_pending(mutation):
-    root = etree.parse(str(PASSAGE_FIXTURE))
+    root = etree.ElementTree(etree.fromstring(xml_fixture(PASSAGE_FIXTURE).encode()))
     header = root.xpath('//*[@resource-id="timeline_post"]')[0]
     container = header.getparent()
     body = container[-1]

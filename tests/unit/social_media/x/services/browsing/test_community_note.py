@@ -4,6 +4,7 @@ from dataclasses import replace
 
 import pytest
 from unit.paths import CORE
+from unit.x_fixtures import xml_fixture
 
 from taktik.core.social_media.x.services.browsing.navigation import (
     XError,
@@ -17,9 +18,7 @@ FIXTURES = CORE / "tests/unit/social_media/x/fixtures"
 
 def screens():
     return tuple(
-        read_screen(
-            (FIXTURES / f"community-note-{stage}.xml").read_text(), (1080, 2340)
-        )
+        read_screen(xml_fixture(FIXTURES / f"community-note-{stage}.xml"), (1080, 2340))
         for stage in ("before", "after")
     )
 

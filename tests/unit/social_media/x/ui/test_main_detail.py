@@ -6,6 +6,7 @@ import json
 import pytest
 from lxml import etree
 from unit.paths import CORE
+from unit.x_fixtures import xml_fixture
 
 from taktik.core.social_media.x.ui.detail import combine_hierarchies
 from taktik.core.social_media.x.ui.screen import read_screen
@@ -15,7 +16,7 @@ SIZE = (1080, 2340)
 
 
 def document(name="image-main"):
-    return (FIXTURES / f"{name}.xml").read_text()
+    return xml_fixture(FIXTURES / f"{name}.xml")
 
 
 def test_main_detail_is_read_independently_with_separate_media_and_timestamp():

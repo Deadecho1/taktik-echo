@@ -8,6 +8,7 @@ from unit.social_media.x.services.browsing.test_quote_body_preview import (
     FIXTURES,
     screens,
 )
+from unit.x_fixtures import xml_fixture
 
 from taktik.core.social_media.x.services.browsing.navigation import (
     XError,
@@ -116,7 +117,9 @@ def test_inset_quote_reread_rejects_uncommanded_changes(scrolling, mutation):
     "mutation", ["unknown_content", "header", "quote_content", "incomplete_footer"]
 )
 def test_inset_video_and_quote_require_an_understood_container(mutation):
-    root = etree.fromstring((FIXTURES / "quoted-video-inset-after.xml").read_bytes())
+    root = etree.fromstring(
+        xml_fixture(FIXTURES / "quoted-video-inset-after.xml").encode()
+    )
     video = root.xpath('//*[@content-desc="Video"]')[0]
     container = video.getparent().getparent()
     quote = root.xpath('//*[@content-desc="Quote"]')[0]

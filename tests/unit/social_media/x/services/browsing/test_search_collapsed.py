@@ -6,6 +6,7 @@ from unittest.mock import Mock
 import pytest
 from lxml import etree
 from unit.paths import CORE
+from unit.x_fixtures import xml_fixture
 
 from taktik.core.shared.phone_interaction import Phone, Result, Status
 from taktik.core.social_media.x.services.browsing.navigation import (
@@ -20,7 +21,7 @@ SIZE = (1080, 2340)
 
 
 def document(stage):
-    return (FIXTURES / f"results-{stage}-scroll.xml").read_text()
+    return xml_fixture(FIXTURES / f"results-{stage}-scroll.xml")
 
 
 def app_at_expanded_results():
@@ -91,7 +92,7 @@ def test_expanded_tab_geometry_without_header_does_not_claim_collapse():
 def test_reaching_home_from_collapsed_search_reveals_and_uses_back():
     app, before = app_at_expanded_results()
     collapsed = read_screen(document("collapsed-after"), SIZE)
-    home = read_screen((FIXTURES / "for-you.xml").read_text(), SIZE)
+    home = read_screen(xml_fixture(FIXTURES / "for-you.xml"), SIZE)
     app.phone.gesture.return_value = Result(Status.SUCCESS)
     app.phone.tap.return_value = Result(Status.SUCCESS)
     app._wait_for = Mock(side_effect=[before, home])
@@ -106,7 +107,7 @@ COVERAGE_FIXTURES = CORE / "tests/unit/social_media/x/fixtures/coverage"
 
 def test_captured_clipped_video_reaches_a_verified_successor():
     documents = [
-        (COVERAGE_FIXTURES / f"search-video-{name}.xml").read_text()
+        xml_fixture(COVERAGE_FIXTURES / f"search-video-{name}.xml")
         for name in ("source", "move-1", "move-2", "successor")
     ]
     screens = [read_screen(xml, SIZE) for xml in documents]
