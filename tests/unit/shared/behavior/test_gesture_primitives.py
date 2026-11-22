@@ -198,7 +198,8 @@ def test_touch_path_distributes_the_complete_duration():
     host._execute_touch_path(touch, _PATH, 0.6)
 
     sleeps = [event[1] for event in touch.events if event[0] == "sleep"]
-    assert abs(sum(sleeps) - 0.6) < 1e-9
+    assert abs(sum(sleeps[:-1]) - 0.6) < 1e-9
+    assert sleeps[-1] >= 0.15
 
 
 def test_long_drag_hands_the_path_to_the_device_without_using_raw_drag(monkeypatch):
@@ -240,6 +241,37 @@ def test_device_path_never_asks_for_a_single_step(monkeypatch):
 
     _, steps = raw.point_calls[0]
     assert steps >= 2
+
+
+def test_device_path_keeps_a_stationary_release_within_the_point_budget():
+    for duration in (0.02, 0.202, 0.590, 10.0):
+        for step_cost in (0.0045, 0.012, 0.060):
+            raw = _RawJsonRpc()
+            setattr(raw, gp._STEP_COST_ATTR, step_cost)
+            host = _Host(raw)
+            host._interaction_rng = random.Random(17)
+
+            assert host._execute_device_path(raw, _PATH, duration)
+
+            (flat, steps), = raw.point_calls
+            points = list(zip(flat[::2], flat[1::2]))
+            assert len(points) <= 400
+            assert points[0] == tuple(_PATH[0])
+            assert points[-1] == tuple(_PATH[-1])
+            assert all(point == points[-1] for point in points[-31:])
+            assert steps == 2
+            assert host._last_gesture_injection["events"] == len(points) - 1
+
+
+def test_device_path_reuses_the_session_randomness():
+    paths = []
+    for _ in range(2):
+        raw = _RawJsonRpc()
+        host = _Host(raw)
+        host._interaction_rng = random.Random(17)
+        assert host._execute_device_path(raw, _PATH, 0.202)
+        paths.append(raw.point_calls)
+    assert paths[0] == paths[1]
 
 
 def test_velocity_scale_changes_the_physical_drag_duration(monkeypatch):

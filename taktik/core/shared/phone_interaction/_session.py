@@ -160,7 +160,7 @@ class Phone:
         return result
 
     def read(self, what):
-        """Read screenshot (PIL), hierarchy (XML), size, clipboard or app info."""
+        """Read screenshot, hierarchy, screen_reader_hierarchy, size, clipboard or app."""
         return self._run("read_" + what, lambda: self._backend.read(what)).require()
 
     def command(self, name, value=None):
@@ -187,7 +187,7 @@ class Phone:
         return self._run("drag", lambda: self._backend.drag(start, end, region))
 
     def enter_text(self, field, text, *, submit=None):
-        """Focus a resource-id field, clear, type, verify exactly, then optionally Enter.
+        """Focus a resource ID or scoped TextField, type and verify exactly.
 
         A callable submission resolves the current platform control after verification.
         No submission takes place after partial input, failed verification or cancellation.

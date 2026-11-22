@@ -1,0 +1,17 @@
+{
+  "kind": "synthetic_native_layout",
+  "size": [
+    1080,
+    2340
+  ],
+  "fixtures": [
+    {
+      "file": "drawer-tip-home.xml",
+      "sha256": "adcccfcfd7f4a5bc3a38ae26bd56b2edc8d21fb0afc43f89bb24fedaff2a277e"
+    },
+    {
+      "file": "drawer-tip.xml",
+      "sha256": "467b34ba6ddf8fc9ab70299c4d4430abe1b05fcb2680d0f4779dc6adaee24cef"
+    }
+  ]
+}

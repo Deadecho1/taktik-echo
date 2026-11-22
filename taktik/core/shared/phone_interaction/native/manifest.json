@@ -1,0 +1,8 @@
+{
+  "minimum_android_api": 26,
+  "compiler_sha256": "9007144728d47b5f11338c9292d5b74899b6579ad9ddc6942d419e3600c3d6d7",
+  "files": {
+    "HierarchyReader.java": "376b15f0ef34107529816c30c02a27500eac8a915215a61e016f1b2ca4f0b65a",
+    "hierarchy-reader.dex": "f418ea12a2df5790d7fee77a03b6ffa098bf6c3b0ce1ebe1aff3e55c603e7e5d"
+  }
+}

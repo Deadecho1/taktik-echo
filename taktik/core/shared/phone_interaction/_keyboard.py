@@ -86,10 +86,14 @@ class Keyboard:
             raise NotImplementedError(
                 "Text submission must be Enter or a control resolver."
             )
+        self._field(resource_id)
         self.prepare()
-        rect = self._field(resource_id)["bounds"]
+        info = self._field(resource_id)
+        rect = info["bounds"]
         self.backend.tap(
-            tuple(rect[k] for k in ("left", "top", "right", "bottom")), (), "tap"
+            tuple(rect[k] for k in ("left", "top", "right", "bottom")),
+            info.get("exclude", ()),
+            "tap",
         )
         for _ in range(30):
             if self._field(resource_id).get("focused"):

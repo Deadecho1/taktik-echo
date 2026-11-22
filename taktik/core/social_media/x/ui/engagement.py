@@ -1,0 +1,190 @@
+"""Native engagement state and scoped menus; no device access."""
+
+from dataclasses import dataclass
+from typing import Literal
+
+from .screen import (
+    HANDLE,
+    Rect,
+    Screen,
+    Target,
+    Visibility,
+    _clickable,
+    _desc,
+    _one,
+    _rect,
+    _target,
+    _Unsupported,
+    _visibility,
+)
+
+
+@dataclass(frozen=True)
+class PostOptions:
+    author: str
+    following: bool
+    feedback_label: str | None
+
+
+@dataclass(frozen=True)
+class FeedbackPreference:
+    kind: Literal["posts", "reposts"]
+    account: str
+
+
+@dataclass(frozen=True)
+class RemovalNotice:
+    action: str
+    text: str
+    author: str | None
+    visibility: Visibility
+    undo: Target
+    message_visibility: Visibility
+    preference: FeedbackPreference | None = None
+    slot_bounds: Rect | None = None
+
+    @property
+    def confirmation_visible(self):
+        return self.message_visibility.unobscured and self.undo.visibility.unobscured
+
+
+def read_notices(scope, viewport, overlays):
+    notices = []
+    for node in scope.xpath('.//*[@class="android.widget.TextView"]'):
+        text = node.get("text", "")
+        if text.startswith("You unfollowed "):
+            action, author = "unfollow", text.removeprefix("You unfollowed ")
+            expected_counts = (2,)
+        elif text == "Thanks. X will use this to make your timeline better.":
+            action, author = "not_interested", None
+            expected_counts = (2, 3, 4)
+        else:
+            continue
+        if author is not None and not HANDLE.fullmatch(author):
+            continue
+        row = node.getparent()
+        ancestors = []
+        for ancestor in node.iterancestors():
+            if ancestor.get("scrollable") == "true":
+                break
+            ancestors.append(ancestor)
+        if any(a.get("clickable") == "true" for a in ancestors):
+            continue
+        texts = row.xpath('.//*[@text!=""]')
+        undo = row.xpath('.//*[@text="Undo"]')
+        if (
+            len(row) not in expected_counts
+            or len(texts) != len(row)
+            or len(undo) != 1
+            or texts[0] is not node
+            or texts[1] is not undo[0]
+        ):
+            continue
+        preference = None
+        if action == "not_interested":
+            if len(texts) > 2:
+                fewer = texts[2].get("text", "")
+                kinds = [
+                    kind
+                    for kind in ("posts", "reposts")
+                    if fewer.startswith(f"Show fewer {kind} from ")
+                ]
+                if len(kinds) != 1:
+                    continue
+                kind = kinds[0]
+                account = "@" + fewer.removeprefix(f"Show fewer {kind} from ")
+                if not HANDLE.fullmatch(account):
+                    continue
+                preference = FeedbackPreference(kind, account)
+            if len(texts) > 3 and texts[3].get("text") != "This post isn’t relevant":
+                continue
+            for extra in texts[2:]:
+                _target(extra, extra.get("text"), row, viewport, overlays)
+        controls = {_clickable(text, row) for text in texts[1:]}
+        if set(row.xpath('.//*[@clickable="true"]')) != controls:
+            continue
+        target = _target(undo[0], "Undo", row, viewport, overlays)
+        visibility = _visibility(row, viewport, overlays)
+        if not _visibility(undo[0], viewport, overlays).accessible:
+            continue
+        if action == "unfollow" and not all(
+            _visibility(n, viewport, overlays).unobscured for n in (row, *texts)
+        ):
+            continue
+        if _rect(node)[2] > target.visibility.bounds[0]:
+            continue
+        slot = (
+            _rect(ancestors[-1])
+            if len(ancestors) > 1
+            and all(len(a) == 1 for a in ancestors[1:])
+            and ancestors[-1].getparent() is not None
+            and ancestors[-1].getparent().get("scrollable") == "true"
+            else None
+        )
+        notices.append(
+            RemovalNotice(
+                action,
+                text,
+                author,
+                visibility,
+                target,
+                _visibility(node, viewport, overlays),
+                preference,
+                slot,
+            )
+        )
+    return tuple(notices)
+
+
+def read_options(root, area, overlays):
+    from .inspection import _control_covers
+
+    close = _one(_desc(root, "Close sheet"), "sheet dismissal")
+    menu = _one(root.xpath('.//*[@class="android.widget.ScrollView"]'), "options list")
+    panel = menu
+    for ancestor in menu.iterancestors():
+        if close in ancestor.iter():
+            break
+        panel = ancestor
+    labels = []
+    controls = [_target(close, "Close sheet", root, area, (*overlays, _rect(panel)))]
+    for row in menu:
+        text = _one(row.xpath('.//*[@text!=""]'), "option label")
+        label = text.get("text")
+        labels.append(label)
+        target = _clickable(text, menu)
+        covers = (*overlays, *_control_covers(menu, target))
+        if not _visibility(text, area, covers).unobscured:
+            raise _Unsupported("Post options are obscured.")
+        controls.append(_target(text, label, menu, area, covers))
+    fixed = {
+        "Add/remove from Lists",
+        "Report post",
+        "Request Community Note",
+        "View Post Interactions",
+        "View Hidden Replies",
+    }
+    feedback_labels = [
+        s for s in labels if s in {"This post's not helpful", "Not interested in Post"}
+    ]
+    if len(feedback_labels) > 1:
+        raise _Unsupported("Ambiguous recommendation feedback.")
+    feedback = feedback_labels[0] if feedback_labels else None
+    follow = _one(
+        [s for s in labels if s.startswith(("Follow ", "Unfollow "))],
+        "follow state option",
+    )
+    author = follow.split(" ", 1)[1]
+    if not HANDLE.fullmatch(author):
+        raise _Unsupported("Invalid options author.")
+    expected = fixed | {follow, f"Mute {author}", f"Block {author}"}
+    if feedback:
+        expected.add(feedback)
+    if len(labels) != len(expected) or set(labels) != expected:
+        raise _Unsupported("Unrecognized post options structure.")
+    return Screen(
+        "post_options",
+        overlaps=overlays,
+        controls=tuple(controls),
+        post_options=PostOptions(author, follow.startswith("Unfollow "), feedback),
+    )

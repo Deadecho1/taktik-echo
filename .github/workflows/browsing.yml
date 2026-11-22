@@ -1,0 +1,49 @@
+name: Browsing compatibility
+
+on:
+  pull_request:
+  push:
+    branches: [main, feature/x-platform]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: browsing-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browsing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: requirements.lock
+      - name: Install test and build dependencies
+        run: python -m pip install -c requirements.lock -r requirements-dev.txt build
+      - name: Check shared and platform browsing
+        run: >-
+          python -m pytest -o addopts='' -q
+          tests/unit/shared
+          tests/unit/social_media/x
+          tests/unit/social_media/instagram/services
+          tests/unit/social_media/tiktok/services
+          tests/unit/scripts/build
+          tests/unit/scripts/eval
+          tests/unit/test_package_metadata.py
+          tests/unit/test_package_requirements.py
+      - name: Check repository layout
+        run: python scripts/audits/audit_tree_layout.py
+      - name: Build wheel and source distribution
+        run: python -m build --no-isolation
+      - name: Verify browsing code and native assets in both distributions
+        run: python scripts/build/verify_browsing_distribution.py dist/*.whl dist/*.tar.gz

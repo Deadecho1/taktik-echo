@@ -35,6 +35,8 @@ def canonicalize(platform, value):
     ):
         raise ValueError("Invalid public post URL.")
     parsed = urlsplit(value)
+    if platform == "x":
+        return _x_url(parsed)
     host = (parsed.hostname or "").lower().removeprefix("www.").removeprefix("m.")
     if (
         parsed.scheme != "https"
@@ -58,3 +60,32 @@ def canonicalize(platform, value):
     ]
     path = parsed.path.rstrip("/") + ("/" if platform == "instagram" else "")
     return urlunsplit(("https", "www." + host, path, urlencode(query), "")), found[1]
+
+
+def _x_url(parsed):
+    hosts = {
+        "x.com",
+        "www.x.com",
+        "m.x.com",
+        "twitter.com",
+        "www.twitter.com",
+        "mobile.twitter.com",
+        "m.twitter.com",
+    }
+    if (
+        parsed.scheme != "https"
+        or parsed.hostname not in hosts
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.port is not None
+    ):
+        raise ValueError("Post URL is outside the selected public platform.")
+    found = re.fullmatch(
+        r"/([A-Za-z0-9_]{1,15})/status/([1-9][0-9]{0,19})/?", parsed.path
+    )
+    if not found or int(found[2]) > 2**64 - 1:
+        raise ValueError("Expected a direct X post URL with an author and native ID.")
+    author, post_id = found.groups()
+    if author.lower() == "i":
+        raise ValueError("An authorless X status URL cannot identify a post author.")
+    return f"https://x.com/{author}/status/{post_id}", post_id

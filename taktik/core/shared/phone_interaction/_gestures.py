@@ -3,6 +3,7 @@
 from taktik.core.shared.behavior.gesture import FULL_REACH_H
 from taktik.core.shared.behavior.gesture_primitives import (
     _drag_duration,
+    _minimum_controlled_travel,
     human_drag_between_raw,
 )
 from taktik.core.shared.behavior.tap import sample_tap_point
@@ -40,23 +41,34 @@ class Gestures:
         distance = (
             distance if distance is not None else h * (0.6 if intent == "page" else 0.4)
         )
-        if not 0 < distance <= h * 0.8:
+        if not 1 <= distance <= h * 0.8:
             raise InteractionError(
                 "Requested gesture travel does not fit the usable region."
+            )
+        minimum = (
+            _minimum_controlled_travel(host.screen_height) if intent == "scroll" else 1
+        )
+        if distance < minimum:
+            raise InteractionError(
+                "Requested travel is below the minimum controlled drag."
             )
 
         geometry = {}
         prepare = host._prepare_gesture_path
+        path_error = None
 
         def validate_path(path, **kwargs):
+            nonlocal path_error
             path = prepare(path, **kwargs)
             travel = abs(path[-1][1] - path[0][1])
-            if not distance * 0.95 - 2 <= travel <= distance + 2:
-                raise InteractionError(
-                    "Sampled gesture cannot satisfy the requested reach."
-                )
-            if not all(l <= x < r and t <= y < b for x, y in path):
-                raise InteractionError("Sampled gesture leaves the usable region.")
+            reason = None
+            if travel < minimum or not distance * 0.95 - 2 <= travel <= distance + 2:
+                reason = "Sampled gesture cannot satisfy the requested reach."
+            elif not all(l <= x < r and t <= y < b for x, y in path):
+                reason = "Sampled gesture leaves the usable region."
+            if reason:
+                path_error = InteractionError(reason)
+                raise path_error
             geometry.update(start=path[0], end=path[-1])
             return path
 
@@ -64,6 +76,9 @@ class Gestures:
 
         def record(action, direction, start, end, duration, **details):
             geometry["duration"] = duration
+            injection = getattr(host, "_last_gesture_injection", None) or {}
+            if "release_hold_min_ms" in injection:
+                geometry["release_hold_min_ms"] = injection["release_hold_min_ms"]
             report(action, direction, start, end, duration, **details)
 
         host._prepare_gesture_path = validate_path
@@ -79,7 +94,9 @@ class Gestures:
         else:
             ok = host._human_swipe(**options, controlled=True)
         if not ok:
-            raise InteractionError("Taktik could not execute the requested gesture.")
+            raise path_error or InteractionError(
+                "Taktik could not execute the requested gesture."
+            )
         phone._emit("gesture_geometry", intent=intent, region=zone, **geometry)
         return geometry
 

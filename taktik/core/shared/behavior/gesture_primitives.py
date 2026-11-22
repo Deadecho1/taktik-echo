@@ -17,28 +17,30 @@ exposing `_device` = the raw u2 device, plus `swipe_coordinates`), `self.screen_
 is documented in `internal docs`.
 """
 
-import time
-import random
+import itertools
 import math
-from typing import Any, List, Optional, Sequence, Tuple
+import random
+import time
+from collections.abc import Sequence
+from typing import Any
 
 from loguru import logger as _gesture_logger
 
-from .gesture import FULL_REACH_H, sample_swipe
-from .sampling import sample_within
 from taktik.core.shared.device.screen import screen_size_of
 from taktik.core.shared.telemetry import emit_step
 
+from .gesture import FULL_REACH_H, SWIPE_FLOOR_H, sample_swipe
+from .sampling import sample_within
 
-_Bounds = Tuple[int, int, int, int]
+_Bounds = tuple[int, int, int, int]
 
 
 def _translate_path(
     path: Sequence[Sequence[int]],
-    start: Tuple[int, int],
+    start: tuple[int, int],
     screen_w: int,
     screen_h: int,
-) -> List[List[int]]:
+) -> list[list[int]]:
     """Translate a sampled path to ``start`` while keeping every point on-screen.
 
     A curve that would leave the screen envelope is shortened as a whole, drift and travel by the
@@ -61,13 +63,18 @@ def _translate_path(
             return (low - origin) / offset
         return 1.0
 
-    scale = min([1.0] + [min(room(sx, ox, x_min, x_max), room(sy, oy, y_min, y_max))
-                         for ox, oy in offsets])
-    return [[sx + int(round(scale * ox)), sy + int(round(scale * oy))] for ox, oy in offsets]
+    scale = min(
+        [1.0]
+        + [
+            min(room(sx, ox, x_min, x_max), room(sy, oy, y_min, y_max))
+            for ox, oy in offsets
+        ]
+    )
+    return [[sx + round(scale * ox), sy + round(scale * oy)] for ox, oy in offsets]
 
 
-def _normalise_bounds(bounds: Sequence[Sequence[int]]) -> List[_Bounds]:
-    valid: List[_Bounds] = []
+def _normalise_bounds(bounds: Sequence[Sequence[int]]) -> list[_Bounds]:
+    valid: list[_Bounds] = []
     for raw in bounds:
         try:
             left, top, right, bottom = (int(value) for value in raw)
@@ -85,7 +92,7 @@ def _relocate_path_outside_bounds(
     avoid_bounds: Sequence[Sequence[int]],
     *,
     rng=None,
-) -> Tuple[List[List[int]], str]:
+) -> tuple[list[list[int]], str]:
     """Move a colliding touch-down into the widest free horizontal gap.
 
     The obstacle geometry comes from the owning platform's live UI dump. Only ratio-based screen
@@ -106,8 +113,8 @@ def _relocate_path_outside_bounds(
 
     rng = rng or random
     sx, sy = guarded[0]
-    pad_x = max(2, int(round(0.012 * screen_w)))
-    pad_y = max(2, int(round(0.008 * screen_h)))
+    pad_x = max(2, round(0.012 * screen_w))
+    pad_y = max(2, round(0.008 * screen_h))
     crossing = [
         (max(0, left - pad_x), min(screen_w, right + pad_x))
         for left, top, right, bottom in bounds
@@ -124,16 +131,16 @@ def _relocate_path_outside_bounds(
             # and Save.
             left, right = max(gaps, key=lambda gap: gap[1] - gap[0])
             inset = 0.25 * (right - left)
-            safe_x = int(round(rng.uniform(left + inset, right - inset)))
+            safe_x = round(rng.uniform(left + inset, right - inset))
             return _translate_path(candidate, (safe_x, sy), screen_w, screen_h), "moved"
     return guarded, "blocked"
 
 
 def _free_gaps(
     path: Sequence[Sequence[int]],
-    crossing: Sequence[Tuple[int, int]],
+    crossing: Sequence[tuple[int, int]],
     screen_w: int,
-) -> List[Tuple[int, int]]:
+) -> list[tuple[int, int]]:
     """The free spans of the touch-down row where the whole ``path`` can start and stay inside
     the same ratio-based screen envelope as sample_swipe."""
     sx = int(path[0][0])
@@ -148,14 +155,14 @@ def _free_gaps(
         for left, right in crossing
         if right >= safe_left and left <= safe_right
     )
-    merged: List[List[int]] = []
+    merged: list[list[int]] = []
     for left, right in intervals:
         if not merged or left > merged[-1][1]:
             merged.append([left, right])
         else:
             merged[-1][1] = max(merged[-1][1], right)
 
-    gaps: List[Tuple[int, int]] = []
+    gaps: list[tuple[int, int]] = []
     cursor = safe_left
     for left, right in merged:
         if left > cursor:
@@ -170,10 +177,10 @@ def _move_path_into_x_band(
     path: Sequence[Sequence[int]],
     screen_w: int,
     screen_h: int,
-    band: Tuple[float, float],
+    band: tuple[float, float],
     *,
     rng=None,
-) -> Tuple[List[List[int]], bool]:
+) -> tuple[list[list[int]], bool]:
     """Fallback when a post is visible but its action bounds could not be read."""
     guarded = [list(point) for point in path]
     if not guarded:
@@ -185,13 +192,24 @@ def _move_path_into_x_band(
     sx, sy = guarded[0]
     if lo <= sx <= hi:
         return guarded, False
-    safe_x = int(round(rng.uniform(lo, hi)))
+    safe_x = round(rng.uniform(lo, hi))
     return _translate_path(guarded, (safe_x, sy), screen_w, screen_h), True
+
+
+_TOUCH_DEPARTURE_H = (0.032, 0.045)
+
+
+def _minimum_controlled_travel(screen_h: int) -> int:
+    """Conservative host clearance, shared with the existing drag departure.
+
+    This is not a queried Android touch-slop value or proof of content movement.
+    """
+    return max(1, math.ceil(_TOUCH_DEPARTURE_H[0] * screen_h))
 
 
 def _touch_move_path(
     path: Sequence[Sequence[int]], screen_h: int, *, rng=None
-) -> List[List[int]]:
+) -> list[list[int]]:
     """Return move points whose first event immediately clears Android's touch-slop.
 
     The first displacement varies, and is injected without a preceding sleep: this keeps the
@@ -206,9 +224,9 @@ def _touch_move_path(
     total = math.hypot(ex - sx, ey - sy)
     if total <= 0:
         return points[1:]
-    exit_distance = min(total, rng.uniform(0.032, 0.045) * screen_h)
+    exit_distance = min(total, rng.uniform(*_TOUCH_DEPARTURE_H) * screen_h)
     ratio = exit_distance / total
-    first = [int(round(sx + (ex - sx) * ratio)), int(round(sy + (ey - sy) * ratio))]
+    first = [round(sx + (ex - sx) * ratio), round(sy + (ey - sy) * ratio)]
     moves = [first]
     for point in points[1:]:
         if math.hypot(point[0] - sx, point[1] - sy) > exit_distance * 1.05:
@@ -254,16 +272,23 @@ def _observe_step_cost(raw, seconds_per_move: float) -> None:
         return
     low, high = _STEP_COST_BOUNDS
     previous = getattr(raw, _STEP_COST_ATTR, None)
-    blended = seconds_per_move if previous is None else previous * 0.7 + seconds_per_move * 0.3
+    blended = (
+        seconds_per_move
+        if previous is None
+        else previous * 0.7 + seconds_per_move * 0.3
+    )
     try:
         setattr(raw, _STEP_COST_ATTR, min(max(blended, low), high))
-    except Exception:
-        pass          # a device object that refuses attributes just keeps the nominal seed
+    except Exception:  # noqa: BLE001, S110 - Refused calibration caching keeps the nominal seed.
+        pass
+
+
 # `UiDevice.swipe(Point[], segmentSteps)` injects `segmentSteps - 1` moves per segment: at 1 it
 # injects NONE and the gesture degrades to a bare down/up pair — a TAP. 2 gives exactly one move
 # per segment, so every injected position is one of ours and none is interpolated by the device.
 _DEVICE_SEGMENT_STEPS = 2
 _DEVICE_MAX_POINTS = 400
+_RELEASE_HOLD_S = 0.15
 
 
 # A hand keeping contact with the glass while it drags: roughly 0.8-3.2 k px/s. `_long_drag` already
@@ -274,8 +299,9 @@ _CONTROLLED_VEL_RANGE = (800.0, 3200.0)
 _LONG_DRAG_VEL_RANGE = (1500.0, 2200.0)
 
 
-def _controlled_duration(duration: float, distance_px: float, speed: float = 1.0,
-                         redraw=None, rng=None) -> float:
+def _controlled_duration(
+    duration: float, distance_px: float, speed: float = 1.0, redraw=None, rng=None
+) -> float:
     """Keep a controlled gesture's implied velocity inside the human accompanied-drag band.
 
     `sample_swipe` takes its duration from a randomly chosen REAL swipe and only rescales it by
@@ -293,8 +319,12 @@ def _controlled_duration(duration: float, distance_px: float, speed: float = 1.0
     lo, hi = _CONTROLLED_VEL_RANGE[0] * speed, _CONTROLLED_VEL_RANGE[1] * speed
     shortest, longest = distance_px / hi, distance_px / lo
     return sample_within(
-        redraw or (lambda: duration), shortest, longest,
-        rng=rng, first=duration, max_tries=32 if redraw else 0,
+        redraw or (lambda: duration),
+        shortest,
+        longest,
+        rng=rng,
+        first=duration,
+        max_tries=32 if redraw else 0,
         edge_band=0.10 * (longest - shortest),
     )
 
@@ -303,26 +333,42 @@ def _fling_total_duration(dy: float, *, rng=None) -> float:
     """Total duration of the legacy curved fling: dy over a release velocity of 2800-3800 px/s,
     kept in 0.06-0.24 s by drawing the velocity again. A flick too short (or too long) for any
     velocity of the band lands in a narrow strip beside the limit instead of on it."""
-    return sample_within(lambda: dy / (rng or random).uniform(2800, 3800), 0.06, 0.24, rng=rng, edge_band=0.02)
+    return sample_within(
+        lambda: dy / (rng or random).uniform(2800, 3800),
+        0.06,
+        0.24,
+        rng=rng,
+        edge_band=0.02,
+    )
 
 
-def _flick_duration(dy: float, vel_range: Tuple[float, float], *, rng=None) -> float:
+def _flick_duration(dy: float, vel_range: tuple[float, float], *, rng=None) -> float:
     """Duration of a decisive flick: dy over a release velocity drawn from `vel_range`.
 
     The floor (45 ms, enough steps for uiautomator2 to inject a real move) and the ceiling
     (110 ms, still a fling) are not piled on: a velocity that misses is drawn again. Most feed
     flicks are too short for any velocity of the band to reach the floor; those take a duration
     in the 45-75 ms strip above it, as they already did."""
-    return sample_within(lambda: dy / (rng or random).uniform(*vel_range), 0.045, 0.11,
-                         rng=rng, edge_band=(0.030, 0.015))
+    return sample_within(
+        lambda: dy / (rng or random).uniform(*vel_range),
+        0.045,
+        0.11,
+        rng=rng,
+        edge_band=(0.030, 0.015),
+    )
 
 
-def _drag_duration(dy: float, vel_range: Tuple[float, float], *, rng=None) -> float:
+def _drag_duration(dy: float, vel_range: tuple[float, float], *, rng=None) -> float:
     """Duration of a long continuous drag: dy over a velocity drawn from `vel_range`, in
     0.40-0.85 s. A long drag near the top of the band draws its velocity again rather than
     lasting exactly 0.85 s -- which nine drags in ten of 0.75h did."""
-    return sample_within(lambda: dy / (rng or random).uniform(*vel_range), 0.40, 0.85,
-                         rng=rng, edge_band=0.06)
+    return sample_within(
+        lambda: dy / (rng or random).uniform(*vel_range),
+        0.40,
+        0.85,
+        rng=rng,
+        edge_band=0.06,
+    )
 
 
 def _min_jerk(u: float) -> float:
@@ -337,8 +383,13 @@ def _min_jerk(u: float) -> float:
 
 
 def _resample_by_time(
-    path: Sequence[Sequence[int]], n_out: int, screen_w: int, *, easing=_min_jerk, rng=None
-) -> List[List[int]]:
+    path: Sequence[Sequence[int]],
+    n_out: int,
+    screen_w: int,
+    *,
+    easing=_min_jerk,
+    rng=None,
+) -> list[list[int]]:
     """Resample a polyline into `n_out` positions equally spaced in TIME, not in distance.
 
     The device spends the same time on every segment handed to it, so the SPACING of these points
@@ -348,15 +399,15 @@ def _resample_by_time(
     """
     pts = [(float(p[0]), float(p[1])) for p in path]
     if len(pts) < 2 or n_out < 2:
-        return [[int(round(x)), int(round(y))] for x, y in pts]
+        return [[round(x), round(y)] for x, y in pts]
     rng = rng or random
 
     cum = [0.0]
-    for a, b in zip(pts, pts[1:]):
+    for a, b in itertools.pairwise(pts):
         cum.append(cum[-1] + math.hypot(b[0] - a[0], b[1] - a[1]))
     total = cum[-1]
     if total <= 0:
-        return [[int(round(x)), int(round(y))] for x, y in pts]
+        return [[round(x), round(y)] for x, y in pts]
 
     # Physiological tremor: ONE slow bow across the gesture, never per-point noise. White noise at
     # Per-point noise would inject velocity error into the slow end phase, which is exactly what
@@ -365,7 +416,7 @@ def _resample_by_time(
     freq = rng.uniform(1.2, 2.6)
     phase = rng.uniform(0.0, 2.0 * math.pi)
 
-    out: List[List[int]] = []
+    out: list[list[int]] = []
     seg = 0
     for i in range(n_out):
         u = i / (n_out - 1)
@@ -380,16 +431,18 @@ def _resample_by_time(
         norm = math.hypot(dx, dy) or 1.0
         # Envelope vanishes at both ends so the requested endpoints stay exact — callers aim at a
         # grab bar or a guarded start zone and must land on it.
-        wobble = amp * math.sin(freq * 2.0 * math.pi * u + phase) * math.sin(math.pi * u)
-        out.append([int(round(x - dy / norm * wobble)), int(round(y + dx / norm * wobble))])
-    out[0] = [int(round(pts[0][0])), int(round(pts[0][1]))]
-    out[-1] = [int(round(pts[-1][0])), int(round(pts[-1][1]))]
+        wobble = (
+            amp * math.sin(freq * 2.0 * math.pi * u + phase) * math.sin(math.pi * u)
+        )
+        out.append([round(x - dy / norm * wobble), round(y + dx / norm * wobble)])
+    out[0] = [round(pts[0][0]), round(pts[0][1])]
+    out[-1] = [round(pts[-1][0]), round(pts[-1][1])]
     return out
 
 
-def _requested(distance_px: Optional[float]) -> Optional[int]:
+def _requested(distance_px: float | None) -> int | None:
     """The travel a gesture was asked for, next to the one it covered (`distance_px`)."""
-    return None if distance_px is None else int(round(abs(distance_px)))
+    return None if distance_px is None else round(abs(distance_px))
 
 
 class GestureMixin:
@@ -418,20 +471,35 @@ class GestureMixin:
         dy = abs(path[-1][1] - path[0][1]) or 1
         return _fling_total_duration(dy)
 
-    def _report_gesture(self, action: str, direction: str, start: Sequence[float], end: Sequence[float],
-                        duration: float, **detail) -> None:
+    def _report_gesture(
+        self,
+        action: str,
+        direction: str,
+        start: Sequence[float],
+        end: Sequence[float],
+        duration: float,
+        **detail,
+    ) -> None:
         """One journal line and one step metric per gesture: where the finger went down, where it
         lifted, how long it took. A tap writes its point (`human_tap_at`); a scroll wrote only the
         metric, which reaches stdout only when a bridge has wired a telemetry sink."""
         (sx, sy), (ex, ey) = start, end
-        self.logger.debug(f"Gesture {action} {direction}: ({int(sx)}, {int(sy)}) -> ({int(ex)}, {int(ey)}) "
-                          f"in {round(duration * 1000)} ms")
+        self.logger.debug(
+            f"Gesture {action} {direction}: ({int(sx)}, {int(sy)}) -> ({int(ex)}, {int(ey)}) "
+            f"in {round(duration * 1000)} ms"
+        )
         emit_step("scroll", action=action, target=direction, **detail)
 
-    def _human_swipe(self, direction: str = "up", distance_px: Optional[float] = None,
-                     start_band: Optional[tuple] = None, controlled: bool = False,
-                     guard_start: bool = False,
-                     velocity_scale: float = 1.0, bounds: Optional[tuple] = None) -> bool:
+    def _human_swipe(
+        self,
+        direction: str = "up",
+        distance_px: float | None = None,
+        start_band: tuple | None = None,
+        controlled: bool = False,
+        guard_start: bool = False,
+        velocity_scale: float = 1.0,
+        bounds: tuple | None = None,
+    ) -> bool:
         """Curved multi-point swipe via `swipe_points` (or the raw touch API when `controlled`).
         Kept for callers that want a sampled curve; the decisive feed advance uses `_strong_flick`.
 
@@ -439,20 +507,50 @@ class GestureMixin:
         final segment the slowest, so it does NOT trigger a real fling (the content tracks the
         finger ~1:1). For a true coast use `_strong_flick`."""
         try:
-            l, t, r, b = bounds or (0, 0, int(self.screen_width), int(self.screen_height))
+            minimum = _minimum_controlled_travel(self.screen_height)
+            if (
+                controlled
+                and distance_px is not None
+                and (not math.isfinite(distance_px) or abs(distance_px) < minimum)
+            ):
+                raise ValueError(
+                    "Requested travel is below the minimum controlled drag or nonfinite."
+                )
+            l, t, r, b = bounds or (
+                0,
+                0,
+                int(self.screen_width),
+                int(self.screen_height),
+            )
+
             def sample():
                 path, duration = sample_swipe(
-                    r - l, b - t,
-                    direction=direction, distance_px=distance_px, start_band=start_band,
+                    r - l,
+                    b - t,
+                    direction=direction,
+                    distance_px=distance_px,
+                    start_band=start_band,
                     # Controlled 1:1 gestures often need half to two-thirds of a screen. The
                     # historical 0.34h cap was tuned for the coasting curve and silently shortened
                     # grid/retry drags.
-                    dist_cap_h=FULL_REACH_H if controlled else 0.34, rng=self._interaction_rng,
+                    dist_cap_h=FULL_REACH_H if controlled else 0.34,
+                    rng=self._interaction_rng,
+                    # An explicit controlled request can protect an anchor shorter than the
+                    # calibrated swipe floor. Its caller verifies the actual requested reach.
+                    dist_floor_h=0.0
+                    if controlled and distance_px is not None
+                    else SWIPE_FLOOR_H,
                 )
                 return [[x + l, y + t] for x, y in path], duration
 
             path, duration = sample()
             path = self._prepare_gesture_path(path, guard_start=guard_start)
+            if (
+                controlled
+                and distance_px is not None
+                and abs(path[-1][1] - path[0][1]) < minimum
+            ):
+                raise ValueError("Sampled path is below the minimum controlled drag.")
             speed = min(1.50, max(0.60, float(velocity_scale)))
             duration = duration / speed
             if controlled:
@@ -461,15 +559,20 @@ class GestureMixin:
                 # `_fling_total` and never needed this. A duration out of the band is replaced by
                 # the duration of another sampled swipe for the same request.
                 duration = _controlled_duration(
-                    duration, abs(path[-1][1] - path[0][1]), speed,
-                    redraw=lambda: sample()[1] / speed, rng=self._interaction_rng,
+                    duration,
+                    abs(path[-1][1] - path[0][1]),
+                    speed,
+                    redraw=lambda: sample()[1] / speed,
+                    rng=self._interaction_rng,
                 )
             n_seg = max(1, len(path) - 1)
             raw = getattr(self.device, "_device", None)
 
             # Controlled = the content must track the finger 1:1, so the path is paced ON the
             # device. Uncontrolled already goes down in one call as a fling profile.
-            executed = bool(controlled) and self._execute_device_path(raw, path, duration)
+            executed = bool(controlled) and self._execute_device_path(
+                raw, path, duration
+            )
             if controlled and not executed:
                 touch = self._touch_api(raw)
                 if touch is not None:
@@ -481,27 +584,44 @@ class GestureMixin:
                     total = duration if controlled else self._fling_total(path)
                     raw.swipe_points(path, total / n_seg)
                 else:
-                    self.device.swipe_coordinates(path[0][0], path[0][1], path[-1][0], path[-1][1],
-                                                  duration if controlled else self._fling_total(path))
+                    self.device.swipe_coordinates(
+                        path[0][0],
+                        path[0][1],
+                        path[-1][0],
+                        path[-1][1],
+                        duration if controlled else self._fling_total(path),
+                    )
             self._report_gesture(
-                "curve", direction, path[0], path[-1],
+                "curve",
+                direction,
+                path[0],
+                path[-1],
                 duration if controlled else self._fling_total(path),
                 requested_px=_requested(distance_px),
-                distance_px=int(abs(path[-1][1] - path[0][1])), points=len(path),
-                controlled=controlled, velocity_scale=round(speed, 3),
-                paced=(getattr(self, "_last_gesture_injection", None) or {}).get("mode"),
+                distance_px=int(abs(path[-1][1] - path[0][1])),
+                points=len(path),
+                controlled=controlled,
+                velocity_scale=round(speed, 3),
+                paced=(getattr(self, "_last_gesture_injection", None) or {}).get(
+                    "mode"
+                ),
             )
             self._interaction_sleep(0.1)
             return True
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - Legacy gesture API returns failure for backend errors.
             self.logger.error(f"Error in human swipe ({direction}): {e}")
             return False
 
-    def _strong_flick(self, direction: str = "up", distance_px: Optional[float] = None,
-                      vel_range: tuple = (9000.0, 13000.0),
-                      guard_start: bool = False,
-                      velocity_scale: float = 1.0, bounds: Optional[tuple] = None,
-                      dist_cap_h: float = 0.45) -> bool:
+    def _strong_flick(
+        self,
+        direction: str = "up",
+        distance_px: float | None = None,
+        vel_range: tuple = (9000.0, 13000.0),
+        guard_start: bool = False,
+        velocity_scale: float = 1.0,
+        bounds: tuple | None = None,
+        dist_cap_h: float = 0.45,
+    ) -> bool:
         """A decisive fast FLICK that triggers a REAL Android fling so the content COASTS well past
         the finger (~2.5-4x the finger distance) — one gesture reveals a whole post.
 
@@ -512,10 +632,20 @@ class GestureMixin:
         still sampled from real data; only the execution is the high-velocity straight line.
         `vel_range` is the release velocity in px/s (Lab-calibrated; far above the fling floor)."""
         try:
-            l, t, r, b = bounds or (0, 0, int(self.screen_width), int(self.screen_height))
-            path, _ = sample_swipe(r - l, b - t,
-                                   direction=direction, distance_px=distance_px,
-                                   dist_cap_h=dist_cap_h, rng=self._interaction_rng)
+            l, t, r, b = bounds or (
+                0,
+                0,
+                int(self.screen_width),
+                int(self.screen_height),
+            )
+            path, _ = sample_swipe(
+                r - l,
+                b - t,
+                direction=direction,
+                distance_px=distance_px,
+                dist_cap_h=dist_cap_h,
+                rng=self._interaction_rng,
+            )
             path = [[x + l, y + t] for x, y in path]
             path = self._prepare_gesture_path(path, guard_start=guard_start)
             (sx, sy), (ex, ey) = path[0], path[-1]
@@ -532,21 +662,31 @@ class GestureMixin:
             else:
                 self.device.swipe_coordinates(sx, sy, ex, ey, duration)
             self._report_gesture(
-                "flick", direction, (sx, sy), (ex, ey), duration,
-                requested_px=_requested(distance_px), distance_px=int(dy), duration_ms=round(duration * 1000),
+                "flick",
+                direction,
+                (sx, sy),
+                (ex, ey),
+                duration,
+                requested_px=_requested(distance_px),
+                distance_px=int(dy),
+                duration_ms=round(duration * 1000),
                 velocity_scale=round(speed, 3),
             )
             self._interaction_sleep(0.05)
             return True
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - Legacy gesture API returns failure for backend errors.
             self.logger.error(f"Error in strong flick ({direction}): {e}")
             return False
 
-    def _long_drag(self, direction: str = "up", distance_px: Optional[float] = None,
-                   vel_range: tuple = _LONG_DRAG_VEL_RANGE,
-                   start_point: Optional[Tuple[int, int]] = None,
-                   guard_start: bool = False,
-                   velocity_scale: float = 1.0) -> bool:
+    def _long_drag(
+        self,
+        direction: str = "up",
+        distance_px: float | None = None,
+        vel_range: tuple = _LONG_DRAG_VEL_RANGE,
+        start_point: tuple[int, int] | None = None,
+        guard_start: bool = False,
+        velocity_scale: float = 1.0,
+    ) -> bool:
         """A long CONTINUOUS finger-down drag ("keep the finger on the screen and push"). It tracks
         the finger 1:1 and lifts at ~zero velocity (no fling, no coast), landing exactly where the
         finger stops. Starts LOW (but clear of the bottom nav bar) so it has room to travel ~0.8h
@@ -554,12 +694,22 @@ class GestureMixin:
         falls back to `swipe_points`, then to a plain swipe."""
         try:
             h = int(self.screen_height)
-            target = distance_px if distance_px is not None else self._interaction_rng.uniform(0.78, 0.90) * h
+            target = (
+                distance_px
+                if distance_px is not None
+                else self._interaction_rng.uniform(0.78, 0.90) * h
+            )
             # Start band kept above the bottom navigation bar: a touch-down on a tab opens it
             # instead of scrolling. The band still leaves the drag room to travel upward.
-            path, _ = sample_swipe(int(self.screen_width), h, direction=direction,
-                                   distance_px=target, start_band=(0.78 * h, 0.85 * h),
-                                   dist_cap_h=FULL_REACH_H, rng=self._interaction_rng)
+            path, _ = sample_swipe(
+                int(self.screen_width),
+                h,
+                direction=direction,
+                distance_px=target,
+                start_band=(0.78 * h, 0.85 * h),
+                dist_cap_h=FULL_REACH_H,
+                rng=self._interaction_rng,
+            )
             path = self._prepare_gesture_path(
                 path, start_point=start_point, guard_start=guard_start
             )
@@ -578,14 +728,22 @@ class GestureMixin:
                 else:
                     self.device.swipe_coordinates(sx, sy, ex, ey, duration)
             self._report_gesture(
-                "drag", direction, (sx, sy), (ex, ey), duration,
-                requested_px=_requested(target), distance_px=int(dy), duration_ms=round(duration * 1000),
+                "drag",
+                direction,
+                (sx, sy),
+                (ex, ey),
+                duration,
+                requested_px=_requested(target),
+                distance_px=int(dy),
+                duration_ms=round(duration * 1000),
                 velocity_scale=round(speed, 3),
-                paced=(getattr(self, "_last_gesture_injection", None) or {}).get("mode"),
+                paced=(getattr(self, "_last_gesture_injection", None) or {}).get(
+                    "mode"
+                ),
             )
             self._interaction_sleep(0.08)
             return True
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - Legacy gesture API returns failure for backend errors.
             self.logger.error(f"Error in long drag ({direction}): {e}")
             return False
 
@@ -596,13 +754,17 @@ class GestureMixin:
             return None
         try:
             touch = getattr(raw, "touch", None)
-        except Exception:
+        except Exception:  # noqa: BLE001 - Optional backend properties can fail during discovery.
             return None
-        if touch is None or not all(hasattr(touch, name) for name in ("down", "move", "up", "sleep")):
+        if touch is None or not all(
+            hasattr(touch, name) for name in ("down", "move", "up", "sleep")
+        ):
             return None
         return touch
 
-    def _execute_device_path(self, raw, path: Sequence[Sequence[int]], duration: float) -> bool:
+    def _execute_device_path(
+        self, raw, path: Sequence[Sequence[int]], duration: float
+    ) -> bool:
         """Hand the whole gesture to the DEVICE in ONE round trip and let it pace itself.
 
         Returns False when the device exposes no usable entry point, so callers keep their
@@ -623,20 +785,36 @@ class GestureMixin:
         if raw is None:
             return False
         step_cost = _step_cost(raw)
-        n_events = max(2, min(_DEVICE_MAX_POINTS - 1,
-                              int(round(max(duration, 0.02) / step_cost))))
-        points = _resample_by_time(path, n_events + 1, int(self.screen_width))
+        # A slow final point alone leaves fast movement in Android's velocity history.
+        # Size the stationary tail by the mandatory device sleep, not a stale cadence estimate.
+        release_moves = math.ceil(_RELEASE_HOLD_S / _U2_STEP_QUANTUM)
+        n_events = max(
+            2,
+            min(
+                _DEVICE_MAX_POINTS - 1 - release_moves,
+                round(max(duration, 0.02) / step_cost),
+            ),
+        )
+        points = _resample_by_time(
+            path, n_events + 1, int(self.screen_width), rng=self._interaction_rng
+        )
+        points.extend([points[-1][:] for _ in range(release_moves)])
         n_seg = len(points) - 1
         moves = n_seg * (_DEVICE_SEGMENT_STEPS - 1)
-        info = {"mode": "device", "events": moves, "rpc_calls": 1,
-                "step_cost_ms": round(step_cost * 1000, 1),
-                "planned_ms": round(moves * step_cost * 1000),
-                "planned_hz": round(1.0 / step_cost)}
+        info = {
+            "mode": "device",
+            "events": moves,
+            "rpc_calls": 1,
+            "step_cost_ms": round(step_cost * 1000, 1),
+            "planned_ms": round(moves * step_cost * 1000),
+            "release_hold_min_ms": round(_RELEASE_HOLD_S * 1000),
+            "planned_hz": round(1.0 / step_cost),
+        }
         started = self._interaction_clock()
         try:
             jsonrpc = getattr(raw, "jsonrpc", None)
             if jsonrpc is not None and hasattr(jsonrpc, "swipePoints"):
-                flat: List[int] = []
+                flat: list[int] = []
                 for x, y in points:
                     flat.extend((int(x), int(y)))
                 jsonrpc.swipePoints(flat, _DEVICE_SEGMENT_STEPS)
@@ -645,11 +823,15 @@ class GestureMixin:
                 # int(per_segment_duration / 0.005). Aim at the middle of the bucket so float error
                 # can never round it down to 1 — at 1 the device injects no move at all and the
                 # drag becomes a tap.
-                raw.swipe_points(points, (_DEVICE_SEGMENT_STEPS + 0.5) * _U2_STEP_QUANTUM)
+                raw.swipe_points(
+                    points, (_DEVICE_SEGMENT_STEPS + 0.5) * _U2_STEP_QUANTUM
+                )
             else:
                 return False
-        except Exception as exc:
-            self.logger.debug(f"device-paced path unavailable ({exc}); falling back to RPC pacing")
+        except Exception as exc:  # noqa: BLE001 - Retain the legacy transport fallback.
+            self.logger.debug(
+                f"device-paced path unavailable ({exc}); falling back to RPC pacing"
+            )
             return False
         elapsed = self._interaction_clock() - started
         # One round trip is in there too; charging it to the events would inflate the estimate on
@@ -660,7 +842,9 @@ class GestureMixin:
         self._last_gesture_injection = info
         return True
 
-    def _execute_touch_path(self, touch, path: Sequence[Sequence[int]], duration: float) -> None:
+    def _execute_touch_path(
+        self, touch, path: Sequence[Sequence[int]], duration: float
+    ) -> None:
         """Inject DOWN -> immediate MOVE -> paced path -> near-zero-velocity UP.
 
         FALLBACK ONLY — `_execute_device_path` is the normal route. Every event here costs a
@@ -673,7 +857,9 @@ class GestureMixin:
             return
         per_move = duration / max(1, len(moves))
         self._last_gesture_injection = {
-            "mode": "rpc", "events": len(moves), "rpc_calls": len(moves) + 2,
+            "mode": "rpc",
+            "events": len(moves),
+            "rpc_calls": len(moves) + 2,
             "planned_ms": round(duration * 1000),
             "planned_hz": round(len(moves) / max(duration, 1e-3)),
         }
@@ -687,21 +873,22 @@ class GestureMixin:
                 touch.move(x, y)
                 last_x, last_y = x, y
                 touch.sleep(per_move)
+            touch.sleep(_RELEASE_HOLD_S)
             touch.up(path[-1][0], path[-1][1])
             down_sent = False
         finally:
             if down_sent:
                 try:
                     touch.up(last_x, last_y)
-                except Exception:
+                except Exception:  # noqa: BLE001, S110 - Preserve the original failure if cleanup fails.
                     pass
 
     def _prepare_gesture_path(
         self,
         path: Sequence[Sequence[int]],
-        start_point: Optional[Tuple[int, int]] = None,
+        start_point: tuple[int, int] | None = None,
         guard_start: bool = False,
-    ) -> List[List[int]]:
+    ) -> list[list[int]]:
         """Apply an optional requested start, then the platform-owned interactive-zone guard."""
         screen_w, screen_h = int(self.screen_width), int(self.screen_height)
         sampled_start = tuple(path[0])
@@ -715,11 +902,11 @@ class GestureMixin:
         if guard_start and callable(provider):
             try:
                 bounds = provider()
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 - An optional bounds provider can be unavailable.
                 bounds = None
                 try:
                     self.logger.debug(f"gesture start bounds unavailable: {exc}")
-                except Exception:
+                except Exception:  # noqa: BLE001, S110 - A diagnostic logger must not disable the fallback.
                     pass
             if bounds is None:
                 fallback_provider = getattr(self, "_gesture_fallback_safe_x_band", None)
@@ -738,8 +925,11 @@ class GestureMixin:
                         "of its row holds the curve: it stays there"
                     )
                 if bounds:
-                    source = {"moved": "ui_bounds", "clear": "ui_bounds_clear",
-                              "blocked": "ui_bounds_blocked"}[outcome]
+                    source = {
+                        "moved": "ui_bounds",
+                        "clear": "ui_bounds_clear",
+                        "blocked": "ui_bounds_blocked",
+                    }[outcome]
 
         final_start = tuple(prepared[0])
         self._last_gesture_start = {
@@ -751,11 +941,15 @@ class GestureMixin:
         }
         return prepared
 
-    def _human_horizontal_swipe(self, direction: str = "left", distance_ratio: float = 0.6,
-                                y_ratio: Optional[float] = None,
-                                bounds: Optional[_Bounds] = None,
-                                distance_scale: float = 1.0,
-                                velocity_scale: float = 1.0) -> bool:
+    def _human_horizontal_swipe(
+        self,
+        direction: str = "left",
+        distance_ratio: float = 0.6,
+        y_ratio: float | None = None,
+        bounds: _Bounds | None = None,
+        distance_scale: float = 1.0,
+        velocity_scale: float = 1.0,
+    ) -> bool:
         """Humanized HORIZONTAL swipe (carousels, story-advance, story/highlight trays).
         `sample_swipe` is vertical-only (it hard-caps horizontal drift so a feed scroll never reads
         as a story-camera swipe), so horizontal motion needs its own profile: a varied start point
@@ -774,17 +968,27 @@ class GestureMixin:
                 if right <= left or bottom <= top:
                     raise ValueError(f"invalid horizontal swipe bounds: {bounds}")
                 local_w, local_h = right - left, bottom - top
-                sy = (top + bottom) / 2 + local_h * self._interaction_rng.uniform(-0.025, 0.025)
-                ey = sy + min(0.02 * h, 0.04 * local_h) * self._interaction_rng.uniform(-1.0, 1.0)
+                sy = (top + bottom) / 2 + local_h * self._interaction_rng.uniform(
+                    -0.025, 0.025
+                )
+                ey = sy + min(0.02 * h, 0.04 * local_h) * self._interaction_rng.uniform(
+                    -1.0, 1.0
+                )
                 span, x0 = local_w, left
                 if direction == "left":
                     start_band = (0.78, 0.86)
                 else:
                     start_band = (0.14, 0.22)
             else:
-                base_y = y_ratio if y_ratio is not None else self._interaction_rng.uniform(0.42, 0.58)
+                base_y = (
+                    y_ratio
+                    if y_ratio is not None
+                    else self._interaction_rng.uniform(0.42, 0.58)
+                )
                 sy = h * base_y
-                ey = sy + h * self._interaction_rng.uniform(-0.02, 0.02)      # slight vertical wobble
+                ey = sy + h * self._interaction_rng.uniform(
+                    -0.02, 0.02
+                )  # slight vertical wobble
                 span, x0 = w, 0
                 if direction == "left":
                     start_band = (0.78, 0.88)
@@ -799,24 +1003,40 @@ class GestureMixin:
             # a long reach does not lift every swipe on the same column.
             ex = sample_within(
                 lambda: sx + sign * nominal * self._interaction_rng.uniform(0.9, 1.05),
-                x0 + 0.05 * span, x0 + 0.95 * span,
-                rng=self._interaction_rng, first=sx + sign * dist, edge_band=0.04 * span,
+                x0 + 0.05 * span,
+                x0 + 0.95 * span,
+                rng=self._interaction_rng,
+                first=sx + sign * dist,
+                edge_band=0.04 * span,
             )
-            duration = sample_within(lambda: self._interaction_rng.uniform(0.22, 0.38) / speed, 0.16, 0.50,
-                                     rng=self._interaction_rng, edge_band=0.04)
+            duration = sample_within(
+                lambda: self._interaction_rng.uniform(0.22, 0.38) / speed,
+                0.16,
+                0.50,
+                rng=self._interaction_rng,
+                edge_band=0.04,
+            )
             raw = getattr(self.device, "_device", None)
             if raw is not None and hasattr(raw, "swipe"):
                 raw.swipe(int(sx), int(sy), int(ex), int(ey), duration=duration)
             else:
-                self.device.swipe_coordinates(int(sx), int(sy), int(ex), int(ey), duration)
+                self.device.swipe_coordinates(
+                    int(sx), int(sy), int(ex), int(ey), duration
+                )
             self._report_gesture(
-                "hswipe", direction, (sx, sy), (ex, ey), duration,
-                distance_px=int(abs(ex - sx)), duration_ms=round(duration * 1000),
-                distance_scale=round(reach, 3), velocity_scale=round(speed, 3),
+                "hswipe",
+                direction,
+                (sx, sy),
+                (ex, ey),
+                duration,
+                distance_px=int(abs(ex - sx)),
+                duration_ms=round(duration * 1000),
+                distance_scale=round(reach, 3),
+                velocity_scale=round(speed, 3),
             )
             self._interaction_sleep(0.05)
             return True
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - Legacy gesture API returns failure for backend errors.
             self.logger.error(f"Error in horizontal swipe ({direction}): {e}")
             return False
 
@@ -852,19 +1072,23 @@ def _raw_host(device, logger=None) -> _RawGestureHost:
     helpers are safe to call whatever device type a surface happens to hold."""
     host = _RawGestureHost()
     if hasattr(device, "swipe_coordinates") and hasattr(device, "_device"):
-        host.device = device          # a device facade
-        raw = device._device
+        host.device = device  # a device facade
     else:
-        host.device = _RawDeviceAdapter(device)   # a bare u2 device
-        raw = device
+        host.device = _RawDeviceAdapter(device)  # a bare u2 device
     host.logger = logger or _gesture_logger
     w, h = screen_size_of(device)
     host.screen_width, host.screen_height = int(w), int(h)
     return host
 
 
-def human_scroll_raw(raw_device, direction: str = "down", distance_ratio: Optional[float] = None,
-                     coast: bool = False, logger=None, precise: bool = False) -> bool:
+def human_scroll_raw(
+    raw_device,
+    direction: str = "down",
+    distance_ratio: float | None = None,
+    coast: bool = False,
+    logger=None,
+    precise: bool = False,
+) -> bool:
     """Humanized VERTICAL scroll for a bare u2 device. `direction='down'` advances (reveals the
     NEXT content), `'up'` goes back. `coast=True` flings. Mirrors `device.human_scroll`.
 
@@ -878,22 +1102,38 @@ def human_scroll_raw(raw_device, direction: str = "down", distance_ratio: Option
     distance_px = (distance_ratio * host.screen_height) if distance_ratio else None
     if coast:
         return host._strong_flick(direction=g_dir, distance_px=distance_px)
-    return host._human_swipe(direction=g_dir, distance_px=distance_px, controlled=precise)
-
-
-def human_hswipe_raw(raw_device, direction: str = "left", distance_ratio: float = 0.6,
-                     y_ratio: Optional[float] = None, logger=None,
-                     distance_scale: float = 1.0, velocity_scale: float = 1.0) -> bool:
-    """Humanized HORIZONTAL swipe for a bare u2 device. `direction='left'` reveals the NEXT slide,
-    `'right'` the previous. Mirrors `device.human_hswipe`."""
-    return _raw_host(raw_device, logger)._human_horizontal_swipe(
-        direction, distance_ratio, y_ratio=y_ratio,
-        distance_scale=distance_scale, velocity_scale=velocity_scale,
+    return host._human_swipe(
+        direction=g_dir, distance_px=distance_px, controlled=precise
     )
 
 
-def human_drag_between_raw(raw_device, start: Tuple[int, int], end: Tuple[int, int],
-                           duration: Optional[float] = None, logger=None) -> bool:
+def human_hswipe_raw(
+    raw_device,
+    direction: str = "left",
+    distance_ratio: float = 0.6,
+    y_ratio: float | None = None,
+    logger=None,
+    distance_scale: float = 1.0,
+    velocity_scale: float = 1.0,
+) -> bool:
+    """Humanized HORIZONTAL swipe for a bare u2 device. `direction='left'` reveals the NEXT slide,
+    `'right'` the previous. Mirrors `device.human_hswipe`."""
+    return _raw_host(raw_device, logger)._human_horizontal_swipe(
+        direction,
+        distance_ratio,
+        y_ratio=y_ratio,
+        distance_scale=distance_scale,
+        velocity_scale=velocity_scale,
+    )
+
+
+def human_drag_between_raw(
+    raw_device,
+    start: tuple[int, int],
+    end: tuple[int, int],
+    duration: float | None = None,
+    logger=None,
+) -> bool:
     """Continuous finger-down drag from `start` to `end` that TRACKS the finger 1:1 and lifts at
     near-zero velocity — press, hold, accompany, release.
 
@@ -915,7 +1155,9 @@ def human_drag_between_raw(raw_device, start: Tuple[int, int], end: Tuple[int, i
     sx, sy = int(start[0]), int(start[1])
     ex, ey = int(end[0]), int(end[1])
     if duration is None:
-        duration = _drag_duration(math.hypot(ex - sx, ey - sy) or 1, _LONG_DRAG_VEL_RANGE)
+        duration = _drag_duration(
+            math.hypot(ex - sx, ey - sy) or 1, _LONG_DRAG_VEL_RANGE
+        )
 
     raw = getattr(host.device, "_device", None) or raw_device
     try:
@@ -925,7 +1167,10 @@ def human_drag_between_raw(raw_device, start: Tuple[int, int], end: Tuple[int, i
             # RPC-paced fallback injects one event per point, so hand it a pre-densified path.
             steps = max(12, min(32, abs(ey - sy) // 40))
             path = [
-                [round(sx + (ex - sx) * (i / steps)), round(sy + (ey - sy) * (i / steps))]
+                [
+                    round(sx + (ex - sx) * (i / steps)),
+                    round(sy + (ey - sy) * (i / steps)),
+                ]
                 for i in range(steps + 1)
             ]
             touch = host._touch_api(raw)
@@ -937,11 +1182,17 @@ def human_drag_between_raw(raw_device, start: Tuple[int, int], end: Tuple[int, i
                 host.device.swipe_coordinates(sx, sy, ex, ey, duration)
         injection = getattr(host, "_last_gesture_injection", None) or {}
         host._report_gesture(
-            "drag", "down" if ey > sy else "up", (sx, sy), (ex, ey), duration,
-            distance_px=int(abs(ey - sy)), duration_ms=round(duration * 1000),
-            points=injection.get("events"), paced=injection.get("mode"),
+            "drag",
+            "down" if ey > sy else "up",
+            (sx, sy),
+            (ex, ey),
+            duration,
+            distance_px=int(abs(ey - sy)),
+            duration_ms=round(duration * 1000),
+            points=injection.get("events"),
+            paced=injection.get("mode"),
         )
         return True
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - Legacy gesture API returns failure for backend errors.
         host.logger.error(f"Error in drag between points: {exc}")
         return False

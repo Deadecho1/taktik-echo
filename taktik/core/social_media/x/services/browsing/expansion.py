@@ -1,0 +1,203 @@
+"""Verify inline native text expansion without changing the selected occurrence."""
+
+import re
+from dataclasses import replace
+
+from taktik.core.shared.vision.ocr import OcrService
+from taktik.core.social_media.x.ui.screen import _intersect
+
+from .navigation import XError
+
+MORE = re.compile(r"\sShow more\s*$")
+
+
+class XInlineExpansionLimit(XError):
+    """Verified source expansion exceeded the viewport; explicit recovery is required."""
+
+
+def _body_word(word, area, context):
+    return (
+        70 <= word.confidence <= 100
+        and word.width > 0
+        and word.height > 0
+        and area[0] <= word.left < word.bbox[2] <= area[2]
+        and area[1] <= word.top < word.bbox[3] < context[3]
+        # Only a lower glyph fringe may extend beyond the native text rectangle.
+        and max(0, word.bbox[3] - area[3]) <= word.height / 4
+    )
+
+
+def _control_pair(show, more, area):
+    height = max(show.height, more.height)
+    if (
+        0 <= more.left - show.bbox[2] < show.height
+        and abs(show.top - more.top) < height * 0.4
+        and abs(show.bbox[3] - more.bbox[3]) < height * 0.4
+    ):
+        return True
+    # A wrapped label ends one line at the right edge and starts the next at the left.
+    return (
+        area[2] - show.bbox[2] < more.width + show.height
+        and more.left - area[0] < height * 0.4
+        and show.bbox[3] < more.top
+        and height < more.bbox[3] - show.bbox[3] <= height * 2
+    )
+
+
+def _target(source, screenshot):
+    area = source.body_visibility.bounds
+    if _intersect(area, (0, 0, *screenshot.size)) != area:
+        raise XError("Cannot locate one visible native Show more control.")
+    # Scale the recognition budget, not the actionable native body.
+    padding = (min(screenshot.size) + 99) // 100
+    context = (*area[:3], min(screenshot.height, area[3] + padding))
+    words = OcrService.locate(
+        screenshot,
+        ["Show", "more"],
+        region=context,
+        min_confidence=70,
+        timeout_seconds=5.0,
+    )
+    pairs = [
+        (show, more)
+        for show in words
+        for more in words
+        if show.text.lower() == "show"
+        and more.text.lower() == "more"
+        and _body_word(show, area, context)
+        and _body_word(more, area, context)
+        and _control_pair(show, more, area)
+        and area[3] - more.bbox[3] < more.height * 2
+    ]
+    if len(pairs) != 1:
+        raise XError("Cannot locate one visible native Show more control.")
+    return _intersect(pairs[0][1].bbox, area)
+
+
+def _exclusions(source, target):
+    openings = [t.visibility for t in source.targets if t.label == "Open post"]
+    if len(openings) != 1:
+        raise XError("Cannot verify the native Show more control exclusions.")
+    exclusions = list(openings[0].overlaps)
+    # Remove only the body text; a control can occupy the exact same rectangle.
+    exclusions.remove(source.body_visibility.bounds)
+    if any(_intersect(target, r) for r in exclusions):
+        raise XError("The native Show more control is covered by other content.")
+    return tuple(exclusions)
+
+
+def _verify(source, post, *, viewport_limit=False):
+    stable = replace(
+        source,
+        body=post.body,
+        body_complete=post.body_complete,
+        content_key=post.content_key,
+        visibility=post.visibility,
+        body_visibility=post.body_visibility,
+        media=post.media,
+        actions=post.actions,
+        targets=post.targets,
+    )
+    if (
+        stable != post
+        or source.body_visibility.bounds[:3] != post.body_visibility.bounds[:3]
+        # Added text can replace Show more without adding another rendered line.
+        or post.body_visibility.bounds[3] < source.body_visibility.bounds[3]
+    ):
+        raise XError("The expanded X post changed identity, content, or geometry.")
+    if not post.observable or not post.body_complete:
+        # Offscreen media/footer cannot be verified as retained or mutated.
+        # Only classify their disappearance when the body pushes all of them below view.
+        hidden_below_body = (
+            not post.media
+            and not post.actions
+            and all(
+                m.visibility.bounds[1] >= source.body_visibility.bounds[3]
+                for m in source.media
+            )
+            and all(
+                a.visibility.bounds[1] >= source.body_visibility.bounds[3]
+                for a in source.actions
+            )
+        )
+        error = (
+            XInlineExpansionLimit if viewport_limit and hidden_below_body else XError
+        )
+        raise error("The expanded X body is not fully visible within the viewport.")
+    if tuple(replace(m, visibility=None) for m in source.media) != tuple(
+        replace(m, visibility=None) for m in post.media
+    ) or tuple((a.label, a.selected) for a in source.actions) != tuple(
+        (a.label, a.selected) for a in post.actions
+    ):
+        raise XError("The expanded X post changed identity, content, or geometry.")
+
+
+def read_more(app):
+    with app._operation():
+        source = app.observe()
+        if source is not None and source.body_complete:
+            return source
+        if source is None or not source.body or not MORE.search(source.body):
+            raise XError("The selected X post has no supported Show more control.")
+        if source.quoted_post is not None:
+            raise XError("Inline expansion of quoted X posts is not supported.")
+        prefix = MORE.sub("", source.body)
+        if (
+            len(prefix) < 32
+            or sum(p.content_key == source.content_key for p in app._screen.posts) != 1
+        ):
+            raise XError("The selected X expansion source is ambiguous.")
+        screenshot = app.phone.read("screenshot")
+        if screenshot.size != tuple(app.phone.read("size")):
+            raise XError("X screen dimensions changed during expansion.")
+        target = _target(source, screenshot)
+        fresh = app.observe()
+        if (
+            fresh.content_key != source.content_key
+            or fresh.body_visibility != source.body_visibility
+        ):
+            raise XError("The selected X body changed while locating Show more.")
+        before = app._screen
+        exclusions = _exclusions(fresh, target)
+        app.phone.tap(target, exclude=exclusions).require()
+        app.phone.wait(0.3, purpose="readiness")
+        screen = app._wait_for(
+            lambda s: (
+                s.kind == before.kind
+                and any(
+                    p.body
+                    and len(p.body) > len(prefix)
+                    and p.body.startswith(prefix)
+                    and not MORE.search(p.body)
+                    for p in s.posts
+                )
+            ),
+            "inline X text expansion",
+        )
+        app._check_timeline(screen, before)
+        candidates = [
+            (i, p)
+            for i, p in enumerate(screen.posts)
+            if p.author == source.author
+            and p.body
+            and len(p.body) > len(prefix)
+            and p.body.startswith(prefix)
+            and not MORE.search(p.body)
+        ]
+        if len(candidates) != 1 or screen.content_viewport != before.content_viewport:
+            raise XError("The expanded X source or browsing context is ambiguous.")
+        index, expanded = candidates[0]
+        _verify(
+            fresh,
+            expanded,
+            viewport_limit=(
+                expanded.body_visibility.bounds[3] > screen.content_viewport[3]
+                and expanded.body_visibility.accessible
+                and expanded.body_visibility.visible_bounds
+                == _intersect(expanded.body_visibility.bounds, screen.content_viewport)
+                and screen.overlaps == before.overlaps
+                and screen.controls == before.controls
+            ),
+        )
+        app._select(screen, index)
+        return app.observe()

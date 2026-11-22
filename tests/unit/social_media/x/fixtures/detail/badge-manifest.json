@@ -1,0 +1,21 @@
+{
+  "description": "Synthetic author, organization, body, timestamps and counts. Successful return reuses the synthetic source; no physical continuation is implied.",
+  "size": [
+    1080,
+    2340
+  ],
+  "fixtures": [
+    {
+      "file": "badge-source.xml",
+      "sha256": "0c91db9c55fbc14c67ebf61bcd16d3421bee9e0c9c2e089de0f454eefcf71544"
+    },
+    {
+      "file": "badge-native.xml",
+      "sha256": "32d77cfc70eb04e8fc7e6163439054b9ad513306cc96dc085dd64de2e3f36514"
+    },
+    {
+      "file": "badge-ordinary.xml",
+      "sha256": "5cda9c457f038f52fdd8de68c09111fa1f794cfcc026fe9ba7ccd9e09a76bf98"
+    }
+  ]
+}

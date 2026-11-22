@@ -64,6 +64,10 @@ class TaktikDevice:
             return self._call("window_size")
         if what == "hierarchy":
             return self._call("dump_hierarchy")
+        if what == "screen_reader_hierarchy":
+            from ._accessibility import read_hierarchy
+
+            return read_hierarchy(self)
         if what == "screenshot":
             return self._call("screenshot")
         if what == "app":
@@ -212,7 +216,21 @@ class TaktikDevice:
         return self._keyboard.enter(field, text, submit)
 
     def field(self, resource_id):
+        from ._fields import TextField, resolve_field
+
         self.phone._check()
+        if isinstance(resource_id, TextField):
+            if self.read("app").get("package") != resource_id.package:
+                raise InteractionError("The text field app is not foreground.")
+            size = self.read("size")
+            info = resolve_field(self.read("hierarchy"), size, resource_id)
+            if self.read("app").get("package") != resource_id.package:
+                raise InteractionError(
+                    "The foreground app changed while reading the field."
+                )
+            return info
+        if not isinstance(resource_id, str) or not resource_id:
+            raise InteractionError("Text entry requires a resource ID or TextField.")
         query = self._raw(resourceId=resource_id)
         if query.count != 1:
             raise InteractionError("The text field is missing or ambiguous.")

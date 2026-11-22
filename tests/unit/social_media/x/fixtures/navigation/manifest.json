@@ -1,0 +1,109 @@
+{
+  "size": [
+    1080,
+    2340
+  ],
+  "kind": "synthetic_native_layout",
+  "fixtures": [
+    {
+      "file": "preceding-complete-0.xml",
+      "kind": "synthetic_native_layout",
+      "sha256": "3239006bf7d3a3076ed840a5804a8d6ba2f7eb7d237f72881e5886164993f015"
+    },
+    {
+      "file": "preceding-complete-1.xml",
+      "kind": "synthetic_native_layout",
+      "sha256": "1ad3122f231940a627b88182c5bfd0b19047456e3f870b82ca48728c8975d1a5"
+    },
+    {
+      "file": "preceding-complete-10.xml",
+      "kind": "synthetic_native_layout",
+      "sha256": "6641c9ad8a08f2034ec2fcbc540ed535a03522e0118dc8f1661b6d3353710881"
+    },
+    {
+      "file": "preceding-complete-2.xml",
+      "kind": "synthetic_native_layout",
+      "sha256": "502552626040108c81168995f0c46c3c05c0ab7c5b481e9564b925de5403fa9b"
+    },
+    {
+      "file": "preceding-complete-3.xml",
+      "kind": "synthetic_native_layout",
+      "sha256": "cb660a1fd67e83dc8265c4bebe85f4d8ea26975d2fc06b847ac2d142b0c40fab"
+    },
+    {
+      "file": "preceding-complete-4.xml",
+      "kind": "synthetic_native_layout",
+      "sha256": "3ce1d4b232a13756bcaa909ae231329b17735610521c50bf51274c816e77edfb"
+    },
+    {
+      "file": "preceding-complete-5.xml",
+      "kind": "synthetic_native_layout",
+      "sha256": "7b1a9327542fc2d0b3300b05d9a6dd81e6722cbab12df9f6fd3dcab5b35bb44b"
+    },
+    {
+      "file": "preceding-complete-6.xml",
+      "kind": "synthetic_native_layout",
+      "sha256": "cd14bbb9a3a113c352573ccae368d87c7fb5b9eb609ee2c25e6617c54920ff78"
+    },
+    {
+      "file": "preceding-complete-7.xml",
+      "kind": "synthetic_native_layout",
+      "sha256": "a87ad6991f7eacc9dfb50860b426d23f703721370357172012c881089a01c170"
+    },
+    {
+      "file": "preceding-complete-8.xml",
+      "kind": "synthetic_native_layout",
+      "sha256": "110ccb370b6117b73bb7b20e6897586328f412ea891b9a7fe46980f4720bae94"
+    },
+    {
+      "file": "preceding-complete-9.xml",
+      "kind": "synthetic_native_layout",
+      "sha256": "29b65a41edbd2b79e21c10e67f62ea384e983b2cde06fe7b5c2f810de85f1af9"
+    },
+    {
+      "file": "preceding-posts-0.xml",
+      "kind": "synthetic_native_layout",
+      "sha256": "5c89a794469c1235e1442f54fc5e1813c20866365097eca6f36f02bcb1299325"
+    },
+    {
+      "file": "preceding-posts-1.xml",
+      "kind": "synthetic_native_layout",
+      "sha256": "19eb575bd2f4c376cd761e15ae2633f9d0bb354851334532d5a18735deb4d96d"
+    },
+    {
+      "file": "preceding-posts-2.xml",
+      "kind": "synthetic_native_layout",
+      "sha256": "5ad3f8f4e14ed34ce31b061452ca47951c2a8cdfb17dad186a497ec1ea96f0ad"
+    },
+    {
+      "file": "preceding-posts-3.xml",
+      "kind": "synthetic_native_layout",
+      "sha256": "181d658ad4599965e5ba9d771e9a43aea3cd20412c395531882b35b73e020b27"
+    },
+    {
+      "file": "preceding-posts-4.xml",
+      "kind": "synthetic_native_layout",
+      "sha256": "511312d6e1204469f1b91b9055ab6c124bbfc1d0494613a6925102cb166e1e61"
+    },
+    {
+      "file": "preceding-posts-5.xml",
+      "kind": "synthetic_native_layout",
+      "sha256": "25f56d6174b175d4a4262bf6655af6071123424d776214c317b629f5e4345259"
+    },
+    {
+      "file": "preceding-posts-6.xml",
+      "kind": "synthetic_native_layout",
+      "sha256": "5586e34153c24fea9a72757f8027485238b3525ce61a5fff702e20240ba537c5"
+    },
+    {
+      "file": "preceding-posts-7.xml",
+      "kind": "synthetic_native_layout",
+      "sha256": "d32552705715ec91991dbfab52679b6b82c39dab4d1a894d2be873f45df77b74"
+    },
+    {
+      "file": "preceding-posts-8.xml",
+      "kind": "synthetic_native_layout",
+      "sha256": "21186dbcf7b9614a4532b5f9dd06ff0c0c5da10692b3c9b506268367d5b6d352"
+    }
+  ]
+}

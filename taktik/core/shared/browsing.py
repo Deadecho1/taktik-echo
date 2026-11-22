@@ -8,6 +8,7 @@ WORKFLOWS = ["home", "reels", "explore", "search", "profile"]
 PLATFORM_WORKFLOWS = {
     "instagram": WORKFLOWS,
     "tiktok": ["for_you", "search", "profile"],
+    "x": ["for_you", "following", "search"],
 }
 
 ACTIONS = [
@@ -21,6 +22,13 @@ ACTIONS = [
     "unfollow",
     "not_interested",
 ]
+
+
+PLATFORM_ACTIONS = {
+    "instagram": ACTIONS,
+    "tiktok": ACTIONS,
+    "x": ACTIONS,
+}
 
 
 @dataclass
@@ -43,6 +51,9 @@ class PostObservation:
     source_key: str = ""
     date_label: str = ""
     caption_type: str | None = None
+    post_context: dict | None = None
+    native_post_id: str | None = None
+    post_url: str | None = None
 
 
 @dataclass(frozen=True)
@@ -51,3 +62,7 @@ class ActionResult:
 
 
 PlatformError = InteractionError
+
+
+class FeedEmpty(RuntimeError):
+    """The selected feed has a recognized empty state."""
