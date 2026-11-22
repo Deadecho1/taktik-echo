@@ -1,6 +1,5 @@
 """Single-attempt native Copy link flows through the real Phone boundary."""
 
-import hashlib
 import json
 from copy import deepcopy
 from dataclasses import replace
@@ -21,6 +20,7 @@ from unit.social_media.x.ui.test_inspection_screen import (
 from unit.social_media.x.ui.test_inspection_screen import (
     link_document as document,
 )
+from unit.x_fixtures import fixture_digest
 
 from taktik.core.shared.phone_interaction import (
     InteractionCancelled,
@@ -146,10 +146,7 @@ def test_share_glyph_fixture_integrity():
     assert manifest["kind"] == "synthetic_native_layout"
     for item in manifest["fixtures"]:
         assert item["kind"] == "synthetic_native_layout"
-        assert (
-            hashlib.sha256((LINK_FIXTURES / item["file"]).read_bytes()).hexdigest()
-            == item["sha256"]
-        )
+        assert fixture_digest(LINK_FIXTURES / item["file"]) == item["sha256"]
 
 
 def test_edge_clipped_share_uses_the_proven_strip_within_the_glyph_height():

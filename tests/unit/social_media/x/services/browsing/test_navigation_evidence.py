@@ -1,6 +1,5 @@
 """Scrolling can cross rejected content without promoting it to an observation."""
 
-import hashlib
 import json
 from dataclasses import replace
 from unittest.mock import Mock
@@ -16,7 +15,7 @@ from unit.social_media.x.services.browsing.test_search import (
 from unit.social_media.x.services.browsing.test_search import (
     document as search_document,
 )
-from unit.x_fixtures import xml_fixture
+from unit.x_fixtures import fixture_digest, xml_fixture
 
 from scripts.eval.x_caption_validation import check_caption
 from taktik.core.shared.phone_interaction import (
@@ -362,10 +361,7 @@ def test_startup_fixture_hashes():
     manifest = json.loads((STARTUP_FIXTURES / "manifest.json").read_text())
     assert manifest["size"] == list(SIZE)
     for item in manifest["fixtures"]:
-        assert (
-            hashlib.sha256((STARTUP_FIXTURES / item["file"]).read_bytes()).hexdigest()
-            == item["sha256"]
-        )
+        assert fixture_digest(STARTUP_FIXTURES / item["file"]) == item["sha256"]
 
 
 def test_captured_short_framing_scroll_executes_with_its_safe_requested_travel():

@@ -1,0 +1,12 @@
+<fixture base="startup/frame-2.xml" sha256="f3698f0e62643bfde857f5ec7a54ff4fe56267d6dd24501e02231ea06ef27d32">
+  <set select="//node[@resource-id='scaffold_home_tabbed']/node[@class='android.view.View' and @bounds='[0,0][1080,2340]' and @index='0']/node[@class='android.view.View' and @bounds='[389,143][691,275]' and @index='1']" bounds="[389,142][691,274]"/>
+  <set select="//node[@resource-id='ntp']" bounds="[389,142][691,274]"/>
+  <set select="//node[@content-desc='New posts']" bounds="[389,157][691,259]"/>
+  <set select="//node[@resource-id='facepile']" bounds="[467,167][647,249]"/>
+  <set select="//node[@resource-id='facepile']/node[@class='android.view.View' and @bounds='[540,143][672,275]' and @index='0']" bounds="[540,142][672,274]"/>
+  <set select="//node[@resource-id='facepile']/node[@class='android.view.View' and @bounds='[540,143][672,275]' and @index='0']/node" bounds="[540,142][672,274]"/>
+  <set select="//node[@resource-id='facepile']/node[@class='android.view.View' and @bounds='[491,143][623,275]' and @index='1']" bounds="[491,142][623,274]"/>
+  <set select="//node[@resource-id='facepile']/node[@class='android.view.View' and @bounds='[491,143][623,275]' and @index='1']/node" bounds="[491,142][623,274]"/>
+  <set select="//node[@resource-id='facepile']/node[@class='android.view.View' and @bounds='[442,143][574,275]' and @index='2']" bounds="[442,142][574,274]"/>
+  <set select="//node[@resource-id='facepile']/node[@class='android.view.View' and @bounds='[442,143][574,275]' and @index='2']/node" bounds="[442,142][574,274]"/>
+</fixture>

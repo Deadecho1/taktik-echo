@@ -8,22 +8,23 @@
     {
       "file": "share-glyph-source.xml",
       "kind": "synthetic_native_layout",
-      "sha256": "4fabb46af4df9244088b2058166a11e270a544f969faa531a79c4adda5a0e290"
+      "sha256": "c8ad0273d1562e325bbae96f2d04b9c8552281bc2c3db997418c25e5abe154eb"
     },
     {
       "file": "share-glyph-complete-source.xml",
       "kind": "synthetic_native_layout",
-      "sha256": "29f72c4fa6ada700697b97d88cb9e85d2fe56d2e7adb7ff75db4939565e6af5e"
+      "sha256": "55b8760a60e81e75cc2461bcf8df05227ddeeb800cb7afd6d8d4f3d2db405eae"
     },
     {
       "file": "share-glyph-sheet.xml",
       "kind": "synthetic_native_layout",
-      "sha256": "0a31361863461a0ee6f132f76d7e69825e24b29c54c916b2b8ef09c04f486a4b"
+      "sha256": "4686db1e1e368706dab671a368340963d5b6bd0ca5aed47102d4eab5b3cc2662"
     },
     {
       "file": "share-glyph-receipt.xml",
       "kind": "synthetic_native_layout",
-      "sha256": "db0076940ded73809e8232b15397462a1697653d2a56c683c201a612ee53ffb6"
+      "sha256": "772ec58396b92fa9b51d8a6fce4a769d161984a9ea2309dc49eab63844aa1500"
     }
-  ]
+  ],
+  "xml_hash": "canonical-xml-v1"
 }

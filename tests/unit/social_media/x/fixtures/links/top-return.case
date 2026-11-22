@@ -1,0 +1,7 @@
+<fixture base="links/top-receipt.xml" sha256="6eff891f5176d6cf8b16c9b2195e81ae65b184dc95d88f7ac69f2e10220ed7ba">
+  <set select="//node[@content-desc='Search']" bounds="[260,191][326,257]"/>
+  <set select="//node[@text='from:NASA &quot;stellar merger&quot;']" bounds="[348,201][821,247]"/>
+  <replace select="//node[@class='android.view.View' and @bounds='[0,159][1080,291]']">
+    <node bounds="[474,98][606,230]" checkable="false" checked="false" class="android.view.View" clickable="false" content-desc="" display-id="0" drawing-order="2" enabled="true" focusable="false" focused="false" hint="" index="2" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+  </replace>
+</fixture>

@@ -1,0 +1,29 @@
+<fixture base="engagement/source.xml" sha256="3c3b42c3c1e5e3c7d939caaf813715e72899140a1a91f45fcc1fd2a46fb392f4">
+  <set select="//node[@text='132']" text="133"/>
+  <set select="//node[@content-desc='Like']" content-desc="Undo Like"/>
+  <set select="//node[@class='android.view.View' and @bounds='[568,1520][692,1637]']" bounds="[573,1520][692,1637]"/>
+  <set select="//node[@text='4.1K']" bounds="[601,1564][676,1607]" text="4.2K"/>
+  <set select="//node[@class='android.view.View' and @bounds='[764,1520][872,1637]']" bounds="[763,1520][872,1637]"/>
+  <set select="//node[@text='558K']" text="559K"/>
+  <set select="//node[@content-desc='Bookmark']" content-desc="Delete Bookmark"/>
+  <set select="//node[@resource-id='Search']/node/node[@class='android.view.View' and @bounds='[0,312][1080,444]' and @index='1']/node/node[@class='android.view.View' and @bounds='[242,312][503,444]' and @index='1']" bounds="[242,379][503,444]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[275,313][470,445]']" bounds="[275,379][470,445]"/>
+  <set select="//node[@text='Latest']" bounds="[347,379][470,403]"/>
+  <set select="//node[@resource-id='Search']/node/node[@class='android.view.View' and @bounds='[0,312][1080,444]' and @index='1']/node/node[@class='android.view.View' and @bounds='[503,312][723,444]' and @index='2']" bounds="[503,379][723,444]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[508,313][718,445]']" bounds="[508,379][718,445]"/>
+  <set select="//node[@text='People']" bounds="[544,379][682,403]"/>
+  <set select="//node[@text='Media']" bounds="[771,379][895,403]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[242,375][503,507]']" bounds="[242,379][503,507]"/>
+  <replace select="//node[@class='android.view.View' and @bounds='[0,136][1080,312]']/node[@class='android.view.View' and @bounds='[154,158][926,290]' and @index='1']/node">
+    <node NAF="true" bounds="[154,158][926,290]" checkable="false" checked="false" class="android.view.View" clickable="true" content-desc="" display-id="0" drawing-order="0" enabled="true" focusable="true" focused="false" hint="" index="0" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+  </replace>
+  <replace select="//node[@class='android.view.View' and @bounds='[474,98][606,230]']">
+    <node bounds="[0,164][1080,379]" checkable="false" checked="false" class="android.view.View" clickable="false" content-desc="" display-id="0" drawing-order="2" enabled="true" focusable="false" focused="false" hint="" index="2" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+      <node bounds="[167,164][914,379]" checkable="false" checked="false" class="android.view.View" clickable="true" content-desc="" display-id="0" drawing-order="0" enabled="true" focusable="true" focused="false" hint="" index="0" long-clickable="false" package="com.twitter.android" password="false" resource-id="in_app_notification" scrollable="false" selected="false" text="" visible-to-user="true">
+        <node bounds="[167,164][914,379]" checkable="false" checked="false" class="android.view.View" clickable="false" content-desc="Post added to your Bookmarks, Add to folder" display-id="0" drawing-order="0" enabled="true" focusable="false" focused="false" hint="" index="0" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+        <node bounds="[277,200][870,249]" checkable="false" checked="false" class="android.widget.TextView" clickable="false" content-desc="" display-id="0" drawing-order="1" enabled="true" focusable="false" focused="false" hint="" index="1" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="Post added to your Bookmarks" visible-to-user="true"/>
+        <node bounds="[200,274][881,346]" checkable="false" checked="false" class="android.view.View" clickable="false" content-desc="" display-id="0" drawing-order="2" enabled="true" focusable="false" focused="false" hint="" index="2" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+      </node>
+    </node>
+  </replace>
+</fixture>

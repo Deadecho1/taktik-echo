@@ -1,0 +1,136 @@
+<fixture base="navigation/preceding-posts-0.xml" sha256="5c89a794469c1235e1442f54fc5e1813c20866365097eca6f36f02bcb1299325">
+  <set select="//node[@class='android.view.View' and @bounds='[0,0][1080,574]']" bounds="[0,2][1080,354]" drawing-order="1" index="1"/>
+  <set select="//node[@content-desc='Sample label 0']" bounds="[22,35][154,167]" content-desc="Sample label 14"/>
+  <set select="//node[@class='android.widget.TextView' and @bounds='[176,91][1047,456]']" bounds="[176,91][1047,236]" text="Synthetic paragraph 17 describes an invented museum exhibit and a carefully arranged collection of painted wooden objects."/>
+  <set select="//node[@class='android.view.View' and @bounds='[137,456][322,574]']" bounds="[137,236][322,354]"/>
+  <set select="//node[@content-desc='Reply' and @bounds='[176,500][220,544]']" bounds="[176,280][220,324]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[193,457][322,574]']" bounds="[195,237][322,354]"/>
+  <set select="//node[@class='android.widget.TextView' and @bounds='[231,501][286,544]']" bounds="[231,281][290,324]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[322,456][507,574]']" bounds="[322,236][507,354]"/>
+  <set select="//node[@content-desc='Repost' and @bounds='[361,500][405,544]']" bounds="[361,280][405,324]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[380,457][507,574]']" bounds="[382,237][507,354]"/>
+  <set select="//node[@class='android.widget.TextView' and @bounds='[416,501][476,544]']" bounds="[416,281][480,324]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[507,456][692,574]']" bounds="[507,236][692,354]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[502,456][634,574]']" bounds="[502,236][634,354]"/>
+  <set select="//node[@content-desc='Like' and @bounds='[546,500][590,544]']" bounds="[546,280][590,324]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[573,457][692,574]']" bounds="[568,237][692,354]"/>
+  <set select="//node[@class='android.widget.TextView' and @bounds='[601,501][676,544]']" bounds="[601,281][667,324]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[692,456][872,574]']" bounds="[692,236][872,354]"/>
+  <set select="//node[@content-desc='Impressions' and @bounds='[731,500][775,544]']" bounds="[731,280][775,324]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[765,457][872,574]']" bounds="[763,237][872,354]"/>
+  <set select="//node[@class='android.widget.TextView' and @bounds='[786,501][872,544]']" bounds="[786,281][871,324]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[872,456][959,574]']" bounds="[872,236][959,354]"/>
+  <set select="//node[@content-desc='Bookmark' and @bounds='[916,500][959,544]']" bounds="[916,280][959,324]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[959,456][1080,574]']" bounds="[959,236][1080,346]"/>
+  <set select="//node[@content-desc='Share' and @bounds='[1003,500][1047,544]']" bounds="[1003,280][1047,324]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[0,574][1080,1036]']" bounds="[0,354][1080,706]" drawing-order="2" index="2"/>
+  <set select="//node[@content-desc='Sample label 6']" bounds="[22,387][154,519]" content-desc="Sample label 22"/>
+  <set select="//node[@resource-id='timeline_post' and @bounds='[176,607][876,656]']" bounds="[176,387][876,436]"/>
+  <set select="//node[@text='Sample label 6']" bounds="[176,387][251,436]" text="Sample label 22"/>
+  <set select="//node[@text='@writer_7']" bounds="[260,387][477,436]" text="@writer_23"/>
+  <set select="//node[@class='android.widget.TextView' and @bounds='[553,607][639,656]']" bounds="[486,387][556,436]"/>
+  <set select="//node[@content-desc='Explain this post with Grok' and @bounds='[879,566][959,663]']" bounds="[879,346][959,443]"/>
+  <set select="//node[@content-desc='Post options' and @bounds='[959,566][1080,698]']" bounds="[959,346][1080,478]"/>
+  <set select="//node[@class='android.widget.TextView' and @bounds='[176,663][1047,918]']" bounds="[176,443][1047,588]" text="Synthetic paragraph 25 describes an invented museum exhibit and a carefully arranged collection of painted wooden objects."/>
+  <set select="//node[@class='android.view.View' and @bounds='[137,918][322,1036]']" bounds="[137,588][322,706]"/>
+  <set select="//node[@content-desc='Reply' and @bounds='[176,962][220,1006]']" bounds="[176,632][220,676]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[197,919][322,1036]']" bounds="[187,589][319,706]"/>
+  <set select="//node[@class='android.widget.TextView' and @bounds='[231,963][295,1006]']" bounds="[231,633][275,676]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[322,918][507,1036]']" bounds="[322,588][507,706]"/>
+  <set select="//node[@content-desc='Repost' and @bounds='[361,962][405,1006]']" bounds="[361,632][405,676]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[380,919][507,1036]']" bounds="[369,589][501,706]"/>
+  <set select="//node[@class='android.widget.TextView' and @bounds='[416,963][475,1006]']" bounds="[416,633][453,676]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[507,918][692,1036]']" bounds="[507,588][692,706]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[502,918][634,1036]']" bounds="[502,588][634,706]"/>
+  <set select="//node[@content-desc='Like' and @bounds='[546,962][590,1006]']" bounds="[546,632][590,676]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[568,919][692,1036]']" bounds="[563,589][692,706]"/>
+  <set select="//node[@class='android.widget.TextView' and @bounds='[601,963][667,1006]']" bounds="[601,633][656,676]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[692,918][872,1036]']" bounds="[692,588][872,706]"/>
+  <set select="//node[@content-desc='Impressions' and @bounds='[731,962][775,1006]']" bounds="[731,632][775,676]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[758,919][872,1036]']" bounds="[761,589][872,706]"/>
+  <set select="//node[@class='android.widget.TextView' and @bounds='[786,963][862,1006]']" bounds="[786,633][867,676]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[872,918][959,1036]']" bounds="[872,588][959,706]"/>
+  <set select="//node[@content-desc='Bookmark' and @bounds='[916,962][959,1006]']" bounds="[916,632][959,676]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[959,918][1080,1028]']" bounds="[959,588][1080,698]"/>
+  <set select="//node[@content-desc='Share' and @bounds='[1003,962][1047,1006]']" bounds="[1003,632][1047,676]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[0,1036][1080,1388]']" bounds="[0,706][1080,1003]" drawing-order="3" index="3"/>
+  <set select="//node[@content-desc='Sample label 14']" bounds="[22,739][154,871]" content-desc="Sample label 30"/>
+  <set select="//node[@resource-id='timeline_post' and @bounds='[176,1069][876,1118]']" bounds="[176,739][876,788]"/>
+  <set select="//node[@text='Sample label 14']" bounds="[176,739][274,788]" text="Sample label 30"/>
+  <set select="//node[@text='@writer_15']" bounds="[283,739][581,788]" text="@writer_31"/>
+  <set select="//node[@class='android.widget.TextView' and @bounds='[769,1069][846,1118]']" bounds="[590,739][677,788]"/>
+  <set select="//node[@content-desc='Explain this post with Grok' and @bounds='[879,1028][959,1125]']" bounds="[879,698][959,795]"/>
+  <set select="//node[@content-desc='Post options' and @bounds='[959,1028][1080,1160]']" bounds="[959,698][1080,830]"/>
+  <set select="//node[@class='android.widget.TextView' and @bounds='[176,1125][1047,1270]']" bounds="[176,795][1047,885]" text="Synthetic paragraph 33 describes an invented museum exhibit and a carefully arranged collection of painted wooden objects."/>
+  <set select="//node[@class='android.view.View' and @bounds='[137,1270][322,1388]']" bounds="[137,885][322,1017]"/>
+  <set select="//node[@content-desc='Reply' and @bounds='[176,1314][220,1358]']" bounds="[176,929][220,973]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[195,1271][322,1388]']" bounds="[191,886][323,1018]"/>
+  <set select="//node[@class='android.widget.TextView' and @bounds='[231,1315][290,1358]']" bounds="[231,930][283,973]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[322,1270][507,1388]']" bounds="[322,885][507,1017]"/>
+  <set select="//node[@content-desc='Repost' and @bounds='[361,1314][405,1358]']" bounds="[361,929][405,973]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[382,1271][507,1388]']" bounds="[387,886][519,1018]"/>
+  <set select="//node[@class='android.widget.TextView' and @bounds='[416,1315][480,1358]']" bounds="[416,930][490,973]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[507,1270][692,1388]']" bounds="[507,885][692,1017]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[502,1270][634,1388]']" bounds="[502,885][634,1017]"/>
+  <set select="//node[@content-desc='Like' and @bounds='[546,1314][590,1358]']" bounds="[546,929][590,973]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[568,1271][692,1388]']" bounds="[576,886][708,1018]"/>
+  <set select="//node[@class='android.widget.TextView' and @bounds='[601,1315][667,1358]']" bounds="[601,930][682,973]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[692,1270][872,1388]']" bounds="[692,885][872,1017]"/>
+  <set select="//node[@content-desc='Impressions' and @bounds='[731,1314][775,1358]']" bounds="[731,929][775,973]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[763,1271][872,1388]']" bounds="[753,886][885,1018]"/>
+  <set select="//node[@class='android.widget.TextView' and @bounds='[786,1315][871,1358]']" bounds="[786,930][852,973]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[872,1270][959,1388]']" bounds="[872,885][959,1017]"/>
+  <set select="//node[@content-desc='Bookmark' and @bounds='[916,1314][959,1358]']" bounds="[916,929][959,973]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[959,1270][1080,1380]']" bounds="[959,885][1080,1017]"/>
+  <set select="//node[@content-desc='Share' and @bounds='[1003,1314][1047,1358]']" bounds="[1003,929][1047,973]"/>
+  <replace select="//node[@class='android.view.View' and @bounds='[0,1388][1080,1740]']">
+    <node bounds="[33,1047][1047,1103]" checkable="false" checked="false" class="android.widget.TextView" clickable="false" content-desc="" display-id="0" drawing-order="4" enabled="true" focusable="false" focused="false" hint="" index="4" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="Who to follow" visible-to-user="true"/>
+  </replace>
+  <replace select="//node[@class='android.view.View' and @bounds='[0,1740][1080,2037]']">
+    <node bounds="[0,1180][1080,1749]" checkable="false" checked="false" class="android.widget.HorizontalScrollView" clickable="false" content-desc="" display-id="0" drawing-order="5" enabled="true" focusable="false" focused="false" hint="" index="5" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="true" selected="false" text="" visible-to-user="true">
+      <node bounds="[33,1180][487,1749]" checkable="false" checked="false" class="android.view.View" clickable="false" content-desc="" display-id="0" drawing-order="0" enabled="true" focusable="false" focused="false" hint="" index="0" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+        <node bounds="[33,1180][487,1749]" checkable="false" checked="false" class="android.view.View" clickable="true" content-desc="" display-id="0" drawing-order="0" enabled="true" focusable="true" focused="false" hint="" index="0" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+          <node bounds="[145,1202][376,1433]" checkable="false" checked="false" class="android.view.View" clickable="false" content-desc="Sample label 38" display-id="0" drawing-order="0" enabled="true" focusable="false" focused="false" hint="" index="0" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+          <node bounds="[147,1466][368,1522]" checkable="false" checked="false" class="android.widget.TextView" clickable="false" content-desc="" display-id="0" drawing-order="1" enabled="true" focusable="false" focused="false" hint="" index="1" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="Sample label 38" visible-to-user="true"/>
+          <node bounds="[110,1522][411,1571]" checkable="false" checked="false" class="android.widget.TextView" clickable="false" content-desc="" display-id="0" drawing-order="2" enabled="true" focusable="false" focused="false" hint="" index="2" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="@writer_46" visible-to-user="true"/>
+          <node bounds="[156,1583][364,1715]" checkable="false" checked="false" class="android.view.View" clickable="true" content-desc="" display-id="0" drawing-order="3" enabled="true" focusable="true" focused="false" hint="" index="3" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+            <node bounds="[200,1626][320,1672]" checkable="false" checked="false" class="android.widget.TextView" clickable="false" content-desc="" display-id="0" drawing-order="0" enabled="true" focusable="false" focused="false" hint="" index="0" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="Follow" visible-to-user="true"/>
+            <node bounds="[156,1604][364,1694]" checkable="false" checked="false" class="android.widget.Button" clickable="false" content-desc="" display-id="0" drawing-order="1" enabled="true" focusable="false" focused="false" hint="" index="1" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+          </node>
+        </node>
+      </node>
+      <node bounds="[531,1180][985,1749]" checkable="false" checked="false" class="android.view.View" clickable="false" content-desc="" display-id="0" drawing-order="1" enabled="true" focusable="false" focused="false" hint="" index="1" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+        <node bounds="[531,1180][985,1749]" checkable="false" checked="false" class="android.view.View" clickable="true" content-desc="" display-id="0" drawing-order="0" enabled="true" focusable="true" focused="false" hint="" index="0" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+          <node bounds="[643,1202][874,1433]" checkable="false" checked="false" class="android.view.View" clickable="false" content-desc="Sample label 39" display-id="0" drawing-order="0" enabled="true" focusable="false" focused="false" hint="" index="0" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+          <node bounds="[617,1466][853,1515]" checkable="false" checked="false" class="android.widget.TextView" clickable="false" content-desc="" display-id="0" drawing-order="1" enabled="true" focusable="false" focused="false" hint="" index="1" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="Sample label 39" visible-to-user="true"/>
+          <node bounds="[859,1466][900,1507]" checkable="false" checked="false" class="android.view.View" clickable="false" content-desc="Verified" display-id="0" drawing-order="2" enabled="true" focusable="false" focused="false" hint="" index="2" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+          <node bounds="[620,1515][896,1564]" checkable="false" checked="false" class="android.widget.TextView" clickable="false" content-desc="" display-id="0" drawing-order="3" enabled="true" focusable="false" focused="false" hint="" index="3" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="@writer_47" visible-to-user="true"/>
+          <node bounds="[654,1576][862,1708]" checkable="false" checked="false" class="android.view.View" clickable="true" content-desc="" display-id="0" drawing-order="4" enabled="true" focusable="true" focused="false" hint="" index="4" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+            <node bounds="[698,1619][818,1665]" checkable="false" checked="false" class="android.widget.TextView" clickable="false" content-desc="" display-id="0" drawing-order="0" enabled="true" focusable="false" focused="false" hint="" index="0" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="Follow" visible-to-user="true"/>
+            <node bounds="[654,1597][862,1687]" checkable="false" checked="false" class="android.widget.Button" clickable="false" content-desc="" display-id="0" drawing-order="1" enabled="true" focusable="false" focused="false" hint="" index="1" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+          </node>
+        </node>
+      </node>
+      <node bounds="[1029,1180][1080,1749]" checkable="false" checked="false" class="android.view.View" clickable="false" content-desc="" display-id="0" drawing-order="2" enabled="true" focusable="false" focused="false" hint="" index="2" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+        <node bounds="[1029,1180][1080,1749]" checkable="false" checked="false" class="android.view.View" clickable="true" content-desc="" display-id="0" drawing-order="0" enabled="true" focusable="true" focused="false" hint="" index="0" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+      </node>
+    </node>
+  </replace>
+  <set select="//node[@text='Who to follow']" bounds="[0,1782][1080,1938]" clickable="true" drawing-order="6" focusable="true" index="6" text="Show more"/>
+  <replace select="//node[@class='android.widget.HorizontalScrollView' and @bounds='[0,2214][1080,2340]']">
+    <node bounds="[0,1938][1080,2340]" checkable="false" checked="false" class="android.view.View" clickable="true" content-desc="" display-id="0" drawing-order="7" enabled="true" focusable="true" focused="false" hint="" index="7" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+      <node bounds="[22,1971][154,2103]" checkable="false" checked="false" class="android.widget.ImageView" clickable="true" content-desc="Sample label 48" display-id="0" drawing-order="0" enabled="true" focusable="true" focused="false" hint="" index="0" long-clickable="true" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+      <node bounds="[176,1971][876,2038]" checkable="false" checked="false" class="android.view.View" clickable="false" content-desc="" display-id="0" drawing-order="1" enabled="true" focusable="false" focused="false" hint="" index="1" long-clickable="false" package="com.twitter.android" password="false" resource-id="timeline_post" scrollable="false" selected="false" text="" visible-to-user="true">
+        <node bounds="[176,1971][214,2038]" checkable="false" checked="false" class="android.widget.TextView" clickable="false" content-desc="" display-id="0" drawing-order="0" enabled="true" focusable="false" focused="false" hint="" index="0" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="Sample label 48" visible-to-user="true"/>
+        <node bounds="[223,1986][407,2035]" checkable="false" checked="false" class="android.widget.TextView" clickable="false" content-desc="" display-id="0" drawing-order="1" enabled="true" focusable="false" focused="false" hint="" index="1" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="@writer_49" visible-to-user="true"/>
+        <node bounds="[416,1986][503,2035]" checkable="false" checked="false" class="android.widget.TextView" clickable="false" content-desc="" display-id="0" drawing-order="2" enabled="true" focusable="false" focused="false" hint="" index="2" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="· 1h" visible-to-user="true"/>
+      </node>
+      <node bounds="[879,1939][959,2071]" checkable="false" checked="false" class="android.widget.ImageView" clickable="true" content-desc="Explain this post with Grok" display-id="0" drawing-order="2" enabled="true" focusable="true" focused="false" hint="" index="2" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+      <node bounds="[959,1939][1080,2071]" checkable="false" checked="false" class="android.widget.Button" clickable="true" content-desc="Post options" display-id="0" drawing-order="3" enabled="true" focusable="true" focused="false" hint="" index="3" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+      <node bounds="[228,2056][642,2099]" checkable="false" checked="false" class="android.widget.TextView" clickable="false" content-desc="" display-id="0" drawing-order="4" enabled="true" focusable="false" focused="false" hint="" index="4" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="Translated from Japanese" visible-to-user="true"/>
+      <node bounds="[653,2012][884,2116]" checkable="false" checked="false" class="android.widget.TextView" clickable="true" content-desc="" display-id="0" drawing-order="5" enabled="true" focusable="true" focused="false" hint="" index="5" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="Show original" visible-to-user="true"/>
+      <node bounds="[176,2116][1047,2340]" checkable="false" checked="false" class="android.widget.TextView" clickable="false" content-desc="" display-id="0" drawing-order="6" enabled="true" focusable="false" focused="false" hint="" index="6" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="Synthetic paragraph 50 describes an invented museum exhibit and a carefully arranged collection of painted wooden objects." visible-to-user="true"/>
+    </node>
+  </replace>
+  <set select="//node[@resource-id='scaffold_home_tabbed']/node[@class='android.view.View' and @bounds='[882,2076][1036,2230]' and @index='2']" drawing-order="3" index="3"/>
+</fixture>

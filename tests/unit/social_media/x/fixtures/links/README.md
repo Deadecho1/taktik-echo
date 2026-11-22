@@ -1,7 +1,8 @@
 # Native post link captures
 
 These thirteen XML fixtures come from direct Phone/X sessions on 19 and 20 November 2026, using X `12.42.0-prod.01`, Android 13, English UI, at 1080 × 2340.
-The manifest records source paths and SHA-256 hashes for both the original captures and sanitized fixtures.
+The manifest records canonical expanded-input hashes.
+Original capture paths and source hashes remain in local migration diagnostics.
 Status-bar children are removed; native X geometry, public content, and the Android clipboard receipt are preserved.
 Screenshots remain local under ignored `tests/smoke/`.
 On 19 November 2026, the user approved all nine presented captures, including the screenshot counterparts of the original eight XML fixtures.

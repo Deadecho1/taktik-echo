@@ -1,7 +1,8 @@
 # Native engagement captures
 
 These XML fixtures come from direct Phone/X sessions on 19 November 2026, using X `12.42.0-prod.01`, Android 13, English UI, at 1080 × 2340.
-`manifest.json` records each source path and both the source and fixture SHA-256 hashes.
+`manifest.json` records canonical expanded-input hashes.
+Original capture paths and source hashes remain in local migration diagnostics.
 External-window children are removed; window bounds, native X labels, public post content, and geometry are retained.
 Screenshots remain local under ignored `tests/smoke/`; human visual review is pending.
 

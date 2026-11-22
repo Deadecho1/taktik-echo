@@ -1,6 +1,5 @@
 """Bound search between verified post-position changes; preserve session limits."""
 
-import hashlib
 import json
 from copy import deepcopy
 from itertools import pairwise
@@ -10,7 +9,7 @@ from unittest.mock import Mock
 import pytest
 from lxml import etree
 from unit.paths import CORE
-from unit.x_fixtures import xml_fixture
+from unit.x_fixtures import fixture_digest, xml_fixture
 
 from taktik.core.shared.phone_interaction import (
     InteractionCancelled,
@@ -349,10 +348,7 @@ def test_preceding_fixture_integrity():
     manifest = json.loads((FIXTURES / "manifest.json").read_text())
     assert manifest["kind"] == "synthetic_native_layout"
     for item in manifest["fixtures"]:
-        assert (
-            hashlib.sha256((FIXTURES / item["file"]).read_bytes()).hexdigest()
-            == item["sha256"]
-        )
+        assert fixture_digest(FIXTURES / item["file"]) == item["sha256"]
 
 
 def test_temporary_source_loss_cannot_credit_preceding_exit(replay):
@@ -594,7 +590,4 @@ def test_successor_fixture_integrity():
     manifest = json.loads((FIXTURES / "successor-approach-manifest.json").read_text())
     assert manifest["kind"] == "synthetic_native_layout"
     for item in manifest["fixtures"]:
-        assert (
-            hashlib.sha256((FIXTURES / item["file"]).read_bytes()).hexdigest()
-            == item["sha256"]
-        )
+        assert fixture_digest(FIXTURES / item["file"]) == item["sha256"]

@@ -1,0 +1,21 @@
+<fixture base="links/soak-covered.xml" sha256="4c2c18f0214e5b15f2af01c3694571b0b5b13a5af1ed1e8eb54e9713074499cf">
+  <replace select="//node[@resource-id='timeline_post' and @bounds='[176,238][876,287]']">
+    <node bounds="[176,238][876,287]" checkable="false" checked="false" class="android.view.View" clickable="false" content-desc="" display-id="0" drawing-order="1" enabled="true" focusable="false" focused="false" hint="" index="1" long-clickable="false" package="com.twitter.android" password="false" resource-id="timeline_post" scrollable="false" selected="false" text="" visible-to-user="true">
+      <node bounds="[176,238][270,287]" checkable="false" checked="false" class="android.widget.TextView" clickable="false" content-desc="" display-id="0" drawing-order="0" enabled="true" focusable="false" focused="false" hint="" index="0" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="amna" visible-to-user="true"/>
+    </node>
+  </replace>
+  <set select="//node[@resource-id='scaffold_home_tabbed']/node[@class='android.view.View' and @bounds='[0,0][1080,2340]' and @index='0']/node[@class='android.view.View' and @bounds='[389,143][691,275]' and @index='1']" bounds="[389,143][691,159]"/>
+  <replace select="//node[@resource-id='ntp']">
+    <node bounds="[389,143][691,159]" checkable="false" checked="false" class="android.view.View" clickable="true" content-desc="" display-id="0" drawing-order="0" enabled="true" focusable="true" focused="false" hint="" index="0" long-clickable="false" package="com.twitter.android" password="false" resource-id="ntp" scrollable="false" selected="false" text="" visible-to-user="true">
+      <node bounds="[389,158][691,260]" checkable="false" checked="false" class="android.view.View" clickable="false" content-desc="New posts" display-id="0" drawing-order="0" enabled="true" focusable="false" focused="false" hint="" index="0" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+    </node>
+  </replace>
+  <replace select="//node[@class='android.view.View' and @bounds='[474,98][606,230]']">
+    <node bounds="[0,159][1080,291]" checkable="false" checked="false" class="android.view.View" clickable="false" content-desc="" display-id="0" drawing-order="2" enabled="true" focusable="false" focused="false" hint="" index="2" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+      <node bounds="[270,159][810,291]" checkable="false" checked="false" class="android.view.View" clickable="true" content-desc="" display-id="0" drawing-order="0" enabled="true" focusable="true" focused="false" hint="" index="0" long-clickable="false" package="com.twitter.android" password="false" resource-id="in_app_notification" scrollable="false" selected="false" text="" visible-to-user="true">
+        <node bounds="[270,164][810,285]" checkable="false" checked="false" class="android.view.View" clickable="false" content-desc="Copied to clipboard" display-id="0" drawing-order="0" enabled="true" focusable="false" focused="false" hint="" index="0" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+        <node bounds="[383,200][763,249]" checkable="false" checked="false" class="android.widget.TextView" clickable="false" content-desc="" display-id="0" drawing-order="1" enabled="true" focusable="false" focused="false" hint="" index="1" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="Copied to clipboard" visible-to-user="true"/>
+      </node>
+    </node>
+  </replace>
+</fixture>

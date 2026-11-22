@@ -7,39 +7,40 @@
   "fixtures": [
     {
       "file": "successor-approach-0.xml",
-      "sha256": "9094a19ceb9d8992feb92e666fdf26c3aaeadfc69721bae34b99146728f2669a"
+      "sha256": "2850ae9706c40a5cb23196673dad77312421f4b70120573d1f608ff4db94ee9c"
     },
     {
       "file": "successor-approach-1.xml",
-      "sha256": "a001d51413047b35fa653d9cc04d04524774e9523074f674de5ae83cbd261fa5"
+      "sha256": "787fdc33cc406588458f8f38966227d633c7c044c3537f91aefd57bd5639b3fc"
     },
     {
       "file": "successor-approach-2.xml",
-      "sha256": "985be041b226ae96e5934f8600bf6854eeac942bc5fd22f220abedc47065133f"
+      "sha256": "d1554d6910132d8363976f2b723b1143fd67ca554f2c1e78f358b13aafa0a784"
     },
     {
       "file": "successor-approach-3.xml",
-      "sha256": "cfea2bfd5feaae0d1179e34a30bf0a0fbd71b0af077556accf65d44a0ebf891b"
+      "sha256": "353d8cdf708ad1052e129cf8b7388a7532ea6b826249c72b1a1e9b8f57dc9a60"
     },
     {
       "file": "successor-approach-4.xml",
-      "sha256": "c00a9270fb6df4adcbce20052d4fd9b332a2daec70e5f1c0e941249685a51a07"
+      "sha256": "e4a80585fa3f6816648df721a8a5abebfe6c00b2faea4b42627730591e41fcf1"
     },
     {
       "file": "successor-approach-5.xml",
-      "sha256": "b57f349cb4c3afad758b96130e7500fe6378095ca0a5825b0bab4503e3eef143"
+      "sha256": "c3dafd0e036f246f648777419fef916bf1a2a1abdd47dbae7204534601fb4192"
     },
     {
       "file": "successor-approach-6.xml",
-      "sha256": "a5e2a283f6f6705ee9da17538e8653d6885ac9f7e5ed989c3abf3a6a22735103"
+      "sha256": "02002e1d6fffcb3c733c211b3ba66f10d7c459e8ee24fd410381b3a23bbf1270"
     },
     {
       "file": "successor-approach-7.xml",
-      "sha256": "a3f0bb82cb7bd999f1308cd188259a474cbc76d8b7c614d5145b424065e702f4"
+      "sha256": "03fe825be58b663a7229c67ddc37c2ccbfcb6be6afc881e56fdad213cc006102"
     },
     {
       "file": "successor-approach-8.xml",
-      "sha256": "dd406734280eadd7c4fdcfc1a8c790a624ad4976d100f47d7ed0739a4ef0d26e"
+      "sha256": "f8efb5cb50b7241e815fbf83ebaacae08c6733deb8c7db4aedbed3cf945d7966"
     }
-  ]
+  ],
+  "xml_hash": "canonical-xml-v1"
 }

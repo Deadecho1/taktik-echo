@@ -1,13 +1,12 @@
 """Drawer-tip recognition verified through the public startup and raw device seam."""
 
-import hashlib
 import json
 from copy import deepcopy
 
 import pytest
 from lxml import etree
 from unit.paths import CORE
-from unit.x_fixtures import xml_fixture
+from unit.x_fixtures import fixture_digest, xml_fixture
 
 from taktik.core.shared.phone_interaction import (
     InteractionCancelled,
@@ -321,7 +320,4 @@ def test_synthetic_fixture_integrity():
     manifest = json.loads((FIXTURES / "drawer-tip-manifest.json").read_text())
     assert manifest["kind"] == "synthetic_native_layout"
     for item in manifest["fixtures"]:
-        assert (
-            hashlib.sha256((FIXTURES / item["file"]).read_bytes()).hexdigest()
-            == item["sha256"]
-        )
+        assert fixture_digest(FIXTURES / item["file"]) == item["sha256"]

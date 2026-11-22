@@ -4,7 +4,8 @@
     {
       "file": "share-opportunity-source.xml",
       "kind": "synthetic_native_layout",
-      "sha256": "4d3b072c8e5117ca3d3fbc5af54f5499f2afc4a2ae3b35a8170fa8808f491528"
+      "sha256": "d2aadb7434cd36f6b32f1faaa1659a75529264e2451e19c912217c6ed605d909"
     }
-  ]
+  ],
+  "xml_hash": "canonical-xml-v1"
 }

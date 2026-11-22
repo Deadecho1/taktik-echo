@@ -134,3 +134,7 @@ The input inventory hashes expanded canonical XML, while recipe base hashes chec
 
 The detail, coverage, and inspection families retain every case while removing another 5,688 XML/recipe lines.
 Their 73 converted cases comprise 58 explicit variants and 15 direct aliases, with bases kept inside each detail, caption traversal, or inspection sequence.
+
+The engagement, link, navigation, and startup sequences convert 54 further cases into 42 explicit variants and 12 direct aliases, saving 7,320 XML/recipe lines.
+Search layouts remain full XML because the reviewed recipes did not simplify them.
+All 580 original case names remain available; no case is removed.

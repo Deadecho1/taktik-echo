@@ -8,52 +8,53 @@
     {
       "file": "undo-source.xml",
       "kind": "synthetic_native_layout",
-      "sha256": "e9d55e2eb1d2f55600dac1aac13c456b5e2c26a15ce4928ba795f4da161c7a1d"
+      "sha256": "f29086ffe5f449dc454469ada49ace88ffbdc6e12cc0878e469b7f9e36275ef4"
     },
     {
       "file": "undo-options.xml",
       "kind": "synthetic_native_layout",
-      "sha256": "697d2be9f392179b9313b64ee82c3db65ee532245081d8a8351118de32dc5d69"
+      "sha256": "a5a6723e825f63613bb81ee7602e813a7f9bbfe3d2b49a01f71409c0d31c117c"
     },
     {
       "file": "undo-receipt.xml",
       "kind": "synthetic_native_layout",
-      "sha256": "d599390f26ae0dc6593d46478c72d2e1c9f5421eaf01dcc0bfb0809032393528"
+      "sha256": "84d810b779b124f798491d6f4ff46295c94b3450a5743e33484445697b47d385"
     },
     {
       "file": "undo-framing.xml",
       "kind": "synthetic_native_layout",
-      "sha256": "0ec17452a3d87f383340322c08c343972e0737432f3efe6bccfb9014b7ad6abd"
+      "sha256": "5e72627ad334708444a9cc2f7464cf6993578f9b839a5014809abfb64f506cea"
     },
     {
       "file": "undo-successor.xml",
       "kind": "synthetic_native_layout",
-      "sha256": "2afe9758f7aff1a48c98e2fc06675cc02cb41f9019aa1289dc1ac2688b715252"
+      "sha256": "147add6f9c1a63ad4479d09c0feb8b9889b61e736ea102ce75e0198565b1a149"
     },
     {
       "file": "undo-complete-source.xml",
       "kind": "synthetic_native_layout",
-      "sha256": "80ffc388f4d158971d28a662ed433f332d46222520908c42c61af9612485ffde"
+      "sha256": "9fd86ae71e953e91c3149e2431e9cddbb18c606e126fbcc31136aaf8cf86a711"
     },
     {
       "file": "undo-complete-options.xml",
       "kind": "synthetic_native_layout",
-      "sha256": "697d2be9f392179b9313b64ee82c3db65ee532245081d8a8351118de32dc5d69"
+      "sha256": "a5a6723e825f63613bb81ee7602e813a7f9bbfe3d2b49a01f71409c0d31c117c"
     },
     {
       "file": "undo-complete-transition.xml",
       "kind": "synthetic_native_layout",
-      "sha256": "cc3787c3eb713c03602458a33eb64eb8aba8f5ff07f196c12011c0d6d90b4fe3"
+      "sha256": "343df3be4f54119270c5b56e6e7b6f454876a1c2bd146331fcf043cf5bbdfa47"
     },
     {
       "file": "undo-complete-receipt.xml",
       "kind": "synthetic_native_layout",
-      "sha256": "04f9b7a724a31c35a341a9f8ddfc6ac35063c26bc96785f2aa04a3ff3f704823"
+      "sha256": "80dd9959cebe297f3026705c6f3174e6bedbcb3e072deb6ec426cc1f290ea085"
     },
     {
       "file": "undo-complete-restored.xml",
       "kind": "synthetic_native_layout",
-      "sha256": "b56039c711a8e122c1cec60706b2aa5e6788cd01f9376c83e0468a406bbc8d85"
+      "sha256": "b9fa3dfdcdecaa91218353b588f57dc7284fae9f888a1ea2ea739a0f632ea608"
     }
-  ]
+  ],
+  "xml_hash": "canonical-xml-v1"
 }

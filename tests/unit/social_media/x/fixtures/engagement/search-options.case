@@ -1,0 +1,26 @@
+<fixture base="engagement/full-screen-dismissal.xml" sha256="998408b1919a14fae6494c7da5ebf41d641263244b74f815469c2b2752d1f542">
+  <set select="//node[@content-desc='Close sheet']" bounds="[0,0][1080,987]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[0,986][1080,2339]']" bounds="[0,987][1080,2340]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[0,986][1080,2273]']" bounds="[0,987][1080,2274]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[496,986][584,1041]']" bounds="[496,987][584,1042]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[474,948][606,1041]']" bounds="[474,949][606,1042]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[496,1008][584,1019]']" bounds="[496,1009][584,1020]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[0,1041][1080,2273]']" bounds="[0,1042][1080,2274]"/>
+  <set select="//node[@class='android.widget.ScrollView' and @bounds='[0,1041][1080,2273]']" bounds="[0,1042][1080,2274]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[0,1041][1080,1195]']" bounds="[0,1042][1080,1196]"/>
+  <set select="//node[@text='Follow @NASA']" bounds="[154,1091][466,1147]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[0,1195][1080,1349]']" bounds="[0,1196][1080,1350]"/>
+  <set select="//node[@text='Add/remove from Lists']" bounds="[154,1245][633,1301]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[0,1349][1080,1503]']" bounds="[0,1350][1080,1504]"/>
+  <set select="//node[@text='Mute @NASA']" bounds="[154,1399][438,1455]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[0,1503][1080,1657]']" bounds="[0,1504][1080,1658]"/>
+  <set select="//node[@text='Block @NASA']" bounds="[154,1553][448,1609]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[0,1657][1080,1811]']" bounds="[0,1658][1080,1812]"/>
+  <set select="//node[@text='Report post']" bounds="[154,1707][404,1763]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[0,1811][1080,1965]']" bounds="[0,1812][1080,1966]"/>
+  <set select="//node[@text='Request Community Note']" bounds="[154,1861][699,1917]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[0,1965][1080,2119]']" bounds="[0,1966][1080,2120]"/>
+  <set select="//node[@text='View Post Interactions']" bounds="[154,2015][627,2071]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[0,2119][1080,2273]']" bounds="[0,2120][1080,2274]"/>
+  <set select="//node[@text='View Hidden Replies']" bounds="[154,2169][587,2225]"/>
+</fixture>
