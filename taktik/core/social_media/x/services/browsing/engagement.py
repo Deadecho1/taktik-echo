@@ -22,19 +22,53 @@ def _uncertain(action, error):
     raise XError(message, result=Result(Status.UNCERTAIN, detail=message)) from error
 
 
+def _footer_control(source, label):
+    target, region = _control(source.actions, label)
+    if (
+        target.selected is None
+        or target.state_visibility is None
+        or not target.state_visibility.unobscured
+    ):
+        _unsupported(f"The native X {label} state is unknown.")
+    return target, region
+
+
+def available_actions(source, screen, account, timeline):
+    """Observed prerequisites only; every action still verifies its fresh target."""
+    if sum(p.content_key == source.content_key for p in screen.posts) != 1:
+        return []
+    actions = []
+    for label, action in (("Like", "like"), ("Bookmark", "save")):
+        try:
+            _footer_control(source, label)
+        except XError:
+            continue
+        actions.append(action)
+    if source.author.lower() == account.lower():
+        return actions
+    try:
+        _control(source.targets, "Post options")
+    except XError:
+        return actions
+    # Relationship state and menu offerings are verified when the menu opens.
+    actions.extend(("follow", "unfollow"))
+    if (
+        screen.kind == "home"
+        and timeline == "for_you"
+        and screen.tab in {None, "For you"}
+        and not any(n.action == "not_interested" for n in screen.removal_notices)
+    ):
+        actions.append("not_interested")
+    return actions
+
+
 def set_footer(app, label, selected):
     if type(selected) is not bool:
         raise ValueError("An X engagement state must be boolean.")
     action = {"Like": "like", "Bookmark": "save"}[label]
     with app._operation():
         source = _source(app)
-        target, region = _control(source.actions, label)
-        if (
-            target.selected is None
-            or target.state_visibility is None
-            or not target.state_visibility.unobscured
-        ):
-            _unsupported(f"The native X {label} state is unknown.")
+        target, region = _footer_control(source, label)
         if target.selected == selected:
             return EngagementResult(action, source.content_key, False, selected)
         try:

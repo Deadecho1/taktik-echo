@@ -2,8 +2,6 @@
 
 import pytest
 from lxml import etree
-from unit.paths import CORE
-
 from taktik.core.shared.browsing import FeedEmpty
 from taktik.core.shared.phone_interaction import (
     InteractionCancelled,
@@ -20,6 +18,7 @@ from taktik.core.social_media.x.services.browsing.navigation import (
     _scroll_motion,
 )
 from taktik.core.social_media.x.ui.screen import PACKAGE, read_screen
+from unit.paths import CORE
 
 FIXTURES = CORE / "tests/unit/social_media/x/fixtures/search"
 SIZE = (1080, 2340)
@@ -94,6 +93,7 @@ class SearchReplay:
             "Home": "for-you",
             "Explore": "explore",
             "Search": "search-empty",
+            "Clear search": "search-empty",
         }
         if label == "Latest":
             if not self.tab_stuck:
@@ -460,6 +460,81 @@ def test_browser_search_transitions_preserve_targets_and_observation_context():
     browser.transition("for_you")
     assert browser.observe().workflow == "for_you"
     assert replay.events.count(("tap", "Show navigation drawer")) == 4
+
+
+def test_browser_can_change_only_result_tab_and_recover_that_tab():
+    replay = SearchReplay()
+    browser = XBrowser(replay.phone, {"search"})
+    browser.start("fixture_owner", "search", "astronomy")
+    original = browser.observe()
+    browser.transition("search", "astronomy", search_tab="latest")
+    latest = browser.observe()
+    assert latest.post_context["search_tab"] == "latest"
+    assert latest.username == "dragonfiinch"
+    assert latest.identity != original.identity
+    events = list(replay.events)
+    browser.transition("search", "astronomy", search_tab="latest")
+    assert replay.events == events
+    browser.recover()
+    recovered = browser.observe()
+    assert recovered.post_context["search_tab"] == "latest"
+    assert recovered.identity != latest.identity
+    assert replay.events.count(("tap", "Show navigation drawer")) == 3
+
+
+def test_new_search_clears_retained_query_through_native_button_before_typing():
+    replay = SearchReplay()
+    replay.query_input = document("search-suggestions")
+    app = X(replay.phone)
+    app.start("fixture_owner", "search", query="astronomy")
+    cleared = replay.events.index(("tap", "Clear search"))
+    typed = next(i for i, e in enumerate(replay.events) if e[0] == "type")
+    assert cleared < typed
+    assert replay.events.count(("tap", "Clear search")) == 1
+
+
+def test_failed_native_query_clear_is_not_repeated_or_followed_by_typing():
+    class StuckClear(SearchReplay):
+        def tap(self, target, exclude, kind):
+            screen = read_screen(self.xml, SIZE)
+            clear = next(
+                (c for c in screen.controls if c.label == "Clear search"), None
+            )
+            if clear is not None and target == clear.visibility.visible_bounds:
+                self.events.append(("tap", "Clear search"))
+                return
+            super().tap(target, exclude, kind)
+
+    replay = StuckClear()
+    replay.query_input = document("search-suggestions")
+    app = X(replay.phone)
+    with pytest.raises(XError, match="empty X query"):
+        app.start("fixture_owner", "search", query="astronomy")
+    assert replay.events.count(("tap", "Clear search")) == 1
+    assert not any(e[0] in {"type", "enter"} for e in replay.events)
+    assert app.verified_account is None
+
+
+@pytest.mark.parametrize("workflow,tab", [("search", "people"), ("for_you", "latest")])
+def test_browser_rejects_invalid_tab_before_touching_phone(workflow, tab):
+    replay = SearchReplay()
+    browser = XBrowser(replay.phone, {"for_you", "search"})
+    with pytest.raises(ValueError, match="result tab"):
+        browser.start("fixture_owner", workflow, "astronomy", search_tab=tab)
+    assert not replay.events
+
+
+def test_recovery_labels_the_verified_context_after_invalid_search():
+    replay = SearchReplay()
+    browser = XBrowser(replay.phone, {"for_you", "search"})
+    browser.start("fixture_owner", "for_you")
+    with pytest.raises(ValueError):
+        browser.start("fixture_owner", "search", "")
+    browser.recover()
+    observation = browser.observe()
+    assert observation.workflow == browser.browser.timeline == "for_you"
+    assert browser.target == ""
+    assert "search_query" not in observation.post_context
 
 
 @pytest.mark.parametrize(
