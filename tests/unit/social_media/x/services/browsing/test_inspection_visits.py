@@ -291,6 +291,31 @@ def test_browser_inspection_preserves_identity_and_supplies_explicit_frames():
     assert not browser.browsing_valid
 
 
+def test_browser_retains_attributed_inspection_context_until_recovery():
+    _replay, browser = started(wrapper=True)
+    source = browser.observe()
+    browser.visit_profile(source)
+    browser.inspect_thread(source, max_scrolls=0)
+    observed = browser.observe(previous=source)
+    assert observed.identity == source.identity
+    assert observed.caption == source.caption
+    profile = observed.post_context["profile_inspection"]
+    assert profile["username"] == "NASA"
+    assert profile["text"] and not profile["complete"]
+    thread = observed.post_context["thread_inspection"]
+    assert thread["posts"][0]["username"] == "InkSpireMusic"
+    assert thread["posts"][0]["body"] != source.caption
+    assert thread["main_text"] is None
+    assert not thread["complete"] and not thread["main_verified"]
+    assert thread["scrolls"] == 0
+    assert observed.post_url is None and observed.native_post_id is None
+    browser.recover()
+    recovered = browser.observe()
+    assert recovered.identity != source.identity
+    assert "profile_inspection" not in recovered.post_context
+    assert "thread_inspection" not in recovered.post_context
+
+
 @pytest.mark.parametrize(
     "options",
     [{"max_posts": 0}, {"max_posts": 51}, {"max_scrolls": 9}, {"max_scrolls": True}],

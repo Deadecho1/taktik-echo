@@ -462,6 +462,35 @@ def test_browser_search_transitions_preserve_targets_and_observation_context():
     assert replay.events.count(("tap", "Show navigation drawer")) == 4
 
 
+def test_browser_can_change_only_result_tab_and_recover_that_tab():
+    replay = SearchReplay()
+    browser = XBrowser(replay.phone, {"search"})
+    browser.start("fixture_owner", "search", "astronomy")
+    original = browser.observe()
+    browser.transition("search", "astronomy", search_tab="latest")
+    latest = browser.observe()
+    assert latest.post_context["search_tab"] == "latest"
+    assert latest.username == "dragonfiinch"
+    assert latest.identity != original.identity
+    events = list(replay.events)
+    browser.transition("search", "astronomy", search_tab="latest")
+    assert replay.events == events
+    browser.recover()
+    recovered = browser.observe()
+    assert recovered.post_context["search_tab"] == "latest"
+    assert recovered.identity != latest.identity
+    assert replay.events.count(("tap", "Show navigation drawer")) == 3
+
+
+@pytest.mark.parametrize("workflow,tab", [("search", "people"), ("for_you", "latest")])
+def test_browser_rejects_invalid_tab_before_touching_phone(workflow, tab):
+    replay = SearchReplay()
+    browser = XBrowser(replay.phone, {"for_you", "search"})
+    with pytest.raises(ValueError, match="result tab"):
+        browser.start("fixture_owner", workflow, "astronomy", search_tab=tab)
+    assert not replay.events
+
+
 @pytest.mark.parametrize(
     "keyboard",
     ["com.google.android.inputmethod.latin", "com.alexal1.adbkeyboard", None],
