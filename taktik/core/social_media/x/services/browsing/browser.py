@@ -11,6 +11,7 @@ from taktik.core.shared.browsing import (
 )
 from taktik.core.shared.phone_interaction import Phone, Result, Status
 
+from .engagement import available_actions
 from .navigation import X, XError
 
 
@@ -244,6 +245,12 @@ class XBrowser:
             else None
         )
         context = post_context(post)
+        context["available_engagement_actions"] = available_actions(
+            post,
+            self.browser._screen,
+            self.browser.verified_account,
+            self.browser.timeline,
+        )
         if self.workflow == "search":
             context["search_query"] = self.browser.query
             context["search_tab"] = self.browser.result_tab

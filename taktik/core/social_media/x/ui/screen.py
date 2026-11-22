@@ -3726,6 +3726,8 @@ def _read_window(window, area, external, keyboard, system_bars):
             raise _Unsupported("Multiple Clear search controls.")
         exclusions = (*external, *(_rect(_clickable(n, field)) for n in clear))
         controls.append(_target(field, "Query", scope, area, exclusions))
+        if clear:
+            controls.append(_target(clear[0], "Clear search", field, area, external))
         top = _rect(bar)[3]
     elif kind == "home" and collapsed:
         top, bottom = _collapsed_home(scope, landing, area, system_bars)
