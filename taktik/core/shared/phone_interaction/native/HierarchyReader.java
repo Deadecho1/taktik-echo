@@ -130,6 +130,9 @@ public final class HierarchyReader {
         Object wrapper = call(wrapperClass, "getInstance");
         Object automation = null;
         try {
+            // The installed UIAutomator bridge owns main-Looper initialization.
+            // Resolve its context before Android 16 starts accessibility callbacks.
+            call(wrapper, "getContext");
             Class<?> deviceClass = Class.forName("androidx.test.uiautomator.UiDevice");
             Object device = call(deviceClass, "getInstance",
                 new Class<?>[] {Class.forName("android.app.Instrumentation")}, wrapper);
