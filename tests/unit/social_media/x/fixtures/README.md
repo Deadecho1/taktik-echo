@@ -6,7 +6,8 @@ text is replaced with fixture values. They are synthetic parser and continuity
 inputs, not full live-feed evidence or proof of pixel visibility.
 
 The `detail/` subdirectory contains sanitized native and ordinary captures, including character geometry needed for long-caption coverage.
-Its manifest records the original and sanitized SHA-256 hashes.
+Its manifest records canonical expanded-input hashes.
+Original capture provenance remains in local migration diagnostics.
 Those captures preserve public author/body text for independent comparison and replace the test account identity.
 They establish native XML evidence; human visual review remains separate.
 
@@ -130,3 +131,6 @@ Every retained case matches the original complete native hierarchy and real pars
 Load case names with `unit.x_fixtures.xml_fixture` or use the expansion command described in [the representation guide](../../../../../docs/validation/x-fixture-representation.md).
 A `.case` stores the recipe for the corresponding `.xml` name; tests and diagnostics should use the loader for either representation.
 The input inventory hashes expanded canonical XML, while recipe base hashes check stored full XML bytes.
+
+The detail, coverage, and inspection families retain every case while removing another 5,688 XML/recipe lines.
+Their 73 converted cases comprise 58 explicit variants and 15 direct aliases, with bases kept inside each detail, caption traversal, or inspection sequence.

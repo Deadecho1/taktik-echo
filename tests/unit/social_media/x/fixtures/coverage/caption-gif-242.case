@@ -1,0 +1,87 @@
+<fixture base="coverage/caption-gif-241.xml" sha256="95534bb4a3a2d681dd568ad5d2328bf58bee5ea2af29676ddac403bec7687114">
+  <set select="//node[@class='android.view.View' and @bounds='[0,0][1080,705]']" bounds="[0,0][1080,262]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[176,0][1047,587]']" bounds="[176,0][1047,144]"/>
+  <set select="//node[@content-desc='Video']" bounds="[176,0][1047,158]"/>
+  <set select="//node[@class='androidx.compose.ui.viewinterop.u' and @bounds='[176,0][1047,601]']" bounds="[176,0][1047,158]"/>
+  <set select="//node[@class='androidx.compose.ui.viewinterop.u' and @bounds='[176,0][1047,601]']/node" bounds="[176,0][1047,158]"/>
+  <set select="//node[@resource-id='com.twitter.android:id/exo_content_frame']" bounds="[176,0][1047,158]"/>
+  <set select="//node[@resource-id='com.twitter.android:id/async_surface_texture_view']" bounds="[176,0][1047,158]"/>
+  <set select="//node[@resource-id='com.twitter.android:id/exo_subtitles']" bounds="[176,0][1047,158]"/>
+  <set select="//node[@resource-id='com.twitter.android:id/exo_subtitles']//node[@class='android.view.View' and @bounds='[176,0][1047,601]']" bounds="[176,0][1047,158]"/>
+  <set select="//node[@content-desc='Unmute']" bounds="[926,37][1058,144]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[137,587][322,705]']" bounds="[137,144][322,262]"/>
+  <set select="//node[@content-desc='Reply' and @bounds='[176,631][220,675]']" bounds="[176,188][220,232]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[197,588][322,705]']" bounds="[197,145][322,262]"/>
+  <set select="//node[@text='100']" bounds="[231,189][294,232]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[322,587][507,705]']" bounds="[322,144][507,262]"/>
+  <set select="//node[@content-desc='Repost' and @bounds='[361,631][405,675]']" bounds="[361,188][405,232]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[377,588][507,705]']" bounds="[377,145][507,262]"/>
+  <set select="//node[@text='137']" bounds="[416,189][470,232]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[507,587][692,705]']" bounds="[507,144][692,262]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[502,587][634,705]']" bounds="[502,144][634,262]"/>
+  <set select="//node[@content-desc='Like' and @bounds='[546,631][590,675]']" bounds="[546,188][590,232]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[573,588][692,705]']" bounds="[573,145][692,262]"/>
+  <set select="//node[@text='2.8K']" bounds="[601,189][676,232]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[692,587][872,705]']" bounds="[692,144][872,262]"/>
+  <set select="//node[@content-desc='Impressions' and @bounds='[731,631][775,675]']" bounds="[731,188][775,232]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[761,588][872,705]']" bounds="[761,145][872,262]"/>
+  <set select="//node[@text='5.5M']" bounds="[786,189][867,232]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[872,587][959,705]']" bounds="[872,144][959,262]"/>
+  <set select="//node[@content-desc='Bookmark' and @bounds='[916,631][959,675]']" bounds="[916,188][959,232]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[959,587][1080,705]']" bounds="[959,144][1080,262]"/>
+  <set select="//node[@content-desc='Share' and @bounds='[1003,631][1047,675]']" bounds="[1003,188][1047,232]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[0,705][1080,1359]']" bounds="[0,262][1080,916]"/>
+  <set select="//node[@content-desc='에이치엠44']" bounds="[22,295][154,427]"/>
+  <set select="//node[@resource-id='timeline_post' and @bounds='[176,738][876,798]']" bounds="[176,295][876,355]"/>
+  <set select="//node[@text='에이치엠44']" bounds="[176,295][382,355]"/>
+  <set select="//node[@content-desc='Verified' and @bounds='[391,751][432,792]']" bounds="[391,308][432,349]"/>
+  <set select="//node[@text='@HM44_HM44']" bounds="[441,304][730,353]"/>
+  <set select="//node[@text='· 8h']" bounds="[739,304][808,329]"/>
+  <set select="//node[@content-desc='Explain this post with Grok' and @bounds='[879,702][959,834]']" bounds="[879,259][959,391]"/>
+  <set select="//node[@content-desc='Post options' and @bounds='[959,702][1080,834]']" bounds="[959,259][1080,391]"/>
+  <set select="//node[@text='Translated from Japanese']" bounds="[228,373][642,416]"/>
+  <set select="//node[@text='Show original']" bounds="[653,329][884,433]"/>
+  <set select="//node[@class='android.widget.TextView' and @bounds='[176,876][1047,1241]']" bounds="[176,433][1047,798]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[137,1241][322,1359]']" bounds="[137,798][322,916]"/>
+  <set select="//node[@content-desc='Reply' and @bounds='[176,1285][220,1329]']" bounds="[176,842][220,886]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[184,1242][316,1359]']" bounds="[184,799][316,916]"/>
+  <set select="//node[@text='21']" bounds="[231,843][268,886]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[322,1241][507,1359]']" bounds="[322,798][507,916]"/>
+  <set select="//node[@content-desc='Repost' and @bounds='[361,1285][405,1329]']" bounds="[361,842][405,886]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[372,1242][504,1359]']" bounds="[372,799][504,916]"/>
+  <set select="//node[@text='34']" bounds="[416,843][460,886]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[507,1241][692,1359]']" bounds="[507,798][692,916]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[502,1241][634,1359]']" bounds="[502,798][634,916]"/>
+  <set select="//node[@content-desc='Like' and @bounds='[546,1285][590,1329]']" bounds="[546,842][590,886]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[564,1242][692,1359]']" bounds="[564,799][692,916]"/>
+  <set select="//node[@text='841']" bounds="[601,843][659,886]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[692,1241][872,1359]']" bounds="[692,798][872,916]"/>
+  <set select="//node[@content-desc='Impressions' and @bounds='[731,1285][775,1329]']" bounds="[731,842][775,886]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[755,1242][872,1359]']" bounds="[755,799][872,916]"/>
+  <set select="//node[@text='1.7M']" bounds="[786,843][856,886]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[872,1241][959,1359]']" bounds="[872,798][959,916]"/>
+  <set select="//node[@content-desc='Bookmark' and @bounds='[916,1285][959,1329]']" bounds="[916,842][959,886]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[959,1241][1080,1359]']" bounds="[959,798][1080,916]"/>
+  <set select="//node[@content-desc='Share' and @bounds='[1003,1285][1047,1329]']" bounds="[1003,842][1047,886]"/>
+  <set select="//node[@class='android.view.View' and @bounds='[0,1359][1080,2340]']" bounds="[0,916][1080,2340]"/>
+  <set select="//node[@content-desc='Nikki Siapno']" bounds="[22,949][154,1081]"/>
+  <set select="//node[@resource-id='timeline_post' and @bounds='[176,1392][876,1441]']" bounds="[176,949][876,998]"/>
+  <set select="//node[@text='Nikki Siapno']" bounds="[176,949][427,998]"/>
+  <set select="//node[@content-desc='Verified' and @bounds='[436,1396][477,1437]']" bounds="[436,953][477,994]"/>
+  <set select="//node[@text='@NikkiSiapno']" bounds="[486,949][748,998]"/>
+  <set select="//node[@text='· 1d']" bounds="[757,949][819,998]"/>
+  <set select="//node[@content-desc='Explain this post with Grok' and @bounds='[879,1359][959,1448]']" bounds="[879,916][959,1005]"/>
+  <set select="//node[@content-desc='Post options' and @bounds='[959,1359][1080,1483]']" bounds="[959,916][1080,1040]"/>
+  <set select="//node[@class='android.widget.TextView' and @bounds='[176,1448][1047,2340]']" bounds="[176,1005][1047,2340]"/>
+  <set select="//node[@resource-id='scaffold_home_tabbed']/node[@class='android.view.View' and @bounds='[0,0][1080,2340]' and @index='0']/node[@class='android.view.View' and @bounds='[389,142][691,274]' and @index='1']" bounds="[389,143][691,275]"/>
+  <set select="//node[@resource-id='ntp']" bounds="[389,143][691,275]"/>
+  <set select="//node[@content-desc='New posts']" bounds="[389,158][691,260]"/>
+  <set select="//node[@resource-id='facepile']" bounds="[467,168][647,250]"/>
+  <set select="//node[@resource-id='facepile']/node[@class='android.view.View' and @bounds='[540,142][672,274]' and @index='0']" bounds="[540,143][672,275]"/>
+  <set select="//node[@resource-id='facepile']/node[@class='android.view.View' and @bounds='[540,142][672,274]' and @index='0']/node" bounds="[540,143][672,275]"/>
+  <set select="//node[@resource-id='facepile']/node[@class='android.view.View' and @bounds='[491,142][623,274]' and @index='1']" bounds="[491,143][623,275]"/>
+  <set select="//node[@resource-id='facepile']/node[@class='android.view.View' and @bounds='[491,142][623,274]' and @index='1']/node" bounds="[491,143][623,275]"/>
+  <set select="//node[@resource-id='facepile']/node[@class='android.view.View' and @bounds='[442,142][574,274]' and @index='2']" bounds="[442,143][574,275]"/>
+  <set select="//node[@resource-id='facepile']/node[@class='android.view.View' and @bounds='[442,142][574,274]' and @index='2']/node" bounds="[442,143][574,275]"/>
+  <set select="//node[@resource-id='scaffold_home_tabbed']/node[@class='android.view.View' and @bounds='[882,2076][1036,2230]' and @index='3']" drawing-order="2" index="2"/>
+</fixture>

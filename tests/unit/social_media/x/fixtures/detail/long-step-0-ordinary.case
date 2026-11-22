@@ -1,0 +1,10 @@
+<fixture base="detail/long-step-0-native.xml" sha256="3f100b8139bd6246a33b7003e794f9d929f23c1fd8dab36982fae241a111bb8b">
+  <replace select="//node[@class='android.view.View' and @bounds='[22,345][784,477]']">
+    <node NAF="true" bounds="[22,345][784,477]" checkable="false" checked="false" class="android.view.View" clickable="true" content-desc="" display-id="0" drawing-order="1" enabled="true" focusable="true" focused="false" hint="" index="1" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+  </replace>
+  <unset select="//node[@text='Follow']" names="taktik-character-locations"/>
+  <set select="//node[@class='android.widget.TextView' and @bounds='[22,499][1047,2340]']" class="android.view.View" text=""/>
+  <unset select="//node[@class='android.widget.TextView' and @bounds='[22,499][1047,2340]']" names="taktik-character-locations"/>
+  <unset select="//node[@text='Post']" names="taktik-character-locations"/>
+  <unset select="//node[@text='Post your reply']" names="taktik-character-locations"/>
+</fixture>

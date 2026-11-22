@@ -1,0 +1,10 @@
+<fixture base="detail/long-step-0-native.xml" sha256="3f100b8139bd6246a33b7003e794f9d929f23c1fd8dab36982fae241a111bb8b">
+  <set select="//node[@resource-id='com.android.systemui:id/clock']" content-desc="8:05 PM" text="8:05"/>
+  <replace select="//node[@resource-id='PostDetail']//node[@class='android.view.View' and @bounds='[0,0][1080,2340]']">
+    <node bounds="[0,0][1080,2340]" checkable="false" checked="false" class="android.view.View" clickable="false" content-desc="" display-id="0" drawing-order="0" enabled="true" focusable="false" focused="false" hint="" index="0" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="true" selected="false" text="" visible-to-user="true">
+      <node bounds="[22,0][1047,2340]" checkable="false" checked="false" class="android.view.View" clickable="false" content-desc="" display-id="0" drawing-order="0" enabled="true" focusable="false" focused="false" hint="" index="0" long-clickable="false" package="com.twitter.android" password="false" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+    </node>
+  </replace>
+  <unset select="//node[@text='Post']" names="taktik-character-locations"/>
+  <unset select="//node[@text='Post your reply']" names="taktik-character-locations"/>
+</fixture>

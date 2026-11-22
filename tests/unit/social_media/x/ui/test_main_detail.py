@@ -1,12 +1,11 @@
 """Independent main-post evidence captured with native screen-reader semantics."""
 
-import hashlib
 import json
 
 import pytest
 from lxml import etree
 from unit.paths import CORE
-from unit.x_fixtures import xml_fixture
+from unit.x_fixtures import fixture_digest, xml_fixture
 
 from taktik.core.social_media.x.ui.detail import combine_hierarchies
 from taktik.core.social_media.x.ui.screen import read_screen
@@ -134,10 +133,7 @@ def test_obscured_main_author_never_becomes_observable():
 def test_main_detail_fixture_provenance():
     manifest = json.loads((FIXTURES / "manifest.json").read_text())
     for item in manifest["fixtures"]:
-        assert (
-            hashlib.sha256((FIXTURES / item["file"]).read_bytes()).hexdigest()
-            == item["sha256"]
-        )
+        assert fixture_digest(FIXTURES / item["file"]) == item["sha256"]
 
 
 def test_secondary_badge_fixture_integrity_and_synthetic_labels():
@@ -145,10 +141,7 @@ def test_secondary_badge_fixture_integrity_and_synthetic_labels():
     assert "Synthetic" in manifest["description"]
     for item in manifest["fixtures"]:
         assert set(item) == {"file", "sha256"}
-        assert (
-            hashlib.sha256((FIXTURES / item["file"]).read_bytes()).hexdigest()
-            == item["sha256"]
-        )
+        assert fixture_digest(FIXTURES / item["file"]) == item["sha256"]
     main = read_screen(document("badge-native"), SIZE).detail.main_post
     source = read_screen(document("badge-source"), SIZE).observable_posts[0]
     assert main.author == source.author == "@fixture_author"

@@ -1,0 +1,50 @@
+<fixture base="detail/badge-native.xml" sha256="32d77cfc70eb04e8fc7e6163439054b9ad513306cc96dc085dd64de2e3f36514">
+  <unset select="/hierarchy" names="taktik-reader"/>
+  <replace select="//node[@resource-id='PostDetail']//node[@class='android.view.View' and @bounds='[0,0][1080,2340]']">
+    <node bounds="[0,0][1080,2340]" class="android.view.View" clickable="false" content-desc="" enabled="true" focusable="false" long-clickable="false" package="com.twitter.android" resource-id="" scrollable="true" selected="false" text="" visible-to-user="true">
+      <node bounds="[22,345][784,477]" class="android.view.View" clickable="true" content-desc="" enabled="true" focusable="true" long-clickable="false" package="com.twitter.android" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+                            </node>
+      <node bounds="[806,345][959,477]" class="android.view.View" clickable="true" content-desc="" enabled="true" focusable="true" long-clickable="false" package="com.twitter.android" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+        <node bounds="[839,388][959,434]" class="android.widget.TextView" clickable="false" content-desc="" enabled="true" focusable="false" long-clickable="false" package="com.twitter.android" resource-id="" scrollable="false" selected="false" text="Follow" visible-to-user="true"/>
+        <node bounds="[806,377][992,445]" class="android.widget.Button" clickable="false" content-desc="" enabled="true" focusable="false" long-clickable="false" package="com.twitter.android" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+      </node>
+      <node bounds="[959,345][1080,477]" class="android.widget.Button" clickable="true" content-desc="Post options" enabled="true" focusable="true" long-clickable="false" package="com.twitter.android" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+      <node bounds="[22,698][634,747]" class="android.widget.TextView" clickable="false" content-desc="" enabled="true" focusable="false" long-clickable="false" package="com.twitter.android" resource-id="" scrollable="false" selected="false" text="9:00 AM • 1 Jan 25 • 12 Views" visible-to-user="true"/>
+      <node bounds="[0,750][218,882]" class="android.view.View" clickable="true" content-desc="" enabled="true" focusable="true" long-clickable="true" package="com.twitter.android" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+        <node bounds="[22,797][88,863]" class="android.view.View" clickable="false" content-desc="Reply" enabled="true" focusable="false" long-clickable="false" package="com.twitter.android" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+        <node bounds="[55,765][187,882]" class="android.view.View" clickable="false" content-desc="" enabled="true" focusable="false" long-clickable="false" package="com.twitter.android" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+          <node bounds="[99,809][142,852]" class="android.widget.TextView" clickable="false" content-desc="" enabled="true" focusable="false" long-clickable="false" package="com.twitter.android" resource-id="" scrollable="false" selected="false" text="1" visible-to-user="true"/>
+        </node>
+      </node>
+      <node bounds="[218,750][453,882]" class="android.view.View" clickable="true" content-desc="" enabled="true" focusable="true" long-clickable="true" package="com.twitter.android" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+        <node bounds="[257,797][323,863]" class="android.view.View" clickable="false" content-desc="Repost" enabled="true" focusable="false" long-clickable="false" package="com.twitter.android" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+        <node bounds="[300,765][432,897]" class="android.view.View" clickable="false" content-desc="" enabled="true" focusable="false" long-clickable="false" package="com.twitter.android" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+          <node bounds="[334,809][397,852]" class="android.widget.TextView" clickable="false" content-desc="" enabled="true" focusable="false" long-clickable="false" package="com.twitter.android" resource-id="" scrollable="false" selected="false" text="1" visible-to-user="true"/>
+        </node>
+      </node>
+      <node bounds="[453,750][688,882]" class="android.view.View" clickable="true" content-desc="" enabled="true" focusable="true" long-clickable="true" package="com.twitter.android" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+        <node bounds="[459,764][591,896]" class="android.view.View" clickable="false" content-desc="" enabled="true" focusable="false" long-clickable="false" package="com.twitter.android" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+          <node bounds="[492,797][558,863]" class="android.view.View" clickable="false" content-desc="Like" enabled="true" focusable="false" long-clickable="false" package="com.twitter.android" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+        </node>
+        <node bounds="[541,765][673,897]" class="android.view.View" clickable="false" content-desc="" enabled="true" focusable="false" long-clickable="false" package="com.twitter.android" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+          <node bounds="[569,809][645,852]" class="android.widget.TextView" clickable="false" content-desc="" enabled="true" focusable="false" long-clickable="false" package="com.twitter.android" resource-id="" scrollable="false" selected="false" text="1" visible-to-user="true"/>
+        </node>
+      </node>
+      <node bounds="[688,750][925,882]" class="android.view.View" clickable="true" content-desc="" enabled="true" focusable="true" long-clickable="true" package="com.twitter.android" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+        <node bounds="[727,797][793,863]" class="android.view.View" clickable="false" content-desc="Bookmark" enabled="true" focusable="false" long-clickable="false" package="com.twitter.android" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+        <node bounds="[767,765][899,897]" class="android.view.View" clickable="false" content-desc="" enabled="true" focusable="false" long-clickable="false" package="com.twitter.android" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+          <node bounds="[804,809][862,852]" class="android.widget.TextView" clickable="false" content-desc="" enabled="true" focusable="false" long-clickable="false" package="com.twitter.android" resource-id="" scrollable="false" selected="false" text="1" visible-to-user="true"/>
+        </node>
+      </node>
+      <node bounds="[946,750][1078,882]" class="android.view.View" clickable="true" content-desc="" enabled="true" focusable="true" long-clickable="true" package="com.twitter.android" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+        <node bounds="[979,797][1045,863]" class="android.view.View" clickable="false" content-desc="Share" enabled="true" focusable="false" long-clickable="false" package="com.twitter.android" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true"/>
+      </node>
+      <node bounds="[33,910][269,1042]" class="android.view.View" clickable="true" content-desc="" enabled="true" focusable="true" long-clickable="false" package="com.twitter.android" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+        <node bounds="[33,951][208,1000]" class="android.widget.TextView" clickable="false" content-desc="" enabled="true" focusable="false" long-clickable="false" package="com.twitter.android" resource-id="" scrollable="false" selected="false" text="Relevant" visible-to-user="true"/>
+      </node>
+      <node bounds="[743,910][1047,1042]" class="android.view.View" clickable="true" content-desc="" enabled="true" focusable="true" long-clickable="false" package="com.twitter.android" resource-id="" scrollable="false" selected="false" text="" visible-to-user="true">
+        <node bounds="[743,951][986,1000]" class="android.widget.TextView" clickable="false" content-desc="" enabled="true" focusable="false" long-clickable="false" package="com.twitter.android" resource-id="" scrollable="false" selected="false" text="View quotes" visible-to-user="true"/>
+      </node>
+    </node>
+  </replace>
+</fixture>

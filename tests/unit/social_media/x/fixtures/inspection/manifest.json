@@ -8,105 +8,72 @@
   "fixtures": [
     {
       "file": "text-source.xml",
-      "source": "tests/smoke/x-inspection-probes/20261117T123614.716319Z/01-search.xml",
-      "sha256": "73cee3b35158d33c507baffbaa8ea4196a44baabc7271f495794d3d03f7815f1",
-      "source_sha256": "da5072f3c25dde2f1c5d2a6a0651d5bf02746a79820b3481f1ec61a0e145b233"
+      "sha256": "a0bad2d909e4c736e1bcdcdf0bc40d2aa75dd161053301068ac283ed4e428adb"
     },
     {
       "file": "text-detail.xml",
-      "source": "tests/smoke/x-inspection-probes/20261117T123614.716319Z/02-detail.xml",
-      "sha256": "cf236594145866bf6955912352de1ebead859832301fd6c7e28b7aee16bb85eb",
-      "source_sha256": "38a18db51ba44d90c9aad36177cef2b34ab8cb6def976cf7da063fd7d85d177d"
+      "sha256": "550efd0adea2950d2a82b9d766b9dd20ca7e8296a906b6c0c9a6779a57aa09f7"
     },
     {
       "file": "profile.xml",
-      "source": "tests/smoke/x-inspection-probes/20261117T123614.716319Z/05-profile.xml",
-      "sha256": "3f37a4550043f19f50bdcd48c4de49419e1f737e505d202c5ac13a8783ef1b2b",
-      "source_sha256": "25974ae8d3de74611c9fa234f2e124961eec29d5d3db02c4ff4d43a61cc01633"
+      "sha256": "43997e700b7c9848e86a329a8d36f1c670e7a671ba68dd80aad46a2cc5289798"
     },
     {
       "file": "text-return.xml",
-      "source": "tests/smoke/x-inspection-probes/20261117T123614.716319Z/06-profile-return.xml",
-      "sha256": "73cee3b35158d33c507baffbaa8ea4196a44baabc7271f495794d3d03f7815f1",
-      "source_sha256": "da5072f3c25dde2f1c5d2a6a0651d5bf02746a79820b3481f1ec61a0e145b233"
+      "sha256": "a0bad2d909e4c736e1bcdcdf0bc40d2aa75dd161053301068ac283ed4e428adb"
     },
     {
       "file": "image-source.xml",
-      "source": "tests/smoke/x-inspection-probes/20261117T124023.822773Z/01-search.xml",
-      "sha256": "5e75740ad1cea8e0bd5a8add1da134efafe06af7435e68a3e3b65bf77fcd0b95",
-      "source_sha256": "870db109221c331e5d7baf9949518c6803a6f0f1bc906537edbe6c2e2c973be3"
+      "sha256": "33cfa2a76171e7d282f98cf7198d8f026c74e9d1a6d230153be85abbc24672bb"
     },
     {
       "file": "image-detail.xml",
-      "source": "tests/smoke/x-inspection-probes/20261117T123904.033851Z/03-detail-reread.xml",
-      "sha256": "b7ee4c63715322bfcdf3fa1eb19d3d8bba4e2174cf04bdeb77d7bf2342b8ebac",
-      "source_sha256": "69e859c939f60e7c3c5ab4e08bd075e0e5a10d680f51de03121dd610b8e6d908"
+      "sha256": "1bcf7ebc8469b9690a2adf05960397f4fabf2b659f6b978a9c57fffa00cd7b50"
     },
     {
       "file": "image-detail-scrolled.xml",
-      "source": "tests/smoke/x-inspection-probes/20261117T123904.033851Z/03b-detail-scroll.xml",
-      "sha256": "4dca7b0dc1fd6eadb38291acb8e35435c4bc7847a3e1a36f3f2b8c9d7e97c151",
-      "source_sha256": "d42a07d8d9435f7d8c06123d3b5dda053604a423431a485ddb3806a0efde21c1"
+      "sha256": "d8e3c2aa30852ace444639f54242e54dc958494cd333fa2f0828c7c526f5973e"
     },
     {
       "file": "image-gallery.xml",
-      "source": "tests/smoke/x-inspection-probes/20261117T124023.822773Z/07-media.xml",
-      "sha256": "065e26135abccde740b8fd54017015a239895eef587b2a9d1edb9baa32511783",
-      "source_sha256": "f2db8fcf506eeab4a3d3ed774887b6c77da66f108fdab397cf3d34ac238253b4"
+      "sha256": "597a3367d4c94ae5296fe569926937b35ad9bd7f6e7f85ee961b90f46bc9e2e1"
     },
     {
       "file": "image-return.xml",
-      "source": "tests/smoke/x-inspection-probes/20261117T124023.822773Z/06-profile-return.xml",
-      "sha256": "5e75740ad1cea8e0bd5a8add1da134efafe06af7435e68a3e3b65bf77fcd0b95",
-      "source_sha256": "680c296ea9a1980ccb483c5fa45bad5af079d6a5497227edb2fed7fa91b9be4b"
+      "sha256": "33cfa2a76171e7d282f98cf7198d8f026c74e9d1a6d230153be85abbc24672bb"
     },
     {
       "file": "legacy-profile.xml",
-      "source": "../persona-engine-x/tests/fixtures/x/public-profile.xml",
-      "sha256": "23bce8b73f720df13681e5ceb8b05cdad5e93a9bed310e35511b2abe35aa7366",
-      "source_sha256": "23bce8b73f720df13681e5ceb8b05cdad5e93a9bed310e35511b2abe35aa7366"
+      "sha256": "184182970a4b953d5ab2fd48bc360e3b438169031e04be6ea9f7a264c968fcd3"
     },
     {
       "file": "legacy-detail.xml",
-      "source": "../persona-engine-x/tests/fixtures/x/post-details.xml",
-      "sha256": "8e8b2645fe440aac1a3e2c5ad8d531ad91c35cf66e7ea64dc8a1e46fb79252cc",
-      "source_sha256": "8e8b2645fe440aac1a3e2c5ad8d531ad91c35cf66e7ea64dc8a1e46fb79252cc"
+      "sha256": "1440957ade0b6399675e9623bb62ef111611b3d0928cba30ca4df8312d2f4239"
     },
     {
       "file": "thread-initial.xml",
-      "source": "tests/smoke/x-inspection-runs/20261117T130556.304837Z/snapshot-024.xml",
-      "sha256": "a1c73defe421ba284f26a352f35ee1191d665cd9ed80473f63bace46991dcbc8",
-      "source_sha256": "fda825ce023ec28064196f9b556c1c59b2a3b6b2836e9b0873877ea49f623bd2"
+      "sha256": "623e62db08002805bd05958450b330bf22de7d393979df680fbd713e564d923c"
     },
     {
       "file": "thread-ready.xml",
-      "source": "tests/smoke/x-inspection-runs/20261117T130556.304837Z/snapshot-025.xml",
-      "sha256": "d0ad821df73ce3be34b395ad30822994ab152f4c0122e3324004b70a15f88b49",
-      "source_sha256": "2a4e84ef29f4077a884d05d1c37a2f7735ffa52079a736cf68a75e90bc8c405d"
+      "sha256": "5943e19e77770141936931585a8ed96961ece351ee6510136666302621599f53"
     },
     {
       "file": "thread-first-scroll.xml",
-      "source": "tests/smoke/x-inspection-runs/20261117T130556.304837Z/snapshot-026.xml",
-      "sha256": "809a9e37682dde49a27c92faf68f74e1fe3f5d05e31b8e307f1e1d6eae1ff3d7",
-      "source_sha256": "0c94aa675e4f23cbae2cc7b931c7ef4feebe7d5ee61530ea228197662dea0cfd"
+      "sha256": "745b2c2a2086d0632d243db8be1b0fdb65caa8573874b33a586aab4583fa10bc"
     },
     {
       "file": "thread-second-scroll.xml",
-      "source": "tests/smoke/x-inspection-runs/20261117T130556.304837Z/snapshot-028.xml",
-      "sha256": "23da9af3d190100aa8e1705109312971061ff32dee4dceb2404b6204d9313bf6",
-      "source_sha256": "6caf31a4b5e3f1113d68429d148ba607cf66570cc47ecf92fde604fe347102b4"
+      "sha256": "a034fc38319f63f7b12a4312f7525881130648605cad79dee70478d3795b28c4"
     },
     {
       "file": "thread-header-restored.xml",
-      "source": "tests/smoke/x-inspection-runs/20261117T130556.304837Z/snapshot-030.xml",
-      "sha256": "c921facb771dc96f6b44bf91c85f1f424efba9d48d7f96c4d5bd342bf6af89b7",
-      "source_sha256": "3ee56782d211f921689c17e75af995c86326c2445ac54b998b93107e80b4e416"
+      "sha256": "80ce27e75500f4ed631f2b09e52f53c1b2f9e10e7135c44654ccdb2c512db9f6"
     },
     {
       "file": "ambiguous-image-source.xml",
-      "source": "tests/smoke/x-soak-runs/20261120T141911.022052Z/snapshot-000162-hierarchy.xml",
-      "sha256": "a04e9a7c184a6bbbd3b6bbbf2b3e3f923c9a8db4010ab1457f0658056ec73f06",
-      "source_sha256": "dae69427e06823a02c27f166b91d97a9054c11fc503fe8296d8a60e2d7395a16"
+      "sha256": "66b9afeef1bb0ada40f412b2ad072049498f1e72e6ccef1d9503ba88dc51bd1b"
     }
-  ]
+  ],
+  "xml_hash": "canonical-xml-v1"
 }

@@ -7,7 +7,7 @@ import json
 import pytest
 from lxml import etree
 from unit.paths import CORE
-from unit.x_fixtures import xml_fixture
+from unit.x_fixtures import fixture_digest, xml_fixture
 
 from taktik.core.shared.behavior.tap import free_tap_zone
 from taktik.core.shared.ui.geometry import bounds
@@ -36,10 +36,7 @@ def test_captured_inspection_fixture_hashes():
     manifest = json.loads((FIXTURES / "manifest.json").read_text())
     assert manifest["size"] == list(SIZE)
     for item in manifest["fixtures"]:
-        assert (
-            hashlib.sha256((FIXTURES / item["file"]).read_bytes()).hexdigest()
-            == item["sha256"]
-        )
+        assert fixture_digest(FIXTURES / item["file"]) == item["sha256"]
 
 
 def test_profile_identity_is_separate_from_authors_of_its_reposts():
