@@ -2359,6 +2359,20 @@ class X:
             raise XError("The active X handle does not match the configured account.")
         return handle
 
+    def _close_drawer(self, screen):
+        self._verify_account(screen)
+        if not screen.drawer_back:
+            self._tap(screen, "Close navigation menu")
+            return
+        fresh = self._snapshot()
+        self._verify_account(fresh)
+        if not fresh.drawer_back:
+            raise XError("The X drawer changed before dismissal.")
+        if fresh.android_back is not None:
+            self.phone.tap(fresh.android_back, kind="immediate").require()
+        else:
+            self.phone.command("back").require()
+
     def _reach_home(self, screen):
         for attempt in range(RESTORE_ATTEMPTS + 1):
             if screen.kind == "home" and any(
@@ -2374,7 +2388,7 @@ class X:
                 screen = self._wait_for(lambda s: s.kind == "home", "Home expansion")
             elif screen.kind == "drawer":
                 self._verify_account(screen)
-                self._tap(screen, "Close navigation menu")
+                self._close_drawer(screen)
                 screen = self._wait_for(
                     lambda s: s.kind not in {"drawer", "unsupported"},
                     "drawer dismissal",
@@ -2447,7 +2461,7 @@ class X:
             self._tap(screen, "Show navigation drawer")
             drawer = self._wait_for(lambda s: s.kind == "drawer", "X account drawer")
             account = self._verify_account(drawer)
-            self._tap(drawer, "Close navigation menu")
+            self._close_drawer(drawer)
             screen = self._wait_for(lambda s: s.kind == "home", "return to X Home")
             screen = self._reach_home(screen)
             if timeline == "search":
