@@ -1,0 +1,4 @@
+<fixture base="detail/long-source.xml" sha256="1b82a02b136cb0c9fa7c7bfd63362e0e0fe502875f5835e5620f85de9ec1dd84">
+  <set select="//node[@text='· 4h']" bounds="[714,477][783,526]" text="· 5h"/>
+  <set select="//node[@resource-id='com.android.systemui:id/clock']" content-desc="8:05 PM" text="8:05"/>
+</fixture>

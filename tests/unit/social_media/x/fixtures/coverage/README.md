@@ -2,7 +2,8 @@
 
 These XML fixtures preserve native geometry and public post content at 1080 × 2340.
 The November 2026 captures use Android 13 and English X.
-The manifest records source paths, original hashes, fixture hashes, and the app version for each capture.
+The manifest records canonical expanded-input hashes and the app version for each capture.
+Original capture paths and source hashes remain in local migration diagnostics.
 The older plural media-tag reference uses X `12.41.0-prod.01`; the new direct sessions use `12.42.0-prod.01`.
 Owner names are replaced and external system-window children are removed while retaining their bounds.
 Screenshots remain local and have not received new human visual approval.
@@ -35,4 +36,4 @@ The `caption-gif-entry` pair captures a later attempt where the first body edge 
 The eight `caption-gif-physical-17` through `caption-gif-physical-24` fixtures preserve one complete successful physical advance from run `20261120T194306.709075Z`.
 Its seven gestures include pending entry, the first lower-edge reveal, independently reverified movement, footer revelation, and an observable successor.
 These are separate captured sequences, not a synthetic splice or evidence that the original expanded caption became complete.
-Their source and sanitized hashes are recorded in the manifest; synthetic mutations in tests only establish rejection behavior.
+Their canonical expanded-input hashes are recorded in the manifest; synthetic mutations in tests only establish rejection behavior.

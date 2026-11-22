@@ -7,15 +7,16 @@
   "fixtures": [
     {
       "file": "badge-source.xml",
-      "sha256": "0c91db9c55fbc14c67ebf61bcd16d3421bee9e0c9c2e089de0f454eefcf71544"
+      "sha256": "3a066525a6a79bf8f6a1f8414da6e4d7a09d163fd454091ffbfa98ac2b6f7a6f"
     },
     {
       "file": "badge-native.xml",
-      "sha256": "32d77cfc70eb04e8fc7e6163439054b9ad513306cc96dc085dd64de2e3f36514"
+      "sha256": "fd83ec5049b9c3ba647a6c42c8a72b3922cb9e04515bd255fca96618151ef890"
     },
     {
       "file": "badge-ordinary.xml",
-      "sha256": "5cda9c457f038f52fdd8de68c09111fa1f794cfcc026fe9ba7ccd9e09a76bf98"
+      "sha256": "6cd9b9e2c15ce6f9151c3653888276452d6bb3a069417f185577b72443e845e6"
     }
-  ]
+  ],
+  "xml_hash": "canonical-xml-v1"
 }

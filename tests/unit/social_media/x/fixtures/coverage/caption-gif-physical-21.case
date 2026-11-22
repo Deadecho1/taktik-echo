@@ -1,0 +1,11 @@
+<fixture base="coverage/caption-gif-physical-20.xml" sha256="2952c762e791696e249f00c670f833bddda739091d4958d32e7c8d7ff6a80145">
+  <set select="//node[@class='android.widget.TextView' and @bounds='[176,0][1047,2232]']" bounds="[176,0][1047,1625]"/>
+  <set select="//node[@resource-id='scaffold_home_tabbed']/node[@class='android.view.View' and @bounds='[0,0][1080,2340]' and @index='0']/node[@class='android.view.View' and @bounds='[0,0][1080,2340]' and @index='0']/node/node[@class='android.view.View' and @bounds='[176,2254][1047,2340]' and @index='1']" bounds="[176,1647][1047,2340]"/>
+  <set select="//node[@content-desc='GIF']" bounds="[176,1647][1047,2340]"/>
+  <set select="//node[@class='androidx.compose.ui.viewinterop.u' and @bounds='[176,2254][1047,2340]']" bounds="[176,1647][1047,2340]"/>
+  <set select="//node[@class='androidx.compose.ui.viewinterop.u' and @bounds='[176,2254][1047,2340]']/node" bounds="[176,1647][1047,2340]"/>
+  <set select="//node[@resource-id='com.twitter.android:id/exo_content_frame']" bounds="[176,1647][1047,2340]"/>
+  <set select="//node[@resource-id='com.twitter.android:id/exo_content_frame']/node[@class='android.view.View' and @bounds='[176,2254][1047,2340]' and @index='0']" bounds="[176,1647][1047,2340]"/>
+  <set select="//node[@resource-id='com.twitter.android:id/exo_subtitles']" bounds="[176,1647][1047,2340]"/>
+  <set select="//node[@resource-id='com.twitter.android:id/exo_subtitles']//node[@class='android.view.View' and @bounds='[176,2254][1047,2340]']" bounds="[176,1647][1047,2340]"/>
+</fixture>

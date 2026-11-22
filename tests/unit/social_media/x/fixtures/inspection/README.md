@@ -6,7 +6,8 @@ The two legacy captures come from the original `12.41.0-prod.01` inspection pack
 Public account and post text remain intact; external windows retain only their root geometry.
 No active-account drawer, private messages, keyboard suggestions, or screenshots are included.
 
-`manifest.json` records the local source, original SHA-256, and sanitized fixture SHA-256 for each capture.
+`manifest.json` records canonical expanded-input hashes for each capture.
+Original capture paths and source hashes remain in local migration diagnostics.
 The raw sources remain under ignored `tests/smoke/` or in the original persona fixture package.
 XML checks do not establish pixel visibility; no new human screenshot review is claimed.
 
