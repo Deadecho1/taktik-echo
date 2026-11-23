@@ -95,6 +95,7 @@ def _detail_context(before, after):
         and new is not None
         and (
             old.author != new.author
+            or old.display_name != new.display_name
             or old.labels != new.labels
             or old.body != new.body
             or _quote_content(old.quoted_post) != _quote_content(new.quoted_post)
@@ -180,12 +181,20 @@ def inspect_thread(app, *, max_posts, max_scrolls):
     _limit(max_posts, "max_posts", 1, 50)
     _limit(max_scrolls, "max_scrolls", 0, 8)
     with app._visit("Open post", "detail") as (source, screen):
+        reference = screen
         current = app._snapshot()
         _detail_context(screen, current)
-        _verify_main_source(source, screen.detail.main_post)
-        main_verified = _verify_main_source(source, current.detail.main_post)
-        screen, detail = current, current.detail
+        initial_verified = _verify_main_source(source, screen.detail.main_post)
+        current_verified = _verify_main_source(source, current.detail.main_post)
+        main_verified = initial_verified or current_verified
+        detail = (
+            current.detail
+            if current.detail.main_header_visible is True
+            else screen.detail
+        )
         coverage = _TextCoverage(detail)
+        coverage.add(screen.detail)
+        screen = current
         posts, seen = [], set()
         scrolls = 0
         while True:
@@ -202,6 +211,7 @@ def inspect_thread(app, *, max_posts, max_scrolls):
                 break
             current = app._snapshot()
             _detail_context(screen, current)
+            _detail_context(reference, current)
             _verify_main_source(source, current.detail.main_post)
             try:
                 stationary = _scroll_motion(screen, current)
@@ -218,6 +228,7 @@ def inspect_thread(app, *, max_posts, max_scrolls):
             scrolls += 1
             after = app._snapshot()
             _detail_context(current, after)
+            _detail_context(reference, after)
             _verify_main_source(source, after.detail.main_post)
             try:
                 shift = _scroll_motion(current, after)

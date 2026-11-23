@@ -89,3 +89,38 @@ def test_observed_truncation_control_does_not_mean_the_caption_is_complete():
     result = app.inspect_thread(max_scrolls=8)
     assert len(result.main_text) == 1857 and result.main_text.endswith(" Show more")
     assert not result.main_text_complete
+
+
+@pytest.mark.parametrize("missing", ["name", "handle", "both"])
+def test_partial_header_during_long_reading_preserves_coverage_and_forward_direction(
+    missing,
+):
+    from unit.social_media.x.ui.test_main_detail import partial_header
+
+    replay, app = started()
+    read = replay.read
+    omissions = []
+
+    def without_header(what):
+        xml = read(what)
+        if (
+            what == "screen_reader_hierarchy"
+            and replay.stage == 0
+            and replay.native_reads > 1
+        ):
+            omissions.append(missing)
+            return partial_header(xml, missing)
+        return xml
+
+    replay.read = without_header
+    source = app.observe()
+    report = app.inspect_thread(max_scrolls=8)
+    assert omissions
+    expected = read_screen(document("long-step-0-native"), SIZE).detail.main_post.body
+    assert report.main_text == expected
+    assert report.detail.main_post.body == expected
+    assert len(report.main_text) == 1857 and report.main_text_complete
+    assert not report.main_verified and not report.detail.main_post.body_complete
+    assert report.scrolls == 8
+    assert [e[2] for e in replay.events if e[0] == "gesture"] == ["up"] * 8 + ["down"]
+    assert app.observe().content_key == source.content_key == report.source_key

@@ -118,3 +118,14 @@ No next-post capture is present, and the separate unchanged-frame test preserves
 The author, organization, body, counts, and timestamp are fictional.
 The public Phone/TaktikDevice regression uses the source fixture again for its synthetic successful return.
 `detail/badge-manifest.json` records synthetic fixture hashes only.
+
+`detail/missing-header-{ordinary,native,native-second}.xml` preserve the full 1440 × 3216 layouts from one ordinary capture and two independent native captures.
+Author/display names, captions, counts, ages, timestamps, and personal system labels are synthetic; all node geometry, window ordering, required native controls, and body character geometry remain.
+Label character offsets are removed where the replacement label has a different length.
+The missing-name header contains only a handle below the viewport boundary, while its avatar description retains a synthetic display name.
+The native quote must never provide the main author's identity.
+The bottom Android navigation window remains a separate occlusion, not a clipboard receipt.
+`detail/missing-header-manifest.json` records only sanitized fixture hashes; raw captures remain in local diagnostics.
+Tests derive handle-boundary and missing-text variants from these fixtures.
+The toolbar reveal and subsequent Home/account sequence are explicitly synthetic continuations; no successful physical restoration sequence was captured.
+The separate synthetic badge visit exercises restored source verification and return to the selected occurrence through the real Phone/TaktikDevice boundary.

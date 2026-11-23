@@ -6,6 +6,9 @@ from dataclasses import replace
 import pytest
 from lxml import etree
 from PIL import Image
+from unit.social_media.x.services.browsing.test_search import SearchReplay
+from unit.social_media.x.ui.test_inspection_screen import SIZE, document
+
 from taktik.core.shared.behavior.tap import free_tap_zone
 from taktik.core.shared.phone_interaction import (
     InteractionCancelled,
@@ -16,8 +19,6 @@ from taktik.core.shared.ui.geometry import bounds
 from taktik.core.social_media.x.services.browsing.browser import XBrowser
 from taktik.core.social_media.x.services.browsing.navigation import X, XError
 from taktik.core.social_media.x.ui.screen import PACKAGE, read_screen
-from unit.social_media.x.services.browsing.test_search import SearchReplay
-from unit.social_media.x.ui.test_inspection_screen import SIZE, document
 
 
 class InspectionReplay(SearchReplay):
@@ -374,12 +375,12 @@ def test_collapsed_detail_return_restores_back_with_one_bounded_scroll():
     assert ("back", None) not in replay.events
 
 
-def test_collapsed_detail_back_restoration_exhausts_its_bound_without_blind_back():
+def test_collapsed_detail_back_restoration_stops_on_no_progress_without_blind_back():
     replay, app = started(image=True)
     replay.detail = document("image-detail-scrolled")
-    with pytest.raises(XError, match="Back control within the limit"):
+    with pytest.raises(XError, match="Cannot verify progress.*Back control"):
         app.inspect_thread(max_scrolls=0)
-    assert len([e for e in replay.events if e[0] == "gesture"]) == 8
+    assert len([e for e in replay.events if e[0] == "gesture"]) == 1
     assert ("back", None) not in replay.events
     assert ("tap", "inspection Back") not in replay.events
     assert app.verified_account is None
