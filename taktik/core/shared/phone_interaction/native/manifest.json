@@ -1,8 +1,10 @@
 {
   "minimum_android_api": 26,
-  "compiler_sha256": "9007144728d47b5f11338c9292d5b74899b6579ad9ddc6942d419e3600c3d6d7",
+  "compiler_sha256": "fe1e15d8d1dd2cdb43d6d62c6982534466439d5c1a68889a3aa4acf8a944393f",
   "files": {
-    "HierarchyReader.java": "376b15f0ef34107529816c30c02a27500eac8a915215a61e016f1b2ca4f0b65a",
-    "hierarchy-reader.dex": "f418ea12a2df5790d7fee77a03b6ffa098bf6c3b0ce1ebe1aff3e55c603e7e5d"
-  }
+    "HierarchyReader.java": "d659024d30dd3e48ec7d73fd44c060fbb15f473bc9cd5a320a78231031e02dc8",
+    "hierarchy-reader.dex": "cf5b1b5cde7218317ef562f5fddee6eb97308ad4778f47b63163d223db4aad75"
+  },
+  "compiler_url": "https://storage.googleapis.com/r8-releases/raw/8.6.27/r8.jar",
+  "javac_release": 8
 }

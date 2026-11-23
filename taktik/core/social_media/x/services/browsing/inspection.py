@@ -263,6 +263,8 @@ def _gallery_matches(screen, source, media):
         or gallery.description != media.description.removeprefix("Image: ")
     ):
         raise XError("The X media gallery does not verify the selected post and image.")
+    if gallery.crop is None:
+        raise XError("The X gallery image is fully covered by controls.")
     return gallery
 
 
@@ -307,7 +309,7 @@ def inspect_media(app, *, index, frame_count, interval):
                     tuple(frames),
                     "gallery",
                     gallery.crop,
-                    False,
+                    gallery.partial,
                 )
             return result
         if (

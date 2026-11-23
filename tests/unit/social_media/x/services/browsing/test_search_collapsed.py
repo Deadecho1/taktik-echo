@@ -5,15 +5,16 @@ from unittest.mock import Mock
 
 import pytest
 from lxml import etree
-from unit.paths import CORE
-
 from taktik.core.shared.phone_interaction import Phone, Result, Status
 from taktik.core.social_media.x.services.browsing.navigation import (
     X,
     XError,
     _alignment,
+    _intersection,
+    scroll_region,
 )
 from taktik.core.social_media.x.ui.screen import PACKAGE, read_screen
+from unit.paths import CORE
 
 FIXTURES = CORE / "tests/unit/social_media/x/fixtures/search"
 SIZE = (1080, 2340)
@@ -99,6 +100,41 @@ def test_reaching_home_from_collapsed_search_reveals_and_uses_back():
     app.phone.gesture.assert_called_once()
     assert app.phone.gesture.call_args.args[1] == "down"
     app.phone.tap.assert_called_once()
+
+
+def test_exhausted_post_regions_fall_back_to_captured_safe_navigation_margin():
+    screen = read_screen(
+        (FIXTURES / "results-exhausted-scroll-area.xml").read_text(), (1440, 3216)
+    )
+    assert screen.kind == "search_results" and screen.collapsed
+    assert screen.scroll_areas and screen.navigation_areas
+    region, distance, exclusions = scroll_region(screen)
+    assert region == (0, 444, 200, 2728)
+    assert distance > 0
+    assert not any(_intersection(region, area) for area in exclusions)
+
+
+def test_recovery_can_reveal_collapsed_search_with_exhausted_post_regions():
+    app, expanded = app_at_expanded_results()
+    collapsed = read_screen(
+        (FIXTURES / "results-exhausted-scroll-area.xml").read_text(), (1440, 3216)
+    )
+    home = read_screen((FIXTURES / "for-you.xml").read_text(), SIZE)
+    app.phone.gesture.return_value = Result(Status.SUCCESS)
+    app.phone.tap.return_value = Result(Status.SUCCESS)
+    app._wait_for = Mock(side_effect=[expanded, home])
+    assert app._reach_home(collapsed) == home
+    app.phone.gesture.assert_called_once()
+    assert app.phone.gesture.call_args.args[2] == (0, 444, 200, 2728)
+
+
+def test_fallback_does_not_scroll_when_navigation_margin_is_also_covered():
+    screen = read_screen(
+        (FIXTURES / "results-exhausted-scroll-area.xml").read_text(), (1440, 3216)
+    )
+    screen = replace(screen, overlaps=(*screen.overlaps, screen.content_viewport))
+    with pytest.raises(XError, match="No continuous X scroll region"):
+        scroll_region(screen)
 
 
 COVERAGE_FIXTURES = CORE / "tests/unit/social_media/x/fixtures/coverage"

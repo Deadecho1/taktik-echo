@@ -253,6 +253,8 @@ class Screen:
     tab: str | None = None
     query: str | None = None
     active_account: str | None = None
+    drawer_back: bool = False
+    android_back: Rect | None = None
     profile_handle: str | None = None
     content_viewport: Rect | None = None
     overlaps: tuple[Rect, ...] = ()
@@ -406,7 +408,8 @@ def _header_bar(node, scope):
 
 
 def _drawer(root, area, overlays):
-    close = _one(_desc(root, "Close navigation menu"), "drawer dismissal")
+    close_nodes = _desc(root, "Close navigation menu")
+    close = _one(close_nodes, "drawer dismissal") if close_nodes else None
     profile = _one(root.xpath('.//*[@text="Profile"]'), "drawer Profile row")
     menu = _one(
         [
@@ -425,12 +428,31 @@ def _drawer(root, area, overlays):
     handle = _handle(header.iter(), "drawer account handle")
     if not _visibility(handle, area, overlays).unobscured:
         raise _Unsupported("Drawer account handle is obscured.")
+    if close is None:
+        surface = menu.getparent()
+        if (
+            _rect(surface)[::2] != area[::2]
+            or _rect(header)[::2] != area[::2]
+            or not _visibility(surface, area, overlays).unobscured
+            or len(_desc(header, "More options")) != 1
+            or any(
+                len(header.xpath(".//*[@text=$label]", label=label)) != 1
+                for label in ("Following", "Followers")
+            )
+            or len(menu.xpath('.//*[@text="Settings and privacy"]')) != 1
+        ):
+            raise _Unsupported("Unrecognized full-width X account drawer.")
     return Screen(
         "drawer",
         active_account=handle.get("text"),
+        drawer_back=close is None,
         overlaps=overlays,
         controls=(
-            _target(close, "Close navigation menu", root, area, overlays),
+            *(
+                (_target(close, "Close navigation menu", root, area, overlays),)
+                if close is not None
+                else ()
+            ),
             _target(profile, "Profile", root, area, overlays),
         ),
     )
@@ -3582,6 +3604,7 @@ def _search_empty(scope, query, viewport, overlays):
 def _read(root, area):
     from .drawer import tip_bounds
     from .links import empty_system_window, read_clipboard
+    from .system_navigation import bottom_bar
 
     windows = [n for n in root if n.get("package") == PACKAGE]
     tip, tips = None, ()
@@ -3604,6 +3627,8 @@ def _read(root, area):
     if any(n.get("package") != PACKAGE for n in window.iter()):
         raise _Unsupported("Unexpected package inside X window.")
     keyboard, system_bars, receipts, clipboard_overlays = [], [], [], []
+    navigation_bars = []
+    android_back = None
     empty_window = False
     fullscreen_window = False
     for other in root:
@@ -3616,6 +3641,9 @@ def _read(root, area):
             keyboard.append(_rect(other))
         elif other.get("package") != "com.android.systemui":
             raise _Unsupported("Unrecognized external window.")
+        elif bar := bottom_bar(other, area):
+            navigation_bars.append(bar[0])
+            android_back = bar[1]
         elif _rect(other)[1] != 0 or (
             _rect(other) == area and empty_system_window(other, area)
         ):
@@ -3629,13 +3657,21 @@ def _read(root, area):
             system_bars.append(_rect(other))
     if tip is not None and (keyboard or clipboard_overlays):
         raise _Unsupported("Conflicting X drawer overlays.")
-    external = (*keyboard, *system_bars, *clipboard_overlays, *tips)
+    if len(navigation_bars) > 1:
+        raise _Unsupported("Ambiguous Android navigation bars.")
+    if android_back and any(
+        _intersect(android_back, cover)
+        for cover in (*keyboard, *system_bars, *clipboard_overlays, *tips)
+    ):
+        android_back = None
+    external = (*keyboard, *system_bars, *navigation_bars, *clipboard_overlays, *tips)
     if len(clipboard_overlays) > 1:
         raise _Unsupported("Ambiguous clipboard receipts.")
     screen = replace(
         _read_window(window, area, external, keyboard, system_bars),
         clipboard_text=receipts[0] if receipts else None,
         clipboard_bounds=clipboard_overlays[0] if clipboard_overlays else None,
+        android_back=android_back,
     )
     if tip is not None and screen.kind != "drawer":
         raise _Unsupported("X drawer tip requires a recognized drawer.")
@@ -3665,7 +3701,11 @@ def _read_window(window, area, external, keyboard, system_bars):
         landing = window
     else:
         landing = _one(landings, "MainLanding")
-    if _desc(landing, "Close navigation menu"):
+    if _desc(landing, "Close navigation menu") or (
+        landing.xpath('.//*[@text="Profile"]')
+        and landing.xpath('.//*[@text="Settings and privacy"]')
+        and not any(n.get("resource-id") in PRIMARY for n in landing.iter())
+    ):
         return _drawer(landing, area, external)
     explore_settings = [
         node

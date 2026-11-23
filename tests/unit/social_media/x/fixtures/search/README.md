@@ -15,6 +15,14 @@ The 350-pixel displacement, changed queries, keyboard variants, and failure case
 They verify code behavior and XML evidence, not a physical search run or current device versions.
 `search-empty.xml` is an empty query field, not evidence of a no-results state.
 
+`results-exhausted-scroll-area.xml` was captured from a stalled search debug
+session on Android 16 at 1440 × 3216 on 22 November 2026. A clipped post supplies
+a scroll area too small to use, while an earlier post has verified navigation
+space along its left margin. The safe region `(0, 444, 200, 2728)` excludes all
+reported media and controls. Authors, handles, body text and notification
+descriptions are anonymized. The raw capture remains in Echoseek's ignored
+operation directory; screenshot review was by the coding agent only.
+
 `explore-new-feature.xml` retains the chrome from the 17 November 2026 physical search stop on X `12.42.0-prod.01`, Android 13, at 1080 × 2340.
 The native Settings label is `Explore Settings. New feature available`.
 Trend-list children and external-window contents are removed; screen markers, navigation, tabs, header controls, and their geometry are unchanged.

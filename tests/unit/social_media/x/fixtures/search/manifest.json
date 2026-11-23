@@ -417,6 +417,38 @@
         "review_id": "R3",
         "evidence": "Explicit human Lavish verdict matched to the source screenshot SHA-256."
       }
+    },
+    {
+      "file": "results-exhausted-scroll-area.xml",
+      "sha256": "0d3e8f1fd7758fcf6953297bb4a2d38b121c5c1dcfd6e8bf82678a04311c948c",
+      "source": {
+        "directory": "Echoseek/state/operations/moria-x-gallery-20261122/scroll",
+        "hierarchy": "hierarchy.xml",
+        "sha256": "0f53c1aca9bfe280ab6a4792f1ac987b9dd8d1a939e3b15f219aecc6af5f8eac"
+      },
+      "environment": {
+        "android_version": "16",
+        "size": [
+          1440,
+          3216
+        ],
+        "verified_on": "2026-11-22"
+      },
+      "transformations": "Replace post authors, handles, body text and notification descriptions with fixture values; retain native structure and geometry.",
+      "expected": {
+        "screen": "search_results",
+        "collapsed": true,
+        "safe_scroll_region": [
+          0,
+          444,
+          200,
+          2728
+        ]
+      },
+      "visual_review": {
+        "status": "agent_only",
+        "reviewed_on": "2026-11-22"
+      }
     }
   ]
 }

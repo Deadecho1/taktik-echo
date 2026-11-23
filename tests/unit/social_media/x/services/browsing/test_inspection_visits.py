@@ -1,13 +1,11 @@
 """Phone replays cover successful round trips, stale sources and uncertainty."""
 
+import io
 from dataclasses import replace
 
 import pytest
 from lxml import etree
 from PIL import Image
-from unit.social_media.x.services.browsing.test_search import SearchReplay
-from unit.social_media.x.ui.test_inspection_screen import SIZE, document
-
 from taktik.core.shared.behavior.tap import free_tap_zone
 from taktik.core.shared.phone_interaction import (
     InteractionCancelled,
@@ -18,6 +16,8 @@ from taktik.core.shared.ui.geometry import bounds
 from taktik.core.social_media.x.services.browsing.browser import XBrowser
 from taktik.core.social_media.x.services.browsing.navigation import X, XError
 from taktik.core.social_media.x.ui.screen import PACKAGE, read_screen
+from unit.social_media.x.services.browsing.test_search import SearchReplay
+from unit.social_media.x.ui.test_inspection_screen import SIZE, document
 
 
 class InspectionReplay(SearchReplay):
@@ -276,8 +276,11 @@ def test_video_inspection_crops_visible_region_without_opening_or_advancing():
     assert app.observe().content_key == source.content_key
 
 
-def test_browser_inspection_preserves_identity_and_supplies_explicit_frames():
-    _replay, browser = started(image=True, wrapper=True)
+@pytest.mark.parametrize("overlaid", [False, True])
+def test_browser_inspection_preserves_identity_and_supplies_explicit_frames(overlaid):
+    replay, browser = started(image=True, wrapper=True)
+    if overlaid:
+        replay.gallery = full_screen_gallery()
     before = browser.observe()
     assert not before.frames
     browser.act("inspect", before)
@@ -285,6 +288,7 @@ def test_browser_inspection_preserves_identity_and_supplies_explicit_frames():
     assert after.identity == before.identity
     assert after.frames and after.post_context["visual_content_available"]
     assert after.post_context["media_inspection"]["view"] == "gallery"
+    assert after.post_context["media_inspection"]["partial"] is overlaid
     assert after.caption == before.caption and not after.caption_expanded
     with pytest.raises(XError):
         browser.visit_profile(replace(after, identity="stale"))
@@ -430,3 +434,107 @@ def test_physical_thread_sequence_has_two_verified_scrolls_then_header_restorati
     assert len(report.posts) == 1 and report.posts[0].author == "@InkSpireMusic"
     assert [e[2] for e in replay.events if e[0] == "gesture"] == ["up", "up", "down"]
     assert app.observe().content_key == source.content_key
+
+
+def full_screen_gallery():
+    # X on Android 16 advertises its image as the full-screen media host, even
+    # when the Back/options, author, caption and actions overlay that image.
+    root = etree.fromstring(document("image-gallery").encode())
+    scope = root.xpath('.//*[@resource-id="MediaGallery"]')[0]
+    image = scope.xpath('.//*[@content-desc!=""]')[0]
+    assert image.get("content-desc").startswith("An artist's concept")
+    node = image
+    while node is not scope:
+        node.set("bounds", "[0,136][1080,2230]")
+        node = node.getparent()
+    return etree.tostring(root, encoding="unicode")
+
+
+def test_full_screen_gallery_retains_safe_crop_and_back():
+    screen = read_screen(full_screen_gallery(), SIZE)
+    assert screen.kind == "media", screen.reason
+    assert screen.gallery.crop == (0, 290, 1080, 1677)
+    assert screen.gallery.partial
+    assert screen.controls[0].label == "Back"
+    assert screen.controls[0].visibility.unobscured
+
+
+def test_captured_android_gallery_retains_safe_image_and_back():
+    screen = read_screen(document("overlay-gallery"), (1440, 3216))
+    assert screen.kind == "media", screen.reason
+    assert screen.gallery.author == "@fixture_author"
+    assert screen.gallery.crop == (0, 904, 1440, 2174)
+    assert screen.gallery.partial
+    assert screen.controls[0].visibility.unobscured
+
+
+def test_search_inspection_captures_partial_image_and_returns_same_post():
+    replay, app = started(image=True)
+    replay.gallery = full_screen_gallery()
+    source = app.observe()
+    report = app.inspect_media(frame_count=2, interval=0.2)
+    assert report.partial and report.crop == (0, 290, 1080, 1677)
+    assert report.source_key == source.content_key
+    assert len(report.frames) == replay.capture_count == 2
+    assert Image.open(io.BytesIO(report.frames[0])).size == (797, 1024)
+    assert app.observe().content_key == source.content_key
+    assert replay.events[-1] == ("tap", "inspection Back")
+
+
+def test_search_restarts_from_gallery_and_reverifies_account():
+    replay, app = started(image=True)
+    replay.xml = full_screen_gallery()
+    post = app.recover()
+    assert post.observable and app.verified_account == "@fixture_owner"
+    assert replay.events.count(("tap", "Show navigation drawer")) == 2
+    assert replay.events.count(("tap", "inspection Back")) == 1
+
+
+def covered_image():
+    root = etree.fromstring(document("image-gallery").encode())
+    root.xpath('.//*[@content-desc="More options"]')[0].set(
+        "bounds", "[0,724][1080,1617]"
+    )
+    return etree.tostring(root, encoding="unicode")
+
+
+def test_fully_covered_image_stays_navigable_but_cannot_supply_frames():
+    replay, app = started(image=True)
+    replay.gallery = covered_image()
+    screen = read_screen(replay.gallery, SIZE)
+    assert screen.kind == "media", screen.reason
+    assert screen.gallery.crop is None
+    with pytest.raises(XError, match="covered"):
+        app.inspect_media()
+    assert replay.capture_count == 0
+    assert app.verified_account is None
+    assert app.recover().observable
+
+
+def test_uncertain_back_from_overlaid_gallery_is_not_retried():
+    replay, app = started(image=True)
+    replay.xml = full_screen_gallery()
+    replay.back_error = OSError("back response lost")
+    with pytest.raises(InteractionError):
+        app.recover()
+    assert app.verified_account is None
+    assert replay.events.count(("tap", "inspection Back")) == 1
+
+
+def test_gallery_crop_change_during_capture_discards_frames():
+    replay, app = started(image=True)
+    replay.gallery = full_screen_gallery()
+
+    def changed():
+        root = etree.fromstring(replay.xml.encode())
+        root.xpath('.//*[@content-desc="More options"]')[0].set(
+            "bounds", "[904,800][1036,932]"
+        )
+        replay.xml = etree.tostring(root, encoding="unicode")
+
+    replay.after_capture = changed
+    with pytest.raises(XError, match="changed"):
+        app.inspect_media()
+    assert app.verified_account is None
+    assert replay.capture_count == 1
+    assert ("tap", "inspection Back") not in replay.events

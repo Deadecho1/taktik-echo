@@ -11,6 +11,8 @@ from itertools import pairwise
 from unicodedata import category
 
 from taktik.core.shared.phone_interaction import InteractionError, Phone
+from taktik.core.shared.ui.geometry import free_regions as _free_regions
+from taktik.core.shared.ui.geometry import intersection as _intersection
 from taktik.core.social_media.x.ui.screen import (
     ACTION_LABELS,
     HANDLE,
@@ -42,54 +44,33 @@ class _FramingLimit(XError):
         self.screen = screen
 
 
-def _intersection(a, b):
-    result = max(a[0], b[0]), max(a[1], b[1]), min(a[2], b[2]), min(a[3], b[3])
-    return result if result[0] < result[2] and result[1] < result[3] else None
-
-
-def _free_regions(area, exclusions, minimum_width):
-    """Continuous rectangles only; Phone remains responsible for path sampling."""
-    boxes = [box for rect in exclusions if (box := _intersection(area, rect))]
-    edges = sorted({area[0], area[2], *(x for box in boxes for x in (box[0], box[2]))})
-    for i, left in enumerate(edges):
-        for right in edges[i + 1 :]:
-            if right - left < minimum_width:
-                continue
-            blocked = sorted(
-                (b[1], b[3]) for b in boxes if b[0] < right and b[2] > left
-            )
-            top = area[1]
-            for start, end in blocked:
-                if start > top:
-                    yield left, top, right, start
-                top = max(top, end)
-            if top < area[3]:
-                yield left, top, right, area[3]
-
-
 def scroll_region(screen, *, restore=False):
     viewport = screen.content_viewport
     if screen.kind not in {"home", "search_results", "detail"} or viewport is None:
         raise XError("X scrolling requires a recognized feed viewport.")
     width, height = viewport[2] - viewport[0], viewport[3] - viewport[1]
-    areas = screen.scroll_areas or screen.navigation_areas
-    exclusions = (
-        *screen.overlaps,
-        *(rect for area in areas for rect in area.exclusions),
-    )
     restoring = restore and screen.kind == "detail"
     minimum_width = width * (0.02 if restoring else 0.08)
     minimum_height = height * 0.2 if restoring else width * 0.1
     regions = []
-    for candidate in areas:
-        area = candidate.visibility.visible_bounds
-        if area is None or not candidate.visibility.accessible:
-            continue
-        regions.extend(
-            rect
-            for rect in _free_regions(area, exclusions, minimum_width)
-            if rect[3] - rect[1] >= minimum_height
+    # A clipped post can contribute geometry with no usable gesture path.
+    # Prefer post regions, then try the independently verified navigation space.
+    for areas in (screen.scroll_areas, screen.navigation_areas):
+        exclusions = (
+            *screen.overlaps,
+            *(rect for area in areas for rect in area.exclusions),
         )
+        for candidate in areas:
+            area = candidate.visibility.visible_bounds
+            if area is None or not candidate.visibility.accessible:
+                continue
+            regions.extend(
+                rect
+                for rect in _free_regions(area, exclusions, minimum_width)
+                if rect[3] - rect[1] >= minimum_height
+            )
+        if regions:
+            break
     if not regions:
         raise XError(
             "No continuous X scroll region excludes nested controls and media."
@@ -2359,6 +2340,20 @@ class X:
             raise XError("The active X handle does not match the configured account.")
         return handle
 
+    def _close_drawer(self, screen):
+        self._verify_account(screen)
+        if not screen.drawer_back:
+            self._tap(screen, "Close navigation menu")
+            return
+        fresh = self._snapshot()
+        self._verify_account(fresh)
+        if not fresh.drawer_back:
+            raise XError("The X drawer changed before dismissal.")
+        if fresh.android_back is not None:
+            self.phone.tap(fresh.android_back, kind="immediate").require()
+        else:
+            self.phone.command("back").require()
+
     def _reach_home(self, screen):
         for attempt in range(RESTORE_ATTEMPTS + 1):
             if screen.kind == "home" and any(
@@ -2374,7 +2369,7 @@ class X:
                 screen = self._wait_for(lambda s: s.kind == "home", "Home expansion")
             elif screen.kind == "drawer":
                 self._verify_account(screen)
-                self._tap(screen, "Close navigation menu")
+                self._close_drawer(screen)
                 screen = self._wait_for(
                     lambda s: s.kind not in {"drawer", "unsupported"},
                     "drawer dismissal",
@@ -2447,7 +2442,7 @@ class X:
             self._tap(screen, "Show navigation drawer")
             drawer = self._wait_for(lambda s: s.kind == "drawer", "X account drawer")
             account = self._verify_account(drawer)
-            self._tap(drawer, "Close navigation menu")
+            self._close_drawer(drawer)
             screen = self._wait_for(lambda s: s.kind == "home", "return to X Home")
             screen = self._reach_home(screen)
             if timeline == "search":
