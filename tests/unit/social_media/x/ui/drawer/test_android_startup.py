@@ -4,6 +4,8 @@ import re
 from pathlib import Path
 
 import pytest
+from lxml import etree
+
 from taktik.core.shared.phone_interaction import InteractionError, Phone, Status
 from taktik.core.shared.phone_interaction._device import TaktikDevice
 from taktik.core.social_media.x.services.browsing.browser import XBrowser
@@ -91,8 +93,21 @@ def replay():
     phone.close(home=False).require()
 
 
-def test_verified_full_width_drawer_reaches_feed_through_native_back(replay):
+@pytest.mark.parametrize("recents_label", ["Overview", "Recents"])
+@pytest.mark.parametrize("empty_widget", [False, True])
+def test_verified_full_width_drawer_reaches_feed_through_native_back(
+    replay, recents_label, empty_widget
+):
     raw, browser = replay
+    root = etree.fromstring(raw.drawer.encode())
+    root.xpath('.//*[@resource-id="com.android.systemui:id/recent_apps"]')[0].set(
+        "content-desc", recents_label
+    )
+    if empty_widget:
+        # Synthetic OEM variant of the captured drawer, not a new device capture.
+        widget = etree.SubElement(root[0], "node", attrib=dict(root[0].attrib))
+        widget.set("resource-id", "com.android.systemui:id/nav_bar_widget")
+    raw.drawer = etree.tostring(root, encoding="unicode")
     browser.start("fixture_user", "for_you")
     assert browser.browser.verified_account == "@fixture_user"
     assert browser.observe().username == "fixture_author"

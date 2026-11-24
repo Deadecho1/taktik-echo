@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 from lxml import etree
+
 from taktik.core.social_media.x.ui.screen import read_screen
 
 FIXTURE = Path(__file__).parents[2] / "fixtures/startup/android-buttons-drawer.xml"
@@ -23,6 +24,60 @@ def test_captured_android_buttons_do_not_become_clipboard_evidence():
     assert (0, 3040, 1440, 3216) in screen.overlaps
     assert screen.drawer_back
     assert {t.label for t in screen.controls} == {"Profile"}
+
+
+@pytest.mark.parametrize(
+    "fixture, kind",
+    [
+        ("android-buttons-drawer.xml", "drawer"),
+        ("android-buttons-search.xml", "search_input"),
+    ],
+)
+def test_oem_navigation_keeps_system_controls_excluded(fixture, kind):
+    root = etree.fromstring(FIXTURE.with_name(fixture).read_bytes())
+    nav = root.xpath(
+        './/*[@resource-id="com.android.systemui:id/navigation_bar_frame"]'
+    )[0]
+    root.xpath('.//*[@resource-id="com.android.systemui:id/recent_apps"]')[0].set(
+        "content-desc", "Recents"
+    )
+    widget = etree.SubElement(nav, "node", attrib=dict(nav.attrib))
+    widget.set("resource-id", "com.android.systemui:id/nav_bar_widget")
+    screen = read_screen(etree.tostring(root), SIZE)
+    assert screen.kind == kind, screen.reason
+    assert (0, 3040, 1440, 3216) in screen.overlaps
+    assert screen.clipboard_text is None
+    assert not {"Back", "Home", "Recents"} & {t.label for t in screen.controls}
+
+
+@pytest.mark.parametrize("change", ["text", "content-desc", "package", "child"])
+def test_nav_bar_widget_does_not_hide_unknown_content(change):
+    root = document()
+    widget = etree.SubElement(root[0], "node", attrib=dict(root[0].attrib))
+    widget.set("resource-id", "com.android.systemui:id/nav_bar_widget")
+    if change == "child":
+        child = etree.SubElement(widget, "node", attrib=dict(widget.attrib))
+        child.set("resource-id", "com.android.systemui:id/unknown")
+    else:
+        widget.set(change, "Unknown")
+    assert read_screen(etree.tostring(root), SIZE).kind == "unsupported"
+
+
+@pytest.mark.parametrize(
+    "identity, label",
+    [
+        ("recent_apps", "Recent apps"),
+        ("recent_apps", ""),
+        ("home", "Recents"),
+        ("back", "Recents"),
+    ],
+)
+def test_button_label_alias_is_specific_to_recent_apps(identity, label):
+    root = document()
+    root.xpath(f'.//*[@resource-id="com.android.systemui:id/{identity}"]')[0].set(
+        "content-desc", label
+    )
+    assert read_screen(etree.tostring(root), SIZE).kind == "unsupported"
 
 
 @pytest.mark.parametrize("change", ["package", "control", "geometry", "extra"])

@@ -9,12 +9,13 @@ WRAPPERS = {
     "navigation_inflater",
     "horizontal",
     "nav_buttons",
+    "nav_bar_widget",
     "ends_group",
     "center_group",
     "menu_container",
 }
-BUTTONS = {"back": "Back", "home": "Home", "recent_apps": "Overview"}
-OPTIONAL_BUTTONS = {"ime_switcher": "Switch input method"}
+BUTTONS = {"back": {"Back"}, "home": {"Home"}, "recent_apps": {"Overview", "Recents"}}
+OPTIONAL_BUTTONS = {"ime_switcher": {"Switch input method"}}
 
 
 def bottom_bar(window, area):
@@ -34,7 +35,7 @@ def bottom_bar(window, area):
         if (
             node.get("text")
             or node.get("content-desc", "")
-            != (BUTTONS | OPTIONAL_BUTTONS).get(identity, "")
+            not in (BUTTONS | OPTIONAL_BUTTONS).get(identity, {""})
             or identity
             not in WRAPPERS | BUTTONS.keys() | OPTIONAL_BUTTONS.keys() | {""}
             or _intersect(rect, area) != rect
